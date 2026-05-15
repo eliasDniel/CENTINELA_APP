@@ -9,11 +9,11 @@ class StatSummaryRow extends StatelessWidget {
   final int menores;
 
   const StatSummaryRow({
-    Key? key,
+    super.key,
     required this.emergencias,
     required this.alertas,
     required this.menores,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,19 +26,19 @@ class StatSummaryRow extends StatelessWidget {
             icon: '🔴',
             number: emergencias.toString(),
             label: 'Emergencias',
-            color: AppColors.sos,
+            color: AppConfig.sos,
           ),
           _StatChip(
             icon: '🟡',
             number: alertas.toString(),
             label: 'Alertas',
-            color: AppColors.warning,
+            color: AppConfig.warning,
           ),
           _StatChip(
             icon: '🔵',
             number: menores.toString(),
             label: 'Menores',
-            color: AppColors.primary,
+            color: AppConfig.primary,
           ),
         ],
       ),
@@ -66,7 +66,7 @@ class _StatChip extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(color: color, width: 2),
         borderRadius: BorderRadius.circular(12),
-        color: AppColors.surface,
+        color: AppConfig.surface,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -87,7 +87,7 @@ class _StatChip extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: AppConfig.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),

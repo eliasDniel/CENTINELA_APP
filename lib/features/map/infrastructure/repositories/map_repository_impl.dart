@@ -1,5 +1,5 @@
-// RF-0306: Map repository implementation
-import '../../domain/entities/map_marker_entity.dart';
+// RF-0306: implementación del repositorio del mapa
+import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/repositories/map_repository.dart';
 import '../datasources/map_local_datasource.dart';
 
@@ -9,7 +9,12 @@ class MapRepositoryImpl implements MapRepository {
   MapRepositoryImpl(this.localDataSource);
 
   @override
-  Future<List<MapMarkerEntity>> getMapMarkers() {
-    return localDataSource.getMapMarkers();
+  Future<List<MapAlertEntity>> getActiveAlerts() {
+    return localDataSource.getActiveAlerts();
+  }
+
+  @override
+  MapAlertEntity generateIncomingAlert() {
+    return localDataSource.createIncomingAlert();
   }
 }

@@ -10,15 +10,15 @@ class OfflineBannerWidget extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: AppColors.error,
+      color: AppConfig.error,
       child: Row(
         children: [
-          const Icon(Icons.wifi_off, color: AppColors.textPrimary, size: 20),
+          const Icon(Icons.wifi_off, color: AppConfig.textPrimary, size: 20),
           const SizedBox(width: 12),
           Text(
             'Sin conexión — Los SOS se guardan localmente',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textPrimary,
+              color: AppConfig.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),

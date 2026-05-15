@@ -32,7 +32,7 @@ class _SplashPageState extends State<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shield, size: 80, color: AppColors.primary)
+            Icon(Icons.shield, size: 80, color: AppConfig.primary)
                 .animate()
                 .fade(duration: 1000.ms)
                 .scale(duration: 1000.ms),

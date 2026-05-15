@@ -108,9 +108,9 @@ class _AuthPageState extends ConsumerState<AuthPage> with TickerProviderStateMix
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: AppColors.surface,
+                                            color: AppConfig.surface,
                                             borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: AppColors.primary),
+                                            border: Border.all(color: AppConfig.primary),
                                           ),
                                           child: SelectableText(
                                             authState.user!.uuid,

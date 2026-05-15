@@ -1,7 +1,7 @@
 // RF: Color palette for BarrioSeguro
 import 'package:flutter/material.dart';
 
-class AppColors {
+class AppConfig {
   // Primary color: Indigo
   static const Color primary = Color(0xFF5C6BC0);
   static const Color primaryLight = Color(0xFF8E99F3);
@@ -30,4 +30,13 @@ class AppColors {
   // Utility
   static const Color divider = Color(0xFF424250);
   static const Color border = Color(0xFF5A5A6E);
+
+
+  // Padding Horizontal
+  static const double horizontalPadding = 16.0;
+
+  // Margin Horizontal
+  static const double horizontalMargin = 16.0;
+
+
 }

@@ -60,17 +60,43 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
           animation: _pulse,
           builder: (context, child) {
             return Container(
-              width: 180 + (_pulse.value * 60),
-              height: 180 + (_pulse.value * 60),
+              width: 270 + (_pulse.value * 60),
+              height: 270 + (_pulse.value * 60),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.error.withOpacity(0.3 - (_pulse.value * 0.3)),
+                  color: AppConfig.error.withOpacity(0.18 - (_pulse.value * 0.14)),
                   width: 2,
                 ),
               ),
             );
           },
+        ),
+        // Outer container
+        Container(
+          width: 250,
+          height: 250,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppConfig.error.withOpacity(0.08),
+            border: Border.all(
+              color: AppConfig.error.withOpacity(0.18),
+              width: 2,
+            ),
+          ),
+        ),
+        // Inner container
+        Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppConfig.error.withOpacity(0.14),
+            border: Border.all(
+              color: AppConfig.error.withOpacity(0.25),
+              width: 2,
+            ),
+          ),
         ),
         // Main button with scale animation
         ScaleTransition(
@@ -80,8 +106,8 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('¿Confirmar SOS de emergencia?'),
-                  content: const Text('Se enviará tu ubicación GPS a operadores de emergencia'),
+                  title: const Text('Confirmar alerta de emergencia'),
+                  content: const Text('Se enviará tu ubicación a los contactos y operadores de Centinela Milagro.'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -89,7 +115,7 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
+                        backgroundColor: AppConfig.error,
                       ),
                       onPressed: () {
                         Navigator.pop(context);
@@ -103,7 +129,7 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
                               children: [
                                 const CircularProgressIndicator(),
                                 const SizedBox(height: 16),
-                                const Text('Enviando GPS y alerta...'),
+                                const Text('Enviando ubicación y alerta...'),
                               ],
                             ),
                           ),
@@ -114,27 +140,26 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
                           widget.onPressed();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content:
-                                  Text('✅ SOS enviado. Operador notificado'),
+                              content: Text('✅ Alerta enviada. El equipo de Centinela Milagro fue notificado'),
                             ),
                           );
                         });
                       },
-                      child: const Text('ENVIAR SOS'),
+                      child: const Text('ENVIAR ALERTA'),
                     ),
                   ],
                 ),
               );
             },
             child: Container(
-              width: 120,
-              height: 120,
+              width: 180,
+              height: 180,
               decoration: BoxDecoration(
-                color: AppColors.error,
+                color: AppConfig.error,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.error.withOpacity(0.6),
+                    color: AppConfig.error.withOpacity(0.6),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -152,6 +177,7 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
+                      color: Colors.white
                     ),
                   ),
                   const Text(
@@ -160,6 +186,7 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
+                      color: Colors.white70
                     ),
                   ),
                 ],

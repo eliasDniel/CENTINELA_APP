@@ -95,13 +95,13 @@ class MockMapPainter extends CustomPainter {
   Color _getColorForType(String type) {
     switch (type) {
       case 'emergencia':
-        return AppColors.error;
+        return AppConfig.error;
       case 'alerta':
-        return AppColors.warning;
+        return AppConfig.warning;
       case 'incidente_menor':
-        return AppColors.primary;
+        return AppConfig.primary;
       default:
-        return AppColors.textSecondary;
+        return AppConfig.textSecondary;
     }
   }
 

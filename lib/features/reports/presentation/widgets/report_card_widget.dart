@@ -27,15 +27,15 @@ class ReportCardWidget extends StatelessWidget {
   Color _getColorForType(String type) {
     switch (type) {
       case 'robo':
-        return AppColors.sos;
+        return AppConfig.sos;
       case 'accidente':
-        return AppColors.warning;
+        return AppConfig.warning;
       case 'sospechoso':
         return const Color(0xFFFFC107);
       case 'daño_vial':
-        return AppColors.primary;
+        return AppConfig.primary;
       default:
-        return AppColors.textTertiary;
+        return AppConfig.textTertiary;
     }
   }
 
@@ -46,13 +46,13 @@ class ReportCardWidget extends StatelessWidget {
       case 'Sur':
         return const Color(0xFFFF2D55);
       case 'Centro':
-        return AppColors.warning;
+        return AppConfig.warning;
       case 'Este':
-        return AppColors.success;
+        return AppConfig.success;
       case 'Oeste':
-        return AppColors.primary;
+        return AppConfig.primary;
       default:
-        return AppColors.textTertiary;
+        return AppConfig.textTertiary;
     }
   }
 
@@ -74,13 +74,13 @@ class ReportCardWidget extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'recibido':
-        return AppColors.textTertiary;
+        return AppConfig.textTertiary;
       case 'en_revision':
-        return AppColors.warning;
+        return AppConfig.warning;
       case 'atendido':
-        return AppColors.success;
+        return AppConfig.success;
       default:
-        return AppColors.textSecondary;
+        return AppConfig.textSecondary;
     }
   }
 
@@ -141,10 +141,7 @@ class ReportCardWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              _DetailRow(
-                label: 'Barrio:',
-                value: report.barrio,
-              ),
+              _DetailRow(label: 'Barrio:', value: report.barrio),
               _DetailRow(
                 label: 'Estado:',
                 value: _getStatusLabel(report.status),
@@ -165,18 +162,16 @@ class ReportCardWidget extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
+                  color: AppConfig.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                report.description,
-                style: GoogleFonts.dmSans(fontSize: 14),
-              ),
+              Text(report.description, style: GoogleFonts.dmSans(fontSize: 14)),
               const SizedBox(height: 16),
               _DetailRow(
                 label: 'Ubicación GPS:',
-                value: '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}',
+                value:
+                    '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}',
               ),
             ],
           ),
@@ -190,7 +185,7 @@ class ReportCardWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showDetailBottomSheet(context),
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: 8),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -199,6 +194,7 @@ class ReportCardWidget extends StatelessWidget {
               // Top row: Badge barrio + tiempo
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -226,7 +222,7 @@ class ReportCardWidget extends StatelessWidget {
                     _formatTime(report.timestamp),
                     style: GoogleFonts.dmSans(
                       fontSize: 11,
-                      color: AppColors.textTertiary,
+                      color: AppConfig.textTertiary,
                     ),
                   ),
                 ],
@@ -258,7 +254,7 @@ class ReportCardWidget extends StatelessWidget {
                           style: GoogleFonts.outfit(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: AppConfig.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -268,7 +264,7 @@ class ReportCardWidget extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.dmSans(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: AppConfig.textSecondary,
                           ),
                         ),
                       ],
@@ -311,10 +307,7 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _DetailRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -328,7 +321,7 @@ class _DetailRow extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: AppConfig.textSecondary,
             ),
           ),
           Text(
@@ -336,7 +329,7 @@ class _DetailRow extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: AppConfig.textPrimary,
             ),
           ),
         ],

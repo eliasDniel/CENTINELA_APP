@@ -58,7 +58,7 @@ class ShellPage extends ConsumerWidget {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.map),
-            label: 'Mapa',
+            label: 'Ver Alertas',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
@@ -70,7 +70,6 @@ class ShellPage extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

@@ -91,7 +91,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         child: SelectableText(
                           authState.user?.uuid ?? 'N/A',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
+                            color: AppConfig.textTertiary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -212,8 +212,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               Card(
                 child: ListTile(
                   title: const Text('Cerrar sesión'),
-                  leading: const Icon(Icons.logout, color: AppColors.error),
-                  textColor: AppColors.error,
+                  leading: const Icon(Icons.logout, color: AppConfig.error),
+                  textColor: AppConfig.error,
                   onTap: () {
                     showDialog(
                       context: context,
@@ -229,7 +229,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.error,
+                              backgroundColor: AppConfig.error,
                             ),
                             onPressed: () {
                               Navigator.pop(context);

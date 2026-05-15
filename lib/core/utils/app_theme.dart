@@ -8,29 +8,29 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
-      cardColor: AppColors.card,
+      scaffoldBackgroundColor: AppConfig.background,
+      cardColor: AppConfig.card,
       
       // Primary color
-      primaryColor: AppColors.primary,
+      primaryColor: AppConfig.primary,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.primaryLight,
-        error: AppColors.error,
-        surface: AppColors.surface,
-        onSurface: AppColors.textPrimary,
-        onBackground: AppColors.textPrimary,
+        primary: AppConfig.primary,
+        secondary: AppConfig.primaryLight,
+        error: AppConfig.error,
+        surface: AppConfig.surface,
+        onSurface: AppConfig.textPrimary,
+        onBackground: AppConfig.textPrimary,
       ),
       
       // AppBar theme
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.card,
+        backgroundColor: AppConfig.card,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
       ),
       
@@ -39,55 +39,55 @@ class AppTheme {
         displayLarge: GoogleFonts.outfit(
           fontSize: 32,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         displayMedium: GoogleFonts.outfit(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         displaySmall: GoogleFonts.outfit(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         headlineSmall: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         titleLarge: GoogleFonts.dmSans(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         titleMedium: GoogleFonts.dmSans(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         bodyLarge: GoogleFonts.dmSans(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: AppColors.textPrimary,
+          color: AppConfig.textPrimary,
         ),
         bodyMedium: GoogleFonts.dmSans(
           fontSize: 14,
           fontWeight: FontWeight.w400,
-          color: AppColors.textSecondary,
+          color: AppConfig.textSecondary,
         ),
         bodySmall: GoogleFonts.dmSans(
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          color: AppColors.textTertiary,
+          color: AppConfig.textTertiary,
         ),
       ),
       
       // Button themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: AppConfig.primary,
+          foregroundColor: AppConfig.textPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
@@ -96,15 +96,15 @@ class AppTheme {
       
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppConfig.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
       ),
       
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary),
+          foregroundColor: AppConfig.primary,
+          side: const BorderSide(color: AppConfig.primary),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -113,57 +113,57 @@ class AppTheme {
       // Input decoration
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppConfig.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: const BorderSide(color: AppConfig.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: const BorderSide(color: AppConfig.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: const BorderSide(color: AppConfig.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: const BorderSide(color: AppConfig.error),
         ),
-        hintStyle: GoogleFonts.dmSans(color: AppColors.textTertiary),
-        labelStyle: GoogleFonts.dmSans(color: AppColors.textSecondary),
+        hintStyle: GoogleFonts.dmSans(color: AppConfig.textTertiary),
+        labelStyle: GoogleFonts.dmSans(color: AppConfig.textSecondary),
       ),
       
       // FAB theme
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppConfig.primary,
+        foregroundColor: AppConfig.textPrimary,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       
       // Bottom nav theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.card,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textTertiary,
+        backgroundColor: AppConfig.card,
+        selectedItemColor: AppConfig.primary,
+        unselectedItemColor: AppConfig.textTertiary,
         showUnselectedLabels: true,
         elevation: 8,
       ),
       
       // Chip theme
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surface,
-        selectedColor: AppColors.primary,
-        labelStyle: GoogleFonts.dmSans(color: AppColors.textPrimary),
-        secondaryLabelStyle: GoogleFonts.dmSans(color: AppColors.textPrimary),
+        backgroundColor: AppConfig.surface,
+        selectedColor: AppConfig.primary,
+        labelStyle: GoogleFonts.dmSans(color: AppConfig.textPrimary),
+        secondaryLabelStyle: GoogleFonts.dmSans(color: AppConfig.textPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       
       // Dialog theme
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.card,
+        backgroundColor: AppConfig.card,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),

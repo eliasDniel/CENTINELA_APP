@@ -63,7 +63,7 @@ class _LoginFormState extends State<LoginForm> {
             errorBorder: _aliasError != null
                 ? OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.error, width: 2),
+                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
                   )
                 : null,
           ),
@@ -79,7 +79,7 @@ class _LoginFormState extends State<LoginForm> {
             errorBorder: _passwordError != null
                 ? OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.error, width: 2),
+                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
                   )
                 : null,
             suffixIcon: IconButton(
@@ -101,7 +101,7 @@ class _LoginFormState extends State<LoginForm> {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
                     ),
                   )
                 : const Text('Entrar'),
