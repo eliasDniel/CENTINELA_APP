@@ -55,10 +55,11 @@ class _AuthPageState extends ConsumerState<AuthPage>
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        child: SizedBox(
-          height: size.height - kToolbarHeight - MediaQuery.of(context).padding.top,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+        child: Container(
+          margin: EdgeInsets.all(AppConfig.horizontalMargin),
+          child: SizedBox(
+            
+            height: size.height - kToolbarHeight - MediaQuery.of(context).padding.top,
             child: Column(
               children: [
                 DefaultTabController(
