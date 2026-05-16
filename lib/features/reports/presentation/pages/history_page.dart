@@ -15,6 +15,7 @@ class HistoryPage extends ConsumerStatefulWidget {
 }
 
 class _HistoryPageState extends ConsumerState<HistoryPage> {
+  String _selectedFilter = 'todos';
   @override
   Widget build(BuildContext context) {
     return Consumer(
@@ -59,124 +60,102 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                           error: (err, stack) =>
                               Center(child: Text('Error: $err')),
                           data: (reports) {
+                            final filteredReports = _selectedFilter == 'todos'
+                                ? reports
+                                : reports
+                                      .where((r) => r.type == _selectedFilter)
+                                      .toList();
+
                             return ListView(
-                              padding: const EdgeInsets.all(0),
                               children: [
-                                // Header Section
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    24,
-                                    24,
-                                    24,
-                                    0,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Mi Historial',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 25,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        'Resumen de tus reportes de seguridad',
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                // Stats Grid
                                 Container(
                                   margin: const EdgeInsets.all(
                                     AppConfig.horizontalMargin,
                                   ),
-                                  child: GridView.count(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                    childAspectRatio: 1.5,
-                                    shrinkWrap: true,
-
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    children: [
-                                      _StatCard(
-                                        icon: Icons.warning_rounded,
-                                        iconColor: const Color(0xFFFF3B30),
-                                        number: '${reports.length}',
-                                        label: 'Robos',
+                                  child: Material(
+                                    color: const Color(0xFF5B7FFF),
+                                    borderRadius: BorderRadius.circular(50),
+                                    child: InkWell(
+                                      onTap: () => context.go('/report/new'),
+                                      borderRadius: BorderRadius.circular(50),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 16,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: const [
+                                            Icon(
+                                              Icons.add,
+                                              color: Colors.white,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Crear Nueva Alerta',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      _StatCard(
-                                        icon: Icons.person_outline,
-                                        iconColor: const Color(0xFFFFB800),
-                                        number:
-                                            '${(reports.length * 0.4).toInt()}',
-                                        label: 'Sospechosos',
-                                      ),
-                                      _StatCard(
-                                        icon: Icons.directions_car_outlined,
-                                        iconColor: const Color(0xFF1E90FF),
-                                        number:
-                                            '${(reports.length * 0.25).toInt()}',
-                                        label: 'Accidentes',
-                                      ),
-                                      _StatCard(
-                                        icon: Icons.trending_up,
-                                        iconColor: const Color(0xFF34C759),
-                                        number: '85%',
-                                        label: 'Tasa de atención',
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                // Recent Reports Section
-                                Padding(
+                                // Filter Chips
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
+                                    horizontal: 20,
                                   ),
+
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
-                                        'Reportes Recientes',
-                                        style: TextStyle(
-                                          color: Color(0xFF8A8A8E),
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.5,
-                                        ),
+                                      _FilterChip(
+                                        label: 'Todos ${reports.length}',
+                                        isSelected: _selectedFilter == 'todos',
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedFilter = 'todos';
+                                          });
+                                        },
                                       ),
-                                      TextButton.icon(
-                                        icon: const Icon(
-                                          Icons.filter_list,
-                                          size: 16,
-                                        ),
-                                        label: const Text('Filtrar'),
-                                        onPressed: () {},
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: const Color(
-                                            0xFF1E90FF,
-                                          ),
-                                        ),
+                                      const SizedBox(width: 8),
+                                      _FilterChip(
+                                        label:
+                                            'Robo ${reports.where((r) => r.type == 'robo').length}',
+                                        isSelected: _selectedFilter == 'robo',
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedFilter = 'robo';
+                                          });
+                                        },
+                                        color: const Color(0xFFFF3B30),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _FilterChip(
+                                        label:
+                                            'Sospechoso ${reports.where((r) => r.type == 'sospechoso').length}',
+                                        isSelected:
+                                            _selectedFilter == 'sospechoso',
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedFilter = 'sospechoso';
+                                          });
+                                        },
+                                        color: const Color(0xFFFFB800),
                                       ),
                                     ],
                                   ),
                                 ),
-
+                                const SizedBox(height: 16),
                                 // Reports List
-                                if (reports.isEmpty)
+                                if (filteredReports.isEmpty)
                                   Center(
                                     child: Padding(
                                       padding: const EdgeInsets.all(32),
@@ -189,7 +168,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            'No hay reportes aún',
+                                            'No hay reportes',
                                             style: Theme.of(
                                               context,
                                             ).textTheme.titleMedium,
@@ -206,13 +185,14 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                     ),
                                     physics:
                                         const NeverScrollableScrollPhysics(),
-                                    itemCount: reports.length,
+                                    itemCount: filteredReports.length,
                                     itemBuilder: (context, index) {
                                       return ReportCardWidget(
-                                        report: reports[index],
+                                        report: filteredReports[index],
                                       );
                                     },
                                   ),
+                                const SizedBox(height: 24),
                               ],
                             );
                           },
@@ -221,67 +201,61 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                     ),
                   ),
           ),
-          floatingActionButton: isVisitor
-              ? null
-              : FloatingActionButton(
-                  onPressed: () => context.go('/report/new'),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  backgroundColor: AppConfig.primary,
-                  child:  Icon(Icons.add),
-                ),
         );
       },
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String number;
+class _FilterChip extends StatelessWidget {
   final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? color;
 
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.number,
+  const _FilterChip({
     required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1F2B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: iconColor, size: 30),
-          const SizedBox(height: 10),
-          Text(
-            number,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (color ?? const Color(0xFF5B7FFF))
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (color ?? const Color(0xFF5B7FFF)),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF8A8A8E),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (color != null)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

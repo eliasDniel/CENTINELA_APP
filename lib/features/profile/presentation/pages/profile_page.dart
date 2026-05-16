@@ -66,11 +66,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        child: Text(
-                          authState.user?.alias.substring(0, 1).toUpperCase() ??
-                              'U',
-                          style: const TextStyle(fontSize: 28),
-                        ),
+                        backgroundImage: AssetImage('assets/images/anonimo.png'),
                       ),
                       const SizedBox(height: 16),
                       Text(

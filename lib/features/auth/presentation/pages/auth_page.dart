@@ -15,7 +15,8 @@ class AuthPage extends ConsumerStatefulWidget {
   ConsumerState<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends ConsumerState<AuthPage> with TickerProviderStateMixin {
+class _AuthPageState extends ConsumerState<AuthPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -34,15 +35,16 @@ class _AuthPageState extends ConsumerState<AuthPage> with TickerProviderStateMix
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final authNotifier = ref.read(authProvider.notifier);
+    final size = MediaQuery.of(context).size;
 
     ref.listen(authProvider, (previous, next) {
       if (next.user != null && previous?.user == null) {
         context.go('/home');
       }
       if (next.error != null && next.error!.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.error!)));
       }
     });
 
@@ -53,111 +55,136 @@ class _AuthPageState extends ConsumerState<AuthPage> with TickerProviderStateMix
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              DefaultTabController(
-                length: 2,
-                child: Column(
-                  children: [
-                    TabBar(
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(text: 'Entrar'),
-                        Tab(text: 'Registrarse'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 400,
-                      child: TabBarView(
+        child: SizedBox(
+          height: size.height - kToolbarHeight - MediaQuery.of(context).padding.top,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                DefaultTabController(
+                  length: 2,
+                  child: Column(
+                    children: [
+                      TabBar(
+                        dividerColor: AppConfig.primaryLight,
                         controller: _tabController,
-                        children: [
-                          // Login tab
-                          LoginForm(
-                            onSubmit: () {},
-                            onLogin: (alias, password) {
-                              authNotifier.login(alias, password);
-                            },
-                            isLoading: authState.isLoading,
+                        tabs: const [
+                          Tab(text: 'Entrar'),
+                          Tab(text: 'Registrarse'),
+                        ],
+                      ),
+                      SizedBox(height: size.height * 0.03),
+                      // Image or logo - 20% de la altura
+                      Container(
+                        height: size.height * 0.20,
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/anonimo.png'),
+                            fit: BoxFit.contain,
                           ),
-                          // Register tab
-                          RegisterForm(
-                            onSubmit: () {},
-                            onRegister: (alias, password, barrio, phone) async {
-                              await authNotifier.register(
-                                alias,
-                                password,
-                                barrio,
-                                phone: phone,
-                              );
-                              // Show UUID dialog
-                              if (mounted && authState.user != null) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Pseudónimo privado'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Text(
-                                          'Tu pseudónimo único protege tu identidad:',
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: AppConfig.surface,
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: AppConfig.primary),
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.04),
+                      // Forms - 40% de la altura
+                      SizedBox(
+                        height: size.height * 0.35,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            // Login tab
+                            LoginForm(
+                              onSubmit: () {},
+                              onLogin: (alias, password) {
+                                authNotifier.login(alias, password);
+                              },
+                              isLoading: authState.isLoading,
+                            ),
+                            // Register tab
+                            RegisterForm(
+                              onSubmit: () {},
+                              onRegister: (alias, password, barrio, phone) async {
+                                await authNotifier.register(
+                                  alias,
+                                  password,
+                                  barrio,
+                                  phone: phone,
+                                );
+                                // Show UUID dialog
+                                if (mounted && authState.user != null) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Pseudónimo privado'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'Tu pseudónimo único protege tu identidad:',
                                           ),
-                                          child: SelectableText(
-                                            authState.user!.uuid,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontFamily: 'monospace',
-                                              fontSize: 12,
+                                          const SizedBox(height: 16),
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: AppConfig.surface,
+                                              borderRadius: BorderRadius.circular(
+                                                8,
+                                              ),
+                                              border: Border.all(
+                                                color: AppConfig.primary,
+                                              ),
+                                            ),
+                                            child: SelectableText(
+                                              authState.user!.uuid,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                              ),
                                             ),
                                           ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Continuar'),
                                         ),
                                       ],
                                     ),
-                                    actions: [
-                                      ElevatedButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Continuar'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            },
-                            isLoading: authState.isLoading,
-                          ),
-                        ],
+                                  );
+                                }
+                              },
+                              isLoading: authState.isLoading,
+                            ),
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: size.height * 0.02),
+                // Privacy badge
+                PrivacyBadgeWidget(
+                  uuid: authState.user?.uuid ?? 'Pendiente de autenticación',
+                ),
+                SizedBox(height: size.height * 0.02),
+                // Visitor button
+                OutlinedButton.icon(
+                  onPressed: () {
+                    authNotifier.loginAsVisitor();
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('Ingresar como Visitante'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
                     ),
-                  ],
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              PrivacyBadgeWidget(
-                uuid: authState.user?.uuid ?? 'Pendiente de autenticación',
-              ),
-              const SizedBox(height: 32),
-              OutlinedButton.icon(
-                onPressed: () {
-                  authNotifier.loginAsVisitor();
-                },
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Ingresar como Visitante'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
