@@ -1,4 +1,5 @@
 // RF-0306: página del mapa accesible sin autenticación
+import 'package:centinela_milagro/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,10 +21,9 @@ class MapPage extends ConsumerStatefulWidget {
 
 class _MapPageState extends ConsumerState<MapPage> {
   final MapController _mapController = MapController();
+  bool _showRadiusBadge = true;
+  bool _showMapLegend = false;
 
-  String _subtitle(MapState state) {
-    return 'Radio 3km · Actualizado hace ${state.secondsSinceUpdate}s';
-  }
 
   Future<void> _openFiltersSheet(MapState state) async {
     AlertLevel? selectedLevel = state.levelFilter;
@@ -56,7 +56,7 @@ class _MapPageState extends ConsumerState<MapPage> {
 
             return Container(
               decoration: const BoxDecoration(
-                color: Color(0xFF10131A),
+                color: AppConfig.background,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
@@ -108,7 +108,6 @@ class _MapPageState extends ConsumerState<MapPage> {
                         filterChip<AlertSource>(label: 'Todos', value: null, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
                         filterChip<AlertSource>(label: 'Sensores IoT', value: AlertSource.sensor_audio, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
                         filterChip<AlertSource>(label: 'Ciudadanos', value: AlertSource.ciudadano, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
-                        filterChip<AlertSource>(label: 'Hidrológico', value: AlertSource.sensor_hidrico, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
                       ],
                     ),
                     const SizedBox(height: 22),
@@ -116,7 +115,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF3B30),
+                          backgroundColor: AppConfig.primaryDark,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -201,26 +200,14 @@ class _MapPageState extends ConsumerState<MapPage> {
         .toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF10131A),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF10131A),
-        elevation: 0,
-        titleSpacing: 20,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Alertas Activas',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              _subtitle(state),
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
-            ),
-          ],
+        backgroundColor: Colors.transparent,
+        title: const Text(
+          'Alertas Activas',
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
+          
           IconButton(
             onPressed: () => _openFiltersSheet(state),
             icon: const Icon(Icons.filter_list_rounded),
@@ -258,15 +245,57 @@ class _MapPageState extends ConsumerState<MapPage> {
                 ],
               ),
               MarkerLayer(markers: markers),
-              RichAttributionWidget(
-                attributions: const [
-                  TextSourceAttribution('© OpenStreetMap contributors © CartoDB'),
-                ],
-              ),
             ],
           ),
-          const RadiusBadgeWidget(),
-          const MapLegendWidget(),
+          if (_showRadiusBadge)
+            RadiusBadgeWidget(
+              onClose: () {
+                setState(() {
+                  _showRadiusBadge = false;
+                });
+              },
+            ),
+          if (_showMapLegend)
+            const MapLegendWidget(),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 5,
+              children: [
+                FloatingActionButton(
+                  mini: true,
+                  heroTag: 'zoom_in',
+                  backgroundColor: AppConfig.primaryDark,
+                  onPressed: () {
+                    _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+                  },
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+                FloatingActionButton(
+                  mini: true,
+                  heroTag: 'zoom_out',
+                  backgroundColor: AppConfig.primary,
+                  onPressed: () {
+                    _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+                  },
+                  child: const Icon(Icons.remove, color: Colors.white),
+                ),
+                FloatingActionButton(
+                  mini: true,
+                  heroTag: 'toggle_legend',
+                  backgroundColor: _showMapLegend ? const Color(0xFF1E90FF) : AppConfig.primaryLight,
+                  onPressed: () {
+                    setState(() {
+                      _showMapLegend = !_showMapLegend;
+                    });
+                  },
+                  child: const Icon(Icons.info_outline, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

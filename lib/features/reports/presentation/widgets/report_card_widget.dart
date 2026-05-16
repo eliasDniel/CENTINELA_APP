@@ -185,9 +185,9 @@ class ReportCardWidget extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showDetailBottomSheet(context),
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
+    
+        child: Container(
+          margin: EdgeInsets.all(AppConfig.horizontalMargin),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

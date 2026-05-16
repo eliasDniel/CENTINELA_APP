@@ -24,8 +24,8 @@ class AppTheme {
       
       // AppBar theme
       appBarTheme: AppBarTheme(
-        backgroundColor: AppConfig.card,
-        elevation: 0,
+        backgroundColor: AppConfig.background,
+        // elevation: 10,
         centerTitle: false,
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 24,

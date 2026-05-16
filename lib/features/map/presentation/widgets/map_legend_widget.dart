@@ -87,8 +87,6 @@ class MapLegendWidget extends ConsumerWidget {
             const SizedBox(height: 10),
             const Text('🤖 Sensor IoT', style: TextStyle(color: Colors.white70, fontSize: 12)),
             const SizedBox(height: 6),
-            const Text('🌊 Hidrológico', style: TextStyle(color: Colors.white70, fontSize: 12)),
-            const SizedBox(height: 6),
             const Text('👤 Ciudadano', style: TextStyle(color: Colors.white70, fontSize: 12)),
           ],
         ),
