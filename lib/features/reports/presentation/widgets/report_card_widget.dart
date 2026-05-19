@@ -1,6 +1,5 @@
 // RF-0304, RF-0307: Report card widget with redesigned layout
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../domain/entities/report_entity.dart';
 import '../../../../core/utils/app_colors.dart';
 
@@ -129,10 +128,7 @@ class ReportCardWidget extends StatelessWidget {
                 children: [
                   Text(
                     _getTitleForType(report.type),
-                    style: GoogleFonts.outfit(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -159,14 +155,12 @@ class ReportCardWidget extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Descripción',
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppConfig.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
-              Text(report.description, style: GoogleFonts.dmSans(fontSize: 14)),
+              Text(report.description, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 16),
               _DetailRow(
                 label: 'Ubicación GPS:',
@@ -211,17 +205,15 @@ class ReportCardWidget extends StatelessWidget {
                     ),
                     child: Text(
                       report.barrio,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: _getBarrioColor(report.barrio),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   Text(
                     _formatTime(report.timestamp),
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppConfig.textTertiary,
                     ),
                   ),
@@ -251,9 +243,7 @@ class ReportCardWidget extends StatelessWidget {
                       children: [
                         Text(
                           _getTitleForType(report.type),
-                          style: GoogleFonts.outfit(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: AppConfig.textPrimary,
                           ),
                         ),
@@ -262,8 +252,7 @@ class ReportCardWidget extends StatelessWidget {
                           report.description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppConfig.textSecondary,
                           ),
                         ),
@@ -287,8 +276,7 @@ class ReportCardWidget extends StatelessWidget {
                   ),
                   child: Text(
                     _getStatusLabel(report.status),
-                    style: GoogleFonts.dmSans(
-                      fontSize: 10,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: _getStatusColor(report.status),
                     ),
@@ -318,16 +306,14 @@ class _DetailRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.dmSans(
-              fontSize: 12,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppConfig.textSecondary,
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.dmSans(
-              fontSize: 12,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w500,
               color: AppConfig.textPrimary,
             ),

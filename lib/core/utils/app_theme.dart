@@ -56,27 +56,27 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: AppConfig.textPrimary,
         ),
-        titleLarge: GoogleFonts.dmSans(
+        titleLarge: GoogleFonts.outfit(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppConfig.textPrimary,
         ),
-        titleMedium: GoogleFonts.dmSans(
+        titleMedium: GoogleFonts.outfit(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: AppConfig.textPrimary,
         ),
-        bodyLarge: GoogleFonts.dmSans(
+        bodyLarge: GoogleFonts.outfit(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppConfig.textPrimary,
         ),
-        bodyMedium: GoogleFonts.dmSans(
+        bodyMedium: GoogleFonts.outfit(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: AppConfig.textSecondary,
         ),
-        bodySmall: GoogleFonts.dmSans(
+        bodySmall: GoogleFonts.outfit(
           fontSize: 12,
           fontWeight: FontWeight.w400,
           color: AppConfig.textTertiary,
@@ -131,8 +131,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppConfig.error),
         ),
-        hintStyle: GoogleFonts.dmSans(color: AppConfig.textTertiary),
-        labelStyle: GoogleFonts.dmSans(color: AppConfig.textSecondary),
+        hintStyle: GoogleFonts.outfit(color: AppConfig.textTertiary),
+        labelStyle: GoogleFonts.outfit(color: AppConfig.textSecondary),
       ),
       
       // FAB theme
@@ -156,8 +156,8 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppConfig.surface,
         selectedColor: AppConfig.primary,
-        labelStyle: GoogleFonts.dmSans(color: AppConfig.textPrimary),
-        secondaryLabelStyle: GoogleFonts.dmSans(color: AppConfig.textPrimary),
+        labelStyle: GoogleFonts.outfit(color: AppConfig.textPrimary),
+        secondaryLabelStyle: GoogleFonts.outfit(color: AppConfig.textPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       

@@ -1,6 +1,5 @@
 // RF-0307: Summary statistics row with 3 stat chips
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class StatSummaryRow extends StatelessWidget {
@@ -75,18 +74,14 @@ class _StatChip extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             number,
-            style: GoogleFonts.outfit(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
               color: color,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: AppConfig.textSecondary,
             ),
             textAlign: TextAlign.center,
