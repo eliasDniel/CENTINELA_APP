@@ -1,53 +1,75 @@
-// RF: Global navigation shell with persistent FAB and BottomNavigationBar
+
+import 'package:centinela_milagro/features/map/presentation/pages/map_page.dart';
+import 'package:centinela_milagro/features/profile/presentation/pages/profile_page.dart';
+import 'package:centinela_milagro/features/reports/presentation/pages/history_page.dart';
+import 'package:centinela_milagro/features/reports/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ShellPage extends ConsumerWidget {
-  final Widget child;
-  final String currentRoute;
 
-  const ShellPage({
-    required this.child,
-    required this.currentRoute,
-    super.key,
-  });
+class ShellPage extends StatefulWidget {
+  final int pageIndex;
+  static const String name = 'home';
+  const ShellPage({super.key, required this.pageIndex});
 
-  int _getTabIndex(String route) {
-    switch (route) {
-      case '/home':
-        return 0;
-      case '/map':
-        return 1;
-      case '/history':
-        return 2;
-      case '/profile':
-        return 3;
-      default:
-        return 0;
-    }
+  @override
+  State<ShellPage> createState() => _ShellPageState();
+}
+
+class _ShellPageState extends State<ShellPage>
+    with AutomaticKeepAliveClientMixin {
+  late PageController pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    pageController = PageController(keepPage: true);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
 
+  final viewsPages = const <Widget>[
+    HomePage(),
+    MapPage(),
+    HistoryPage(),
+    ProfilePage()
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    if (pageController.hasClients) {
+      pageController.animateToPage(
+        widget.pageIndex,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+      );
+    }
     return Scaffold(
-      body: child,
+      body: PageView(
+        physics: NeverScrollableScrollPhysics(),
+        controller: pageController,
+        children: viewsPages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _getTabIndex(currentRoute),
+        currentIndex: widget.pageIndex,
         onTap: (index) {
           switch (index) {
             case 0:
-              context.go('/home');
+              context.go('/home/0');
               break;
             case 1:
-              context.go('/map');
+              context.go('/home/1');
               break;
             case 2:
-              context.go('/history');
+              context.go('/home/2');
               break;
             case 3:
-              context.go('/profile');
+              context.go('/home/3');
               break;
           }
         },
@@ -73,5 +95,6 @@ class ShellPage extends ConsumerWidget {
     );
   }
 
+  @override
+  bool get wantKeepAlive => true;
 }
-

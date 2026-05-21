@@ -202,7 +202,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                                   '✅ Reporte enviado correctamente'),
                             ),
                           );
-                          context.go('/home');
+                          context.go('/home/2'); // Volver al historial después de enviar
                         },
                       );
                     },

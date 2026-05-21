@@ -39,7 +39,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
 
     ref.listen(authProvider, (previous, next) {
       if (next.user != null && previous?.user == null) {
-        context.go('/home');
+        context.go('/home/0');
       }
       if (next.error != null && next.error!.isNotEmpty) {
         ScaffoldMessenger.of(

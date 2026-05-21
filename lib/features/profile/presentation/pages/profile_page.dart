@@ -8,7 +8,7 @@ import '../providers/profile_provider.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
