@@ -41,26 +41,28 @@ final goRouter = GoRouter(
       pageBuilder: (context, state) =>
           _fadeTransition(context, state, const AuthPage()),
     ),
-    ShellRoute(
-      builder: (context, state, child) {
-        final pageIndex = int.parse(state.pathParameters['page'] ?? '0');
-        return ShellPage(pageIndex: pageIndex);
+
+    GoRoute(
+      path: '/home/:page',
+      pageBuilder: (context, state) {
+        return _fadeTransition(
+          context,
+          state,
+          ShellPage(
+            pageIndex: int.parse(state.pathParameters['page'] ?? '0'),
+          ),
+        );
       },
       routes: [
         GoRoute(
-          path: '/home/:page',
-          builder: (context, state) {
-            final pageIndex = int.parse(state.pathParameters['page'] ?? '0');
-            return ShellPage(pageIndex: pageIndex);
+          path: 'report/new',
+          name: ReportPage.routeName,
+          pageBuilder: (context, state) {
+            return _fadeTransition(context, state, const ReportPage());
           },
-          routes: [
-            GoRoute(
-              path: 'report/new', 
-              builder: (context, state) => ReportPage(),
-            )
-          ]
         ),
       ],
     ),
+
   ],
 );

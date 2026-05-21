@@ -224,12 +224,12 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
           floatingActionButton: isVisitor
               ? null
               : FloatingActionButton(
-                  onPressed: () => context.go('/home/2/new'),
+                  onPressed: () => context.push('/home/2/report/new'),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(100),
                   ),
                   backgroundColor: AppConfig.primary,
-                  child:  Icon(Icons.add),
+                  child: const Icon(Icons.add),
                 ),
         );
       },

@@ -92,6 +92,10 @@ class MapNotifier extends Notifier<MapState> {
 
   Future<void> _bootstrap() async {
     final alerts = await _repository.getActiveAlerts();
+    
+    // Verificar si el provider aún está montado después de la operación asincrónica
+    if (!ref.mounted) return;
+    
     state = state.copyWith(
       allAlerts: alerts,
       filteredAlerts: _applyCurrentFilters(alerts, state.levelFilter, state.sourceFilter),
