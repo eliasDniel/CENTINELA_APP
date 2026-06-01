@@ -17,4 +17,21 @@ class MapRepositoryImpl implements MapRepository {
   MapAlertEntity generateIncomingAlert() {
     return localDataSource.createIncomingAlert();
   }
+
+  @override
+  MapAlertEntity publishSosAlert({
+    required double lat,
+    required double lng,
+    required String barrio,
+    String? pseudonym,
+    DateTime? timestamp,
+  }) {
+    return localDataSource.addSosAlert(
+      lat: lat,
+      lng: lng,
+      barrio: barrio,
+      pseudonym: pseudonym,
+      timestamp: timestamp,
+    );
+  }
 }

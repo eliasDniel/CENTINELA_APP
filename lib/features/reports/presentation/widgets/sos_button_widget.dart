@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class SOSButtonWidget extends StatefulWidget {
-  final VoidCallback onPressed;
+  final Future<void> Function() onEmergencySent;
 
-  const SOSButtonWidget({super.key, required this.onPressed});
+  const SOSButtonWidget({super.key, required this.onEmergencySent});
 
   @override
   State<SOSButtonWidget> createState() => _SOSButtonWidgetState();
@@ -103,47 +103,25 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
           scale: _scale,
           child: GestureDetector(
             onTap: () {
-              showDialog(
+              showDialog<void>(
                 context: context,
-                builder: (context) => AlertDialog(
+                builder: (dialogContext) => AlertDialog(
                   title: const Text('Confirmar alerta de emergencia'),
-                  content: const Text('Se enviará tu ubicación a los contactos y operadores de Centinela Milagro.'),
+                  content: const Text(
+                    'Se enviará tu ubicación a los contactos y operadores de Centinela Milagro.',
+                  ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       child: const Text('Cancelar'),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppConfig.error,
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // Show progress
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (context) => AlertDialog(
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircularProgressIndicator(),
-                                const SizedBox(height: 16),
-                                const Text('Enviando ubicación y alerta...'),
-                              ],
-                            ),
-                          ),
-                        );
-                        Future.delayed(const Duration(seconds: 1, milliseconds: 500),
-                            () {
-                          Navigator.pop(context);
-                          widget.onPressed();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Alerta enviada. El equipo de Centinela Milagro fue notificado'),
-                            ),
-                          );
-                        });
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        await widget.onEmergencySent();
                       },
                       child: const Text('ENVIAR ALERTA'),
                     ),

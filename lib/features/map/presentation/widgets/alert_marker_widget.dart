@@ -1,111 +1,191 @@
-// RF-0306: marcador de alerta con pulso para emergencias
+// RF-0306 + RF-0309: marcador tipo pin, colores suaves
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../../subscriptions/domain/barrio_membership.dart';
 import '../../domain/entities/map_alert_entity.dart';
+import 'map_alert_styles.dart';
 
 class AlertMarkerWidget extends StatelessWidget {
-  final MapAlertEntity alert;
-  final VoidCallback onTap;
-
   const AlertMarkerWidget({
     super.key,
     required this.alert,
+    required this.barrioCategory,
     required this.onTap,
   });
 
-  Color _levelColor(AlertLevel level) {
-    switch (level) {
-      case AlertLevel.emergencia:
-        return const Color(0xFFFF3B30);
-      case AlertLevel.alerta:
-        return const Color(0xFFFF9500);
-      case AlertLevel.vigilancia:
-        return const Color(0xFF1E90FF);
-    }
-  }
+  final MapAlertEntity alert;
+  final BarrioMapCategory barrioCategory;
+  final VoidCallback onTap;
 
-  IconData _iconForType(AlertType type) {
-    switch (type) {
-      case AlertType.disparo:
-        return Icons.gpp_bad_rounded;
-      case AlertType.explosion:
-        return Icons.local_fire_department_rounded;
-      case AlertType.grito:
-        return Icons.record_voice_over_rounded;
-      case AlertType.vidrio_roto:
-        return Icons.broken_image_rounded;
-      case AlertType.alarma_vehiculo:
-        return Icons.directions_car_rounded;
-      case AlertType.nivel_hidrico:
-        return Icons.water_rounded;
-      case AlertType.reporte_ciudadano:
-        return Icons.report_rounded;
-      case AlertType.sos:
-        return Icons.emergency_rounded;
-    }
-  }
+  static const _pinSize = 40.0;
+
+  String? get _caption => switch (barrioCategory) {
+        BarrioMapCategory.home => 'Tú',
+        BarrioMapCategory.subscribed => alert.barrio,
+        BarrioMapCategory.other => null,
+      };
 
   @override
   Widget build(BuildContext context) {
-    final color = _levelColor(alert.level);
+    final level = MapAlertLevelStyle.forLevel(alert.level);
+    final barrioBorder = barrioBorderForCategory(barrioCategory, alert.barrio);
+    final dimmed = barrioCategory == BarrioMapCategory.other;
+    final caption = _caption;
 
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: 64,
-        height: 64,
-        child: Stack(
-          alignment: Alignment.center,
+      child: Opacity(
+        opacity: dimmed ? 0.5 : 1,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (alert.level == AlertLevel.emergencia)
-              Animate(
-                onPlay: (controller) => controller.repeat(),
-                effects: [
-                  ScaleEffect(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.6, 1.6),
-                    duration: 1200.ms,
-                    curve: Curves.easeOut,
-                  ),
-                  FadeEffect(
-                    begin: 0.7,
-                    end: 0.0,
-                    duration: 1200.ms,
-                  ),
-                ],
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withOpacity(0.20),
-                  ),
-                ),
-              ),
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.90),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.45),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Icon(
-                _iconForType(alert.type),
-                color: Colors.white,
-                size: 22,
-              ),
+            _PinHead(
+              level: level,
+              barrioBorder: barrioBorder,
+              icon: iconForAlertType(alert.type),
+              pulse: alert.level == AlertLevel.emergencia && !dimmed,
             ),
+            CustomPaint(
+              size: const Size(12, 7),
+              painter: _PinTailPainter(color: level.surface),
+            ),
+            if (caption != null) ...[
+              const SizedBox(height: 2),
+              _CaptionPill(text: caption, accent: barrioBorder),
+            ],
           ],
         ),
       ),
     );
   }
+}
+
+class _PinHead extends StatelessWidget {
+  const _PinHead({
+    required this.level,
+    required this.barrioBorder,
+    required this.icon,
+    required this.pulse,
+  });
+
+  final MapAlertLevelStyle level;
+  final Color barrioBorder;
+  final IconData icon;
+  final bool pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: AlertMarkerWidget._pinSize,
+      height: AlertMarkerWidget._pinSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (pulse)
+            Container(
+              width: AlertMarkerWidget._pinSize + 6,
+              height: AlertMarkerWidget._pinSize + 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: level.accent.withOpacity(0.12),
+              ),
+            ),
+          Container(
+            width: AlertMarkerWidget._pinSize,
+            height: AlertMarkerWidget._pinSize,
+            decoration: BoxDecoration(
+              color: level.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: barrioBorder.withOpacity(0.85), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Center(
+                  child: Icon(icon, size: 18, color: level.accent),
+                ),
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: level.accent.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: level.accent.withOpacity(0.5),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      level.label[0],
+                      style: TextStyle(
+                        color: level.accent,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CaptionPill extends StatelessWidget {
+  const _CaptionPill({required this.text, required this.accent});
+
+  final String text;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xE61C1C2E),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: accent.withOpacity(0.4)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: accent.withOpacity(0.95),
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _PinTailPainter extends CustomPainter {
+  _PinTailPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width / 2, size.height)
+      ..lineTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PinTailPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

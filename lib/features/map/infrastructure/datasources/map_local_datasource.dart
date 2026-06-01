@@ -8,11 +8,42 @@ import '../../domain/entities/map_alert_entity.dart';
 class MapLocalDataSource {
   final _uuid = const Uuid();
   final _random = Random();
+  List<MapAlertEntity>? _alerts;
 
   Future<List<MapAlertEntity>> getActiveAlerts() async {
     await Future.delayed(const Duration(milliseconds: 350));
+    _alerts ??= _seedAlerts();
+    return List.unmodifiable(_alerts!);
+  }
 
-    return [
+  /// RF-0304 / RF-0305: SOS del ciudadano → nueva alerta en el mapa.
+  MapAlertEntity addSosAlert({
+    required double lat,
+    required double lng,
+    required String barrio,
+    String? pseudonym,
+    DateTime? timestamp,
+  }) {
+    _alerts ??= _seedAlerts();
+    final alert = MapAlertEntity(
+      id: 'sos_${_uuid.v4()}',
+      lat: lat,
+      lng: lng,
+      type: AlertType.sos,
+      source: AlertSource.ciudadano,
+      level: AlertLevel.emergencia,
+      barrio: barrio,
+      description:
+          'SOS de emergencia — ubicación enviada${pseudonym != null ? ' · $pseudonym' : ''}',
+      timestamp: timestamp ?? DateTime.now(),
+      isActive: true,
+      pseudonym: pseudonym,
+    );
+    _alerts!.insert(0, alert);
+    return alert;
+  }
+
+  List<MapAlertEntity> _seedAlerts() => [
       MapAlertEntity(
         id: 'a001',
         lat: -2.1289,
@@ -152,7 +183,6 @@ class MapLocalDataSource {
         pseudonym: '0fd2-91aa',
       ),
     ];
-  }
 
   MapAlertEntity createIncomingAlert() {
     final now = DateTime.now();

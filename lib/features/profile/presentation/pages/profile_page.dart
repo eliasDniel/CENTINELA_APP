@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../reports/presentation/providers/reports_provider.dart';
+import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
 import '../providers/profile_provider.dart';
 import '../../../../core/utils/app_colors.dart';
 
@@ -21,7 +22,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final isOffline = ref.watch(isOfflineProvider);
     final offlineNotifier = ref.read(isOfflineProvider.notifier);
     final barriosSuscribed = ref.watch(barriosSubscribedProvider);
-    final barriosNotifier = ref.read(barriosSubscribedProvider.notifier);
     final authNotifier = ref.read(authProvider.notifier);
 
     if (authState.user?.isVisitor ?? false) {
@@ -48,7 +48,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       );
     }
 
-    final barrios = ['Norte', 'Sur', 'Centro', 'Este', 'Oeste'];
     final userBarrio = authState.user?.barrio ?? 'Centro';
 
     return Scaffold(
@@ -68,7 +67,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
-              _CardConfig(isOffline: isOffline, offlineNotifier: offlineNotifier, userBarrio: userBarrio, barriosSuscribed: barriosSuscribed, barrios: barrios, barriosNotifier: barriosNotifier),
+              _CardConfig(
+                isOffline: isOffline,
+                offlineNotifier: offlineNotifier,
+                userBarrio: userBarrio,
+                barriosSuscribed: barriosSuscribed,
+              ),
               const SizedBox(height: 24),
               // SECCIÓN: Sesión
               Text('Sesión', style: Theme.of(context).textTheme.titleMedium),
@@ -122,16 +126,12 @@ class _CardConfig extends StatelessWidget {
     required this.offlineNotifier,
     required this.userBarrio,
     required this.barriosSuscribed,
-    required this.barrios,
-    required this.barriosNotifier,
   });
 
   final bool isOffline;
   final OfflineNotifier offlineNotifier;
   final String userBarrio;
   final List<String> barriosSuscribed;
-  final List<String> barrios;
-  final BarriosSubscribedNotifier barriosNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -206,74 +206,17 @@ class _CardConfig extends StatelessWidget {
               ),
               const Divider(color: Colors.white24),
               ListTile(
-                title: const Text('Barrios suscritos'),
+                title: const Text('Mis barrios'),
                 subtitle: Text(
-                  '$userBarrio${barriosSuscribed.isNotEmpty ? ' + ${barriosSuscribed.length}' : ''}',
+                  barriosSuscribed.isEmpty
+                      ? '$userBarrio · hasta 3 barrios más'
+                      : '$userBarrio + ${barriosSuscribed.join(', ')}',
                 ),
                 leading: Icon(Icons.location_on, color: AppConfig.primary),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Barrios suscritos'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Barrio propio no seleccionable
-                          CheckboxListTile(
-                            title: Text('$userBarrio (propio)'),
-                            value: true,
-                            onChanged: null,
-                          ),
-                          const Divider(),
-                          Text(
-                            'Máximo 3 barrios adicionales',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 8),
-                          ...barrios.where((b) => b != userBarrio).map((
-                            barrio,
-                          ) {
-                            final isSelected = barriosSuscribed.contains(
-                              barrio,
-                            );
-                            return CheckboxListTile(
-                              title: Text(barrio),
-                              value: isSelected,
-                              onChanged: (value) {
-                                if (value == true &&
-                                    !isSelected &&
-                                    barriosSuscribed.length >= 3) {
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Máximo 3 barrios adicionales',
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  barriosNotifier.toggleBarrio(
-                                    barrio,
-                                    userBarrio,
-                                  );
-                                }
-                              },
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                      actions: [
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Listo'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                onTap: () => context.push(
+                  '/home/3/${SubscriptionsHubPage.routeName}',
+                ),
               ),
               const Divider(color: Colors.white24),
               ListTile(

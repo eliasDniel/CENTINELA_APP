@@ -4,4 +4,11 @@ import '../entities/map_alert_entity.dart';
 abstract class MapRepository {
   Future<List<MapAlertEntity>> getActiveAlerts();
   MapAlertEntity generateIncomingAlert();
+  MapAlertEntity publishSosAlert({
+    required double lat,
+    required double lng,
+    required String barrio,
+    String? pseudonym,
+    DateTime? timestamp,
+  });
 }

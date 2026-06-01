@@ -8,7 +8,7 @@ import '../../domain/usecases/get_user_history_usecase.dart';
 import '../../infrastructure/datasources/reports_local_datasource.dart';
 import '../../infrastructure/repositories/reports_repository_impl.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
 
 final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
   final dataSource = ReportsLocalDataSource();

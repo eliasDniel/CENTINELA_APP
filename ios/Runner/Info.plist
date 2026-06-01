@@ -44,5 +44,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMotionUsageDescription</key>
+	<string>Centinela usa el sensor de orientación para mostrar hacia dónde miras en el mapa.</string>
 </dict>
 </plist>

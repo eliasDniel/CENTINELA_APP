@@ -1,6 +1,5 @@
 // RF-0303: Report page - Modern 3 step form with improved UX
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/incident_type_chips.dart';

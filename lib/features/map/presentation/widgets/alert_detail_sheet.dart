@@ -1,39 +1,27 @@
 // RF-0306: detalle expandible de la alerta seleccionada
 import 'package:flutter/material.dart';
 
+import '../../../subscriptions/domain/barrio_membership.dart';
+import '../../../../core/location/user_location_provider.dart';
+import 'map_alert_styles.dart';
 import '../../domain/entities/map_alert_entity.dart';
 
 class AlertDetailSheet extends StatelessWidget {
   final MapAlertEntity alert;
+  final BarrioMapCategory barrioCategory;
+  final double? distanceFromUser;
   final VoidCallback onCenterMap;
 
   const AlertDetailSheet({
     super.key,
     required this.alert,
+    required this.barrioCategory,
+    this.distanceFromUser,
     required this.onCenterMap,
   });
 
-  Color _levelColor(AlertLevel level) {
-    switch (level) {
-      case AlertLevel.emergencia:
-        return const Color(0xFFFF3B30);
-      case AlertLevel.alerta:
-        return const Color(0xFFFF9500);
-      case AlertLevel.vigilancia:
-        return const Color(0xFF1E90FF);
-    }
-  }
-
-  String _levelText(AlertLevel level) {
-    switch (level) {
-      case AlertLevel.emergencia:
-        return 'Emergencia';
-      case AlertLevel.alerta:
-        return 'Alerta';
-      case AlertLevel.vigilancia:
-        return 'Vigilancia';
-    }
-  }
+  MapAlertLevelStyle _levelStyle(AlertLevel level) =>
+      MapAlertLevelStyle.forLevel(level);
 
   String _sourceText(AlertSource source) {
     switch (source) {
@@ -77,6 +65,8 @@ class AlertDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final levelStyle = _levelStyle(alert.level);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.82,
       minChildSize: 0.55,
@@ -107,12 +97,22 @@ class AlertDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _Badge(
-                        label: _levelText(alert.level),
-                        color: _levelColor(alert.level),
+                      _BarrioCategoryBadge(
+                        category: barrioCategory,
+                        barrio: alert.barrio,
                       ),
+                      const Spacer(),
+                      _Badge(
+                        label: levelStyle.label,
+                        color: levelStyle.accent,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
                       _Badge(
                         label: _sourceText(alert.source),
                         color: const Color(0xFF5A5A6E),
@@ -149,7 +149,20 @@ class AlertDetailSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('📍 Barrio: ${alert.barrio}', style: const TextStyle(color: Colors.white)),
+                        Text(
+                          '📍 ${barrioCategoryLabel(barrioCategory, alert.barrio)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (distanceFromUser != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '📏 A ${formatDistanceMeters(distanceFromUser!)} de ti',
+                            style: const TextStyle(color: Color(0xFF90CAF9)),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Text('🕐 ${_timeAgo(alert.timestamp)}', style: const TextStyle(color: Colors.white70)),
                         const SizedBox(height: 8),
@@ -231,7 +244,7 @@ class AlertDetailSheet extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _levelColor(alert.level),
+                        backgroundColor: levelStyle.accent.withOpacity(0.85),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -249,6 +262,58 @@ class AlertDetailSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _BarrioCategoryBadge extends StatelessWidget {
+  const _BarrioCategoryBadge({
+    required this.category,
+    required this.barrio,
+  });
+
+  final BarrioMapCategory category;
+  final String barrio;
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, icon) = switch (category) {
+      BarrioMapCategory.home => (
+          const Color(0xFF81C784),
+          Icons.home_outlined,
+        ),
+      BarrioMapCategory.subscribed => (
+          barrioAccentSoft(barrio),
+          Icons.bookmark_outline,
+        ),
+      BarrioMapCategory.other => (
+          const Color(0xFF78909C),
+          Icons.location_off_outlined,
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            barrioCategoryLabel(category, barrio),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
