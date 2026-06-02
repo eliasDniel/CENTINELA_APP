@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/reports_provider.dart';
+import '../../domain/constants/incident_types.dart';
 import '../widgets/report_card_widget.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
@@ -59,6 +60,17 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                           error: (err, stack) =>
                               Center(child: Text('Error: $err')),
                           data: (reports) {
+                            int countByType(String type) => reports
+                                .where((r) => r.type == type)
+                                .length;
+
+                            const statTypes = [
+                              'robo',
+                              'sicariato',
+                              'sospechoso',
+                              'accidente',
+                            ];
+
                             return ListView(
                               padding: const EdgeInsets.all(0),
                               children: [
@@ -109,34 +121,16 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 
                                     physics:
                                         const NeverScrollableScrollPhysics(),
-                                    children: [
-                                      _StatCard(
-                                        icon: Icons.warning_rounded,
-                                        iconColor: const Color(0xFFFF3B30),
-                                        number: '${reports.length}',
-                                        label: 'Robos',
-                                      ),
-                                      _StatCard(
-                                        icon: Icons.person_outline,
-                                        iconColor: const Color(0xFFFFB800),
-                                        number:
-                                            '${(reports.length * 0.4).toInt()}',
-                                        label: 'Sospechosos',
-                                      ),
-                                      _StatCard(
-                                        icon: Icons.directions_car_outlined,
-                                        iconColor: const Color(0xFF1E90FF),
-                                        number:
-                                            '${(reports.length * 0.25).toInt()}',
-                                        label: 'Accidentes',
-                                      ),
-                                      _StatCard(
-                                        icon: Icons.trending_up,
-                                        iconColor: const Color(0xFF34C759),
-                                        number: '85%',
-                                        label: 'Tasa de atención',
-                                      ),
-                                    ],
+                                    children: statTypes
+                                        .map(
+                                          (type) => _StatCard(
+                                            icon: incidentTypeIcon(type),
+                                            iconColor: incidentTypeColor(type),
+                                            number: '${countByType(type)}',
+                                            label: incidentTypeLabel(type),
+                                          ),
+                                        )
+                                        .toList(),
                                   ),
                                 ),
                                 const SizedBox(height: 10),

@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../reports/presentation/providers/reports_provider.dart';
+import '../../../reports/presentation/pages/offline_queue_page.dart';
+import '../pages/privacy_page.dart';
+import '../pages/change_password_page.dart';
 import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
+import '../../../notifications/presentation/notifications_screens.dart';
+import '../../../notifications/presentation/providers/notification_settings_provider.dart';
 import '../providers/profile_provider.dart';
 import '../../../../core/utils/app_colors.dart';
 
@@ -19,8 +23,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final isOffline = ref.watch(isOfflineProvider);
-    final offlineNotifier = ref.read(isOfflineProvider.notifier);
     final barriosSuscribed = ref.watch(barriosSubscribedProvider);
     final authNotifier = ref.read(authProvider.notifier);
 
@@ -68,14 +70,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
               const SizedBox(height: 12),
               _CardConfig(
-                isOffline: isOffline,
-                offlineNotifier: offlineNotifier,
                 userBarrio: userBarrio,
                 barriosSuscribed: barriosSuscribed,
               ),
               const SizedBox(height: 24),
               // SECCIÓN: Sesión
               Text('Sesión', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              Card(
+                child: ListTile(
+                  title: const Text('Cambiar contraseña'),
+                  subtitle: const Text('Actualiza tu clave de acceso'),
+                  leading: const Icon(Icons.vpn_key_outlined,
+                      color: AppConfig.primary),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push(
+                    '/home/3/${ChangePasswordPage.routeName}',
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
               Card(
                 child: ListTile(
@@ -120,21 +133,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-class _CardConfig extends StatelessWidget {
+class _CardConfig extends ConsumerWidget {
   const _CardConfig({
-    required this.isOffline,
-    required this.offlineNotifier,
     required this.userBarrio,
     required this.barriosSuscribed,
   });
 
-  final bool isOffline;
-  final OfflineNotifier offlineNotifier;
   final String userBarrio;
   final List<String> barriosSuscribed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notificationsOn = ref.watch(notificationsEnabledProvider);
+    final notificationsNotifier =
+        ref.read(notificationsEnabledProvider.notifier);
+
     return Column(
       children: [
         // Sección: Notificaciones y Sincronización
@@ -154,21 +167,37 @@ class _CardConfig extends StatelessWidget {
                   ],
                 ),
               ),
+
+
               const Divider(color: Colors.white24),
               SwitchListTile(
-                title: const Text('Alertas en tiempo real'),
-                subtitle: const Text('Recibe notificaciones de nuevas alertas'),
-                value: true,
-                onChanged: (value) {},
-                secondary: const Icon(Icons.notifications, color: AppConfig.success),
+                title: const Text('Recibir notificaciones'),
+                subtitle: Text(
+                  notificationsOn
+                      ? 'Alertas de tu barrio y barrios que sigues'
+                      : 'No recibirás alertas push',
+                ),
+                value: notificationsOn,
+                onChanged: notificationsNotifier.setEnabled,
+                secondary: Icon(
+                  notificationsOn
+                      ? Icons.notifications_active
+                      : Icons.notifications_off_outlined,
+                  color: notificationsOn
+                      ? AppConfig.success
+                      : AppConfig.textTertiary,
+                ),
               ),
               const Divider(color: Colors.white24),
-              SwitchListTile(
-                title: const Text('Sonido'),
-                subtitle: const Text('Sonidos de notificación'),
-                value: true,
-                onChanged: (value) {},
-                secondary: const Icon(Icons.volume_up, color: AppConfig.warning),
+              ListTile(
+                title: const Text('Bandeja de notificaciones'),
+                subtitle: const Text('Alertas recibidas'),
+                leading:
+                    const Icon(Icons.inbox_outlined, color: AppConfig.primary),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(
+                  '/home/3/${NotificationsScreen.routeName}',
+                ),
               ),
             ],
           ),
@@ -192,16 +221,14 @@ class _CardConfig extends StatelessWidget {
                 ),
               ),
               const Divider(color: Colors.white24),
-              SwitchListTile(
-                title: const Text('Simular modo offline'),
-                subtitle: const Text('Guardar alertas localmente'),
-                value: isOffline,
-                onChanged: (value) {
-                  offlineNotifier.toggleOffline(value);
-                },
-                secondary: Icon(
-                  isOffline ? Icons.cloud_off : Icons.cloud_done,
-                  color: isOffline ? AppConfig.sos : AppConfig.success,
+              ListTile(
+                title: const Text('Pendientes offline'),
+                subtitle: const Text('SOS y reportes sin enviar'),
+                leading: const Icon(Icons.cloud_off_outlined,
+                    color: AppConfig.warning),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(
+                  '/home/3/${OfflineQueuePage.routeName}',
                 ),
               ),
               const Divider(color: Colors.white24),
@@ -221,10 +248,12 @@ class _CardConfig extends StatelessWidget {
               const Divider(color: Colors.white24),
               ListTile(
                 title: const Text('Privacidad'),
-                subtitle: const Text('Controla quién ve tus reportes'),
+                subtitle: const Text('Datos personales y eliminar cuenta'),
                 leading: Icon(Icons.lock, color: AppConfig.primary),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () => context.push(
+                  '/home/3/${PrivacyPage.routeName}',
+                ),
               ),
             ],
           ),

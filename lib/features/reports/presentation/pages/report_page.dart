@@ -1,8 +1,16 @@
 // RF-0303: Report page - Modern 3 step form with improved UX
+import 'dart:io';
+
+import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+
+import '../../domain/constants/incident_types.dart';
 import '../widgets/incident_type_chips.dart';
+import '../widgets/report_location_map.dart';
+import '../widgets/report_media_picker.dart';
 import '../../../../core/utils/app_colors.dart' as app_colors;
 
 class ReportPage extends ConsumerStatefulWidget {
@@ -18,22 +26,26 @@ class _ReportPageState extends ConsumerState<ReportPage>
   int _currentStep = 0;
   String? _selectedType;
   late TextEditingController _descriptionController;
-  bool _hasAttachment = false;
+  ReportMediaAttachment? _attachment;
   late AnimationController _animationController;
-
-  // Mock GPS
-  final double _mockLat = -2.1234;
-  final double _mockLng = -79.5678;
+  late LatLng _reportPosition;
 
   @override
   void initState() {
     super.initState();
+    _reportPosition = milagroMapCenter;
     _descriptionController = TextEditingController();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     _animationController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _reportPosition = ref.read(userLocationProvider).position;
+      });
+    });
   }
 
   @override
@@ -341,7 +353,7 @@ class _ReportPageState extends ConsumerState<ReportPage>
               Icon(Icons.label, size: 16, color: app_colors.AppConfig.primary),
               const SizedBox(width: 8),
               Text(
-                _selectedType?.replaceAll('_', ' ') ?? '',
+                incidentTypeLabel(_selectedType),
                 style: TextStyle(
                   color: app_colors.AppConfig.primary,
                   fontWeight: FontWeight.w500,
@@ -378,113 +390,15 @@ class _ReportPageState extends ConsumerState<ReportPage>
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 20),
-        // GPS Info card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade900.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.blue.shade700.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade700.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.location_on,
-                  size: 20,
-                  color: Colors.blue.shade300,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ubicación detectada',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '$_mockLat, $_mockLng',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        ReportLocationMap(
+          position: _reportPosition,
+          onPositionChanged: (point) => setState(() => _reportPosition = point),
         ),
-        const SizedBox(height: 20),
-        // Attachment toggle
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade700),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SwitchListTile(
-            title: const Text('Adjuntar foto o video'),
-            subtitle: const Text('Añade evidencia visual'),
-            value: _hasAttachment,
-            activeColor: app_colors.AppConfig.primary,
-            onChanged: (value) => setState(() => _hasAttachment = value),
-          ),
+        const SizedBox(height: 24),
+        ReportMediaPicker(
+          attachment: _attachment,
+          onChanged: (value) => setState(() => _attachment = value),
         ),
-        if (_hasAttachment) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade900.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.shade700.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade700.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    size: 20,
-                    color: Colors.amber.shade300,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cámara no disponible en demo',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'Esta función está en desarrollo',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         const SizedBox(height: 40),
       ],
     );
@@ -520,7 +434,7 @@ class _ReportPageState extends ConsumerState<ReportPage>
               _buildReviewSection(
                 icon: Icons.label,
                 title: 'Tipo de incidente',
-                value: _selectedType?.replaceAll('_', ' ') ?? 'N/A',
+                value: incidentTypeLabel(_selectedType),
                 backgroundColor: Colors.blue.shade900.withOpacity(0.1),
               ),
               Divider(color: Colors.grey.shade700, height: 1),
@@ -533,13 +447,18 @@ class _ReportPageState extends ConsumerState<ReportPage>
                 isLongText: true,
               ),
               Divider(color: Colors.grey.shade700, height: 1),
-              // GPS section
               _buildReviewSection(
                 icon: Icons.location_on,
                 title: 'Ubicación',
-                value: '$_mockLat, $_mockLng',
+                value:
+                    '${_reportPosition.latitude.toStringAsFixed(5)}, '
+                    '${_reportPosition.longitude.toStringAsFixed(5)}',
                 backgroundColor: Colors.purple.shade900.withOpacity(0.1),
               ),
+              if (_attachment != null) ...[
+                Divider(color: Colors.grey.shade700, height: 1),
+                _buildAttachmentReviewSection(),
+              ],
             ],
           ),
         ),
@@ -569,6 +488,53 @@ class _ReportPageState extends ConsumerState<ReportPage>
         ),
         const SizedBox(height: 40),
       ],
+    );
+  }
+
+  Widget _buildAttachmentReviewSection() {
+    final attachment = _attachment!;
+    final isPhoto = attachment.kind == ReportMediaKind.photo;
+
+    return Container(
+      color: Colors.orange.shade900.withOpacity(0.1),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPhoto ? Icons.image_outlined : Icons.videocam_outlined,
+                size: 20,
+                color: app_colors.AppConfig.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isPhoto ? 'Foto adjunta' : 'Video adjunto',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (isPhoto)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                File(attachment.file.path),
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            )
+          else
+            Text(
+              attachment.file.name,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+        ],
+      ),
     );
   }
 

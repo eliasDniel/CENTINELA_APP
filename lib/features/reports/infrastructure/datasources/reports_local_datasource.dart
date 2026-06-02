@@ -33,8 +33,8 @@ class ReportsLocalDataSource {
     // Alertas (accidentes y sospechosos)
     ReportModel(
       id: '3',
-      type: 'accidente',
-      description: 'Choque frontal en Avenida Principal',
+      type: 'sicariato',
+      description: 'Reporté un sicariato en zona residencial',
       latitude: -2.1250,
       longitude: -79.5690,
       status: 'recibido',
@@ -57,8 +57,8 @@ class ReportsLocalDataSource {
     ),
     ReportModel(
       id: '5',
-      type: 'accidente',
-      description: 'Motociclista caído en ciclovía',
+      type: 'sicariato',
+      description: 'Reporté un sicariato en zona residencial',
       latitude: -2.1220,
       longitude: -79.5660,
       status: 'atendido',
@@ -79,11 +79,11 @@ class ReportsLocalDataSource {
       hasAttachment: false,
       barrio: 'Norte',
     ),
-    // Menores (daños viales y otros)
+    // Menores (sicariato y otros)
     ReportModel(
       id: '7',
-      type: 'daño_vial',
-      description: 'Hueco peligroso en calle 3ra y 8va',
+      type: 'sicariato',
+      description: 'Hecho de violencia reportado en sector residencial',
       latitude: -2.1280,
       longitude: -79.5710,
       status: 'en_revision',
@@ -94,7 +94,7 @@ class ReportsLocalDataSource {
     ),
     ReportModel(
       id: '8',
-      type: 'otro',
+      type: 'accidente',
       description: 'Árbol caído obstruyendo la vía',
       latitude: -2.1210,
       longitude: -79.5680,
@@ -154,8 +154,8 @@ class ReportsLocalDataSource {
       _userReports[userId] = [
         ReportModel(
           id: '${userId}_1',
-          type: 'robo',
-          description: 'Reporté un asalto en zona residencial',
+          type: 'sicariato',
+          description: 'Reporté un sicariato en zona residencial',
           latitude: -2.1234,
           longitude: -79.5678,
           status: 'atendido',
@@ -178,8 +178,8 @@ class ReportsLocalDataSource {
         ),
         ReportModel(
           id: '${userId}_3',
-          type: 'accidente',
-          description: 'Reporté un accidente vial',
+          type: 'robo',
+          description: 'Reporté un robo en zona residencial',
           latitude: -2.1200,
           longitude: -79.5650,
           status: 'recibido',

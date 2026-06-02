@@ -1,7 +1,7 @@
 // RF-0303, RF-0304, RF-0307, RF-0308: Report entity
 class ReportEntity {
   final String id;
-  final String type; // 'robo', 'accidente', 'sospechoso', 'daño_vial', 'otro'
+  final String type; // 'robo', 'sicariato', 'sospechoso', 'accidente'
   final String description;
   final double latitude;
   final double longitude;

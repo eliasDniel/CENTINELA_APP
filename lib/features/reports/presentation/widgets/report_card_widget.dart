@@ -1,5 +1,7 @@
 // RF-0304, RF-0307: Report card widget with redesigned layout
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../domain/constants/incident_types.dart';
 import '../../domain/entities/report_entity.dart';
 import '../../../../core/utils/app_colors.dart';
 
@@ -8,35 +10,9 @@ class ReportCardWidget extends StatelessWidget {
 
   const ReportCardWidget({super.key, required this.report});
 
-  IconData _getIconForType(String type) {
-    switch (type) {
-      case 'robo':
-        return Icons.no_backpack_rounded;
-      case 'accidente':
-        return Icons.car_crash_rounded;
-      case 'sospechoso':
-        return Icons.person_search_rounded;
-      case 'daño_vial':
-        return Icons.construction_rounded;
-      default:
-        return Icons.report_rounded;
-    }
-  }
+  IconData _getIconForType(String type) => incidentTypeIcon(type);
 
-  Color _getColorForType(String type) {
-    switch (type) {
-      case 'robo':
-        return AppConfig.sos;
-      case 'accidente':
-        return AppConfig.warning;
-      case 'sospechoso':
-        return const Color(0xFFFFC107);
-      case 'daño_vial':
-        return AppConfig.primary;
-      default:
-        return AppConfig.textTertiary;
-    }
-  }
+  Color _getColorForType(String type) => incidentTypeColor(type);
 
   Color _getBarrioColor(String barrio) {
     switch (barrio) {
@@ -96,88 +72,16 @@ class ReportCardWidget extends StatelessWidget {
     }
   }
 
-  String _getTitleForType(String type) {
-    switch (type) {
-      case 'robo':
-        return 'Robo';
-      case 'accidente':
-        return 'Accidente';
-      case 'sospechoso':
-        return 'Sospechoso';
-      case 'daño_vial':
-        return 'Daño vial';
-      default:
-        return 'Otro';
-    }
-  }
+  String _getTitleForType(String type) => incidentTypeLabel(type);
 
-  void _showDetailBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _getTitleForType(report.type),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _DetailRow(label: 'Barrio:', value: report.barrio),
-              _DetailRow(
-                label: 'Estado:',
-                value: _getStatusLabel(report.status),
-              ),
-              _DetailRow(
-                label: 'Hora:',
-                value:
-                    '${report.timestamp.hour}:${report.timestamp.minute.toString().padLeft(2, '0')}',
-              ),
-              _DetailRow(
-                label: 'Fecha:',
-                value:
-                    '${report.timestamp.day}/${report.timestamp.month}/${report.timestamp.year}',
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Descripción',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppConfig.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(report.description, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 16),
-              _DetailRow(
-                label: 'Ubicación GPS:',
-                value:
-                    '${report.latitude.toStringAsFixed(4)}, ${report.longitude.toStringAsFixed(4)}',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _openDetail(BuildContext context) {
+    context.push('/home/2/report/${report.id}', extra: report);
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showDetailBottomSheet(context),
+      onTap: () => _openDetail(context),
       child: Card(
     
         child: Container(
@@ -286,39 +190,6 @@ class ReportCardWidget extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _DetailRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppConfig.textSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppConfig.textPrimary,
-            ),
-          ),
-        ],
       ),
     );
   }

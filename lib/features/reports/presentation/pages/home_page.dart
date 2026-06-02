@@ -1,12 +1,12 @@
 // RF-0304, RF-0305, RF-0307: Home page
 import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:centinela_milagro/core/utils/app_colors.dart';
+import 'package:centinela_milagro/features/notifications/presentation/notifications_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../providers/reports_provider.dart';
 import '../providers/sos_provider.dart';
 import '../widgets/sos_button_widget.dart';
 
@@ -15,7 +15,6 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOffline = ref.watch(isOfflineProvider);
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -25,8 +24,7 @@ class HomePage extends ConsumerWidget {
             const _HomeHeader(),
             _HomeSosSection(
               size: size,
-              isOffline: isOffline,
-              onEmergencySent: () => _handleSosSent(context, ref, isOffline),
+              onEmergencySent: () => _handleSosSent(context, ref),
             ),
             const _HomeLocationCard(),
           ],
@@ -49,9 +47,9 @@ class _HomeHeader extends ConsumerWidget {
     final name = isVisitor ? 'visitante' : (user?.alias ?? 'ciudadano');
     final subtitle = isVisitor
         ? 'Explora el mapa de alertas en un radio de 3 km sin crear cuenta. '
-            'Inicia sesión para reportar incidentes y recibir avisos de tu barrio.'
+              'Inicia sesión para reportar incidentes y recibir avisos de tu barrio.'
         : 'Estás en el barrio ${user?.barrio ?? '—'}. '
-            'Puedes enviar SOS o revisar alertas en el mapa.';
+              'Puedes enviar SOS o revisar alertas en el mapa.';
 
     return Container(
       margin: const EdgeInsets.all(AppConfig.horizontalMargin),
@@ -64,25 +62,25 @@ class _HomeHeader extends ConsumerWidget {
               children: [
                 Text(
                   greeting,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white70,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   name,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white60,
-                        height: 1.35,
-                      ),
+                    color: Colors.white60,
+                    height: 1.35,
+                  ),
                 ),
                 if (isVisitor) ...[
                   const SizedBox(height: 12),
@@ -96,9 +94,33 @@ class _HomeHeader extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 22,
-            backgroundImage: const AssetImage('assets/images/anonimo.png'),
+          Stack(
+            children: [
+              IconButton(onPressed: () {
+                context.go('/home/0/${NotificationsScreen.routeName}');
+              }, icon: Icon(Icons.notification_important_outlined, size: 24)),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppConfig.error,
+                  ),
+
+                  child: Text(
+                    '1',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -109,12 +131,10 @@ class _HomeHeader extends ConsumerWidget {
 class _HomeSosSection extends StatelessWidget {
   const _HomeSosSection({
     required this.size,
-    required this.isOffline,
     required this.onEmergencySent,
   });
 
   final Size size;
-  final bool isOffline;
   final Future<void> Function() onEmergencySent;
 
   @override
@@ -130,17 +150,17 @@ class _HomeSosSection extends StatelessWidget {
                 Text(
                   '¿Necesitas ayuda ahora?',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Pulsa el botón para enviar una alerta de emergencia con tu ubicación.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -149,9 +169,7 @@ class _HomeSosSection extends StatelessWidget {
           SizedBox(
             height: (size.height * 0.45).clamp(180, 320),
             child: Center(
-              child: SOSButtonWidget(
-                onEmergencySent: onEmergencySent,
-              ),
+              child: SOSButtonWidget(onEmergencySent: onEmergencySent),
             ),
           ),
         ],
@@ -163,7 +181,6 @@ class _HomeSosSection extends StatelessWidget {
 Future<void> _handleSosSent(
   BuildContext context,
   WidgetRef ref,
-  bool isOffline,
 ) async {
   showDialog<void>(
     context: context,
@@ -184,7 +201,7 @@ Future<void> _handleSosSent(
   );
 
   try {
-    await sendSosAlert(ref, offline: isOffline);
+    await sendSosAlert(ref);
   } catch (e) {
     if (context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();
@@ -205,9 +222,7 @@ Future<void> _handleSosSent(
 
   if (!context.mounted) return;
 
-  final message = isOffline
-      ? 'SOS guardado. Aparecerá en el mapa al reconectar.'
-      : 'Alerta SOS enviada. Centinela Milagro fue notificado.';
+  const message = 'Alerta SOS enviada. Centinela Milagro fue notificado.';
 
   final onMapTab = isMapTabActive(context);
   if (onMapTab) {
@@ -218,7 +233,6 @@ Future<void> _handleSosSent(
     context: context,
     ref: ref,
     message: message,
-    isOffline: isOffline,
     showMapAction: !onMapTab,
   );
 }
@@ -229,7 +243,6 @@ void _showTimedSosSnackBar({
   required BuildContext context,
   required WidgetRef ref,
   required String message,
-  required bool isOffline,
   required bool showMapAction,
 }) {
   final messenger = ScaffoldMessenger.of(context);
@@ -239,7 +252,7 @@ void _showTimedSosSnackBar({
     SnackBar(
       content: Text(message),
       duration: _sosSnackDuration,
-      backgroundColor: isOffline ? null : AppConfig.success,
+      backgroundColor: AppConfig.success,
       action: showMapAction
           ? SnackBarAction(
               label: 'Ver mapa',
@@ -305,8 +318,8 @@ class _HomeLocationCard extends ConsumerWidget {
                     Text(
                       location.shortAddress,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppConfig.textSecondary,
-                          ),
+                        color: AppConfig.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -314,8 +327,8 @@ class _HomeLocationCard extends ConsumerWidget {
                           ? 'Toca para ver alertas cerca de ti en el mapa'
                           : 'Barrio ${user?.barrio ?? '—'} · Ver distancia a incidentes en el mapa',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppConfig.primaryLight,
-                          ),
+                        color: AppConfig.primaryLight,
+                      ),
                     ),
                   ],
                 ),

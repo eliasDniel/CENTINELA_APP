@@ -69,17 +69,3 @@ final allReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
   return combined;
 });
 
-// Simple state provider for handling offline reports
-class OfflineNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void toggleOffline(bool value) {
-    state = value;
-  }
-}
-
-final isOfflineProvider = NotifierProvider<OfflineNotifier, bool>(() {
-  return OfflineNotifier();
-});
-

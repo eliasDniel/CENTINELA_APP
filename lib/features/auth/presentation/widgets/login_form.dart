@@ -1,5 +1,6 @@
 // RF-0301: Login form widget
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class LoginForm extends StatefulWidget {
@@ -90,7 +91,16 @@ class _LoginFormState extends State<LoginForm> {
           obscureText: _obscurePassword,
           enabled: !widget.isLoading,
         ),
-        const SizedBox(height: 24),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: widget.isLoading
+                ? null
+                : () => context.push('/auth/forgot-password'),
+            child: const Text('¿Olvidaste tu contraseña?'),
+          ),
+        ),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
