@@ -22,6 +22,7 @@ class MapRepositoryImpl implements MapRepository {
   MapAlertEntity publishSosAlert({
     required double lat,
     required double lng,
+    required String zona,
     required String barrio,
     String? pseudonym,
     DateTime? timestamp,
@@ -29,6 +30,7 @@ class MapRepositoryImpl implements MapRepository {
     return localDataSource.addSosAlert(
       lat: lat,
       lng: lng,
+      zona: zona,
       barrio: barrio,
       pseudonym: pseudonym,
       timestamp: timestamp,

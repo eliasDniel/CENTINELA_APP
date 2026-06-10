@@ -2,6 +2,7 @@
 class UserEntity {
   final String alias;
   final String uuid;
+  final String zona;
   final String barrio;
   final String? phone;
   final bool isVisitor;
@@ -9,8 +10,11 @@ class UserEntity {
   UserEntity({
     required this.alias,
     required this.uuid,
+    required this.zona,
     required this.barrio,
     this.phone,
     required this.isVisitor,
   });
+
+  bool get tieneBarrio => barrio.isNotEmpty;
 }

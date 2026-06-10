@@ -3,24 +3,20 @@ import 'package:uuid/uuid.dart';
 import '../models/user_model.dart';
 
 class AuthLocalDataSource {
-  // In-memory storage of users
   final Map<String, UserModel> _users = {};
 
   Future<UserModel> login(String alias, String password) async {
-    // Mock: any non-empty alias+password combination works
-    // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Find user by alias (simplified: we just check if someone with this alias ever logged in)
     if (_users.containsKey(alias)) {
       return _users[alias]!;
     }
 
-    // Create and return mock user if it's their first login
     final user = UserModel(
       alias: alias,
       uuid: const Uuid().v4(),
-      barrio: 'Norte', // Default barrio for login
+      zona: 'Milagro',
+      barrio: 'Chirijos',
       phone: null,
       isVisitor: false,
     );
@@ -31,16 +27,17 @@ class AuthLocalDataSource {
   Future<UserModel> register(
     String alias,
     String password,
+    String zona,
     String barrio, {
     String? phone,
   }) async {
-    // Mock: Generate UUID v4 for new user
     await Future.delayed(const Duration(milliseconds: 500));
 
     final uuid = const Uuid().v4();
     final user = UserModel(
       alias: alias,
       uuid: uuid,
+      zona: zona,
       barrio: barrio,
       phone: phone,
       isVisitor: false,
@@ -49,14 +46,38 @@ class AuthLocalDataSource {
     return user;
   }
 
+  Future<UserModel> updateLocation(
+    String alias,
+    String zona,
+    String barrio,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    final existing = _users[alias];
+    if (existing == null) {
+      throw Exception('Usuario no encontrado');
+    }
+
+    final updated = UserModel(
+      alias: existing.alias,
+      uuid: existing.uuid,
+      zona: zona,
+      barrio: barrio,
+      phone: existing.phone,
+      isVisitor: existing.isVisitor,
+    );
+    _users[alias] = updated;
+    return updated;
+  }
+
   Future<UserModel> loginAsVisitor() async {
-    // Mock: Generate a visitor session
     await Future.delayed(const Duration(milliseconds: 500));
 
     return UserModel(
       alias: 'Visitante_${DateTime.now().millisecondsSinceEpoch}',
       uuid: const Uuid().v4(),
-      barrio: 'Centro',
+      zona: 'Milagro',
+      barrio: 'Chirijos',
       phone: null,
       isVisitor: true,
     );

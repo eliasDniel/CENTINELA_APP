@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../reports/presentation/pages/offline_queue_page.dart';
 import '../pages/privacy_page.dart';
 import '../pages/change_password_page.dart';
+import '../pages/change_location_page.dart';
 import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
 import '../../../notifications/presentation/notifications_screens.dart';
 import '../../../notifications/presentation/providers/notification_settings_provider.dart';
@@ -50,7 +51,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       );
     }
 
-    final userBarrio = authState.user?.barrio ?? 'Centro';
+    final userZona = authState.user?.zona ?? 'Milagro';
+    final userBarrio = authState.user?.barrio ?? '';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Perfil')),
@@ -61,7 +63,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // SECCIÓN: Mi cuenta
-              CardProfile(authState: authState, userBarrio: userBarrio),
+              CardProfile(
+                authState: authState,
+                userZona: userZona,
+                userBarrio: userBarrio,
+              ),
               const SizedBox(height: 24),
               // SECCIÓN: Mi configuración
               Text(
@@ -70,6 +76,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
               const SizedBox(height: 12),
               _CardConfig(
+                userZona: userZona,
                 userBarrio: userBarrio,
                 barriosSuscribed: barriosSuscribed,
               ),
@@ -135,10 +142,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
 class _CardConfig extends ConsumerWidget {
   const _CardConfig({
+    required this.userZona,
     required this.userBarrio,
     required this.barriosSuscribed,
   });
 
+  final String userZona;
   final String userBarrio;
   final List<String> barriosSuscribed;
 
@@ -233,10 +242,26 @@ class _CardConfig extends ConsumerWidget {
               ),
               const Divider(color: Colors.white24),
               ListTile(
+                title: const Text('Cambiar zona y barrio'),
+                subtitle: Text(
+                  userBarrio.isNotEmpty
+                      ? '$userZona · $userBarrio'
+                      : userZona,
+                ),
+                leading: Icon(Icons.edit_location_alt, color: AppConfig.primary),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(
+                  '/home/3/${ChangeLocationPage.routeName}',
+                ),
+              ),
+              const Divider(color: Colors.white24),
+              ListTile(
                 title: const Text('Mis barrios'),
                 subtitle: Text(
                   barriosSuscribed.isEmpty
-                      ? '$userBarrio · hasta 3 barrios más'
+                      ? (userBarrio.isNotEmpty
+                          ? '$userBarrio · hasta 3 barrios más'
+                          : 'Zona completa · sin barrios específicos')
                       : '$userBarrio + ${barriosSuscribed.join(', ')}',
                 ),
                 leading: Icon(Icons.location_on, color: AppConfig.primary),
@@ -267,10 +292,12 @@ class CardProfile extends StatelessWidget {
   const CardProfile({
     super.key,
     required this.authState,
+    required this.userZona,
     required this.userBarrio,
   });
 
   final AuthState authState;
+  final String userZona;
   final String userBarrio;
 
   @override
@@ -303,7 +330,9 @@ class CardProfile extends StatelessWidget {
                 const Icon(Icons.location_on, size: 16, color: AppConfig.primary),
                 const SizedBox(width: 4),
                 Text(
-                  userBarrio,
+                  userBarrio.isNotEmpty
+                      ? '$userZona · $userBarrio'
+                      : userZona,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppConfig.textSecondary,
                   ),

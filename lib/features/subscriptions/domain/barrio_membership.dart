@@ -24,7 +24,21 @@ BarrioMapCategory categorizeBarrio(
   return BarrioMapCategory.other;
 }
 
+String locationLabel({
+  required String zona,
+  required String barrio,
+  BarrioMapCategory? category,
+}) {
+  if (barrio.isEmpty) return 'Zona · $zona';
+  final cat = category;
+  if (cat == BarrioMapCategory.home) return 'Tu barrio · $barrio';
+  if (cat == BarrioMapCategory.subscribed) return 'Suscrito · $barrio';
+  if (cat == BarrioMapCategory.other) return 'Otro barrio · $barrio';
+  return '$zona · $barrio';
+}
+
 String barrioCategoryLabel(BarrioMapCategory category, String barrio) {
+  if (barrio.isEmpty) return 'Zona completa';
   return switch (category) {
     BarrioMapCategory.home => 'Tu barrio',
     BarrioMapCategory.subscribed => 'Suscrito · $barrio',

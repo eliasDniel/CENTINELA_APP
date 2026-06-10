@@ -38,11 +38,12 @@ class MapAlertLevelStyle {
 
 Color barrioAccentSoft(String barrio) {
   return switch (barrio) {
-    'Norte' => const Color(0xFF9FA8DA),
-    'Sur' => const Color(0xFFF48FB1),
-    'Centro' => const Color(0xFFFFCC80),
-    'Este' => const Color(0xFFA5D6A7),
-    'Oeste' => const Color(0xFF90CAF9),
+    'Chirijos' => const Color(0xFF9FA8DA),
+    'Camilo Andrade' => const Color(0xFFF48FB1),
+    'Ernesto Seminario' => const Color(0xFFFFCC80),
+    'Coronel Enrique Valdez' => const Color(0xFFA5D6A7),
+    'Paraíso de Chobo' => const Color(0xFF90CAF9),
+    'Otros recintos' => const Color(0xFFB0BEC5),
     _ => const Color(0xFFB0BEC5),
   };
 }

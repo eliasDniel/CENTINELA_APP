@@ -4,6 +4,7 @@ import '../../domain/entities/user_entity.dart';
 class UserModel {
   final String alias;
   final String uuid;
+  final String zona;
   final String barrio;
   final String? phone;
   final bool isVisitor;
@@ -11,6 +12,7 @@ class UserModel {
   UserModel({
     required this.alias,
     required this.uuid,
+    required this.zona,
     required this.barrio,
     this.phone,
     required this.isVisitor,
@@ -20,7 +22,8 @@ class UserModel {
     return UserModel(
       alias: json['alias'] as String,
       uuid: json['uuid'] as String,
-      barrio: json['barrio'] as String,
+      zona: json['zona'] as String? ?? 'Milagro',
+      barrio: json['barrio'] as String? ?? '',
       phone: json['phone'] as String?,
       isVisitor: json['isVisitor'] as bool? ?? false,
     );
@@ -30,6 +33,7 @@ class UserModel {
     return {
       'alias': alias,
       'uuid': uuid,
+      'zona': zona,
       'barrio': barrio,
       'phone': phone,
       'isVisitor': isVisitor,
@@ -40,6 +44,7 @@ class UserModel {
     return UserEntity(
       alias: alias,
       uuid: uuid,
+      zona: zona,
       barrio: barrio,
       phone: phone,
       isVisitor: isVisitor,
@@ -50,6 +55,7 @@ class UserModel {
     return UserModel(
       alias: entity.alias,
       uuid: entity.uuid,
+      zona: entity.zona,
       barrio: entity.barrio,
       phone: entity.phone,
       isVisitor: entity.isVisitor,

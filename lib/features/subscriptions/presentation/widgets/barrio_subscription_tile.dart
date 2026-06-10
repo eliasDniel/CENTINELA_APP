@@ -4,11 +4,12 @@ import '../../../../core/utils/app_colors.dart';
 
 Color barrioAccentColor(String barrio) {
   return switch (barrio) {
-    'Norte' => const Color(0xFF5856D6),
-    'Sur' => const Color(0xFFFF2D55),
-    'Centro' => AppConfig.warning,
-    'Este' => AppConfig.success,
-    'Oeste' => AppConfig.primary,
+    'Chirijos' => const Color(0xFF5856D6),
+    'Camilo Andrade' => const Color(0xFFFF2D55),
+    'Ernesto Seminario' => AppConfig.warning,
+    'Coronel Enrique Valdez' => AppConfig.success,
+    'Paraíso de Chobo' => AppConfig.primary,
+    'Otros recintos' => const Color(0xFF90CAF9),
     _ => AppConfig.textTertiary,
   };
 }

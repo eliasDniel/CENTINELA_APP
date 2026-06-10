@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../domain/constants/milagro_barrios.dart';
+import '../../domain/constants/zonas_administrativas.dart';
 import '../providers/subscriptions_provider.dart';
 import '../widgets/barrio_subscription_tile.dart';
 import '../widgets/subscription_slots_row.dart';
@@ -17,12 +17,12 @@ class SubscriptionsManagePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
-    final homeBarrio = auth.user?.barrio ?? 'Centro';
+    final homeZona = auth.user?.zona ?? 'Milagro';
+    final homeBarrio = auth.user?.barrio ?? '';
     final subscribed = ref.watch(barriosSubscribedProvider);
     final canAddMore = ref.watch(canSubscribeMoreProvider);
     final notifier = ref.read(barriosSubscribedProvider.notifier);
-
-    final selectable = kMilagroBarrios.where((b) => b != homeBarrio).toList();
+    final selectable = ref.watch(selectableBarriosEnZonaProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,8 +31,16 @@ class SubscriptionsManagePage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppConfig.horizontalMargin),
         children: [
+          Text(
+            'Zona: $homeZona',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppConfig.primary,
+                ),
+          ),
+          const SizedBox(height: 12),
           SubscriptionSlotsRow(
-            homeBarrio: homeBarrio,
+            homeZona: homeZona,
+            homeBarrio: homeBarrio.isNotEmpty ? homeBarrio : null,
             subscribedBarrios: subscribed,
           ),
           const SizedBox(height: 8),
@@ -44,34 +52,48 @@ class SubscriptionsManagePage extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Activa los barrios que quieras seguir',
+            'Barrios disponibles en $homeZona',
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 12),
-          ...selectable.map((barrio) {
-            final isOn = subscribed.contains(barrio);
-            return BarrioSubscriptionTile(
-              barrio: barrio,
-              isSubscribed: isOn,
-              enabled: isOn || canAddMore,
-              onChanged: (value) {
-                if (value) {
-                  final ok = notifier.subscribe(barrio, homeBarrio);
-                  if (!ok) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Máximo 3 barrios adicionales. Quita uno primero.',
+          if (selectable.isEmpty)
+            Card(
+              child: ListTile(
+                leading: Icon(Icons.info_outline, color: AppConfig.textTertiary),
+                title: const Text('Sin barrios adicionales'),
+                subtitle: Text(
+                  zonaTieneBarrios(homeZona)
+                      ? 'Ya estás suscrito a todos los barrios de tu zona.'
+                      : 'Esta zona no tiene barrios específicos.',
+                ),
+              ),
+            )
+          else
+            ...selectable.map((barrio) {
+              final isOn = subscribed.contains(barrio);
+              return BarrioSubscriptionTile(
+                barrio: barrio,
+                isSubscribed: isOn,
+                enabled: isOn || canAddMore,
+                subtitle: 'Zona $homeZona',
+                onChanged: (value) {
+                  if (value) {
+                    final ok = notifier.subscribe(barrio, homeBarrio);
+                    if (!ok) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Máximo 3 barrios adicionales. Quita uno primero.',
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
+                  } else {
+                    notifier.unsubscribe(barrio);
                   }
-                } else {
-                  notifier.unsubscribe(barrio);
-                }
-              },
-            );
-          }),
+                },
+              );
+            }),
         ],
       ),
       bottomNavigationBar: SafeArea(

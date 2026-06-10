@@ -16,16 +16,18 @@ class ReportCardWidget extends StatelessWidget {
 
   Color _getBarrioColor(String barrio) {
     switch (barrio) {
-      case 'Norte':
+      case 'Chirijos':
         return const Color(0xFF5856D6);
-      case 'Sur':
+      case 'Camilo Andrade':
         return const Color(0xFFFF2D55);
-      case 'Centro':
+      case 'Ernesto Seminario':
         return AppConfig.warning;
-      case 'Este':
+      case 'Coronel Enrique Valdez':
         return AppConfig.success;
-      case 'Oeste':
+      case 'Paraíso de Chobo':
         return AppConfig.primary;
+      case 'Otros recintos':
+        return const Color(0xFF90CAF9);
       default:
         return AppConfig.textTertiary;
     }

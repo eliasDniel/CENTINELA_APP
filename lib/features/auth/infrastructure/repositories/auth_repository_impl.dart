@@ -15,16 +15,36 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserEntity> register(String alias, String password, String barrio,
-      {String? phone}) async {
-    final model =
-        await localDataSource.register(alias, password, barrio, phone: phone);
+  Future<UserEntity> register(
+    String alias,
+    String password,
+    String zona,
+    String barrio, {
+    String? phone,
+  }) async {
+    final model = await localDataSource.register(
+      alias,
+      password,
+      zona,
+      barrio,
+      phone: phone,
+    );
     return model.toEntity();
   }
 
   @override
   Future<UserEntity> loginAsVisitor() async {
     final model = await localDataSource.loginAsVisitor();
+    return model.toEntity();
+  }
+
+  @override
+  Future<UserEntity> updateLocation(
+    String alias,
+    String zona,
+    String barrio,
+  ) async {
+    final model = await localDataSource.updateLocation(alias, zona, barrio);
     return model.toEntity();
   }
 }

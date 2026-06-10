@@ -16,6 +16,7 @@ import '../../features/notifications/presentation/notifications_screens.dart';
 import '../../features/reports/presentation/pages/offline_queue_page.dart';
 import '../../features/profile/presentation/pages/privacy_page.dart';
 import '../../features/profile/presentation/pages/change_password_page.dart';
+import '../../features/profile/presentation/pages/change_location_page.dart';
 
 // Custom page transition - fade in/out
 Page<dynamic> _fadeTransition(
@@ -133,6 +134,17 @@ final goRouter = GoRouter(
               context,
               state,
               const ChangePasswordPage(),
+            );
+          },
+        ),
+        GoRoute(
+          path: ChangeLocationPage.routeName,
+          name: ChangeLocationPage.routeName,
+          pageBuilder: (context, state) {
+            return _fadeTransition(
+              context,
+              state,
+              const ChangeLocationPage(),
             );
           },
         ),

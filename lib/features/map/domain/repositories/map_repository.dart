@@ -7,6 +7,7 @@ abstract class MapRepository {
   MapAlertEntity publishSosAlert({
     required double lat,
     required double lng,
+    required String zona,
     required String barrio,
     String? pseudonym,
     DateTime? timestamp,

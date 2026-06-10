@@ -32,6 +32,7 @@ class MapAlertEntity {
   final AlertType type;
   final AlertSource source;
   final AlertLevel level;
+  final String zona;
   final String barrio;
   final String description;
   final DateTime timestamp;
@@ -49,6 +50,7 @@ class MapAlertEntity {
     required this.type,
     required this.source,
     required this.level,
+    required this.zona,
     required this.barrio,
     required this.description,
     required this.timestamp,
@@ -69,6 +71,7 @@ class MapAlertEntity {
     AlertType? type,
     AlertSource? source,
     AlertLevel? level,
+    String? zona,
     String? barrio,
     String? description,
     DateTime? timestamp,
@@ -86,6 +89,7 @@ class MapAlertEntity {
       type: type ?? this.type,
       source: source ?? this.source,
       level: level ?? this.level,
+      zona: zona ?? this.zona,
       barrio: barrio ?? this.barrio,
       description: description ?? this.description,
       timestamp: timestamp ?? this.timestamp,

@@ -1,0 +1,952 @@
+{
+    "version": 0.6,
+    "generator": "Overpass API 0.7.62.11 87bfad18",
+    "osm3s": {
+      "timestamp_osm_base": "2026-06-10T14:41:45Z",
+      "timestamp_areas_base": "2026-05-12T07:36:16Z",
+      "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+    },
+    "elements": [
+  
+  {
+    "type": "node",
+    "id": 198403764,
+    "lat": -31.0057634,
+    "lon": -65.9923885,
+    "tags": {
+      "name": "Milagro",
+      "place": "village",
+      "population": "3494",
+      "source_ref": "http://earth-info.nga.mil/gns/html/cntyfile/ar.zip",
+      "wikidata": "Q939930",
+      "wikimedia_commons": "Category:Milagro, La Rioja",
+      "wikipedia": "es:Milagro (La Rioja)"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249422207,
+    "lat": -2.0531954,
+    "lon": -79.5353755,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Carrizal",
+      "place": "hamlet",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249422762,
+    "lat": -2.1395574,
+    "lon": -79.6345132,
+    "tags": {
+      "name": "Chobo",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249422824,
+    "lat": -2.1831293,
+    "lon": -79.5175738,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1370618",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Roberto Astudillo",
+      "place": "town",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249423617,
+    "lat": -2.1833330,
+    "lon": -79.6000000,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1372006",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Eugenia",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249429148,
+    "lat": -2.1169154,
+    "lon": -79.5981117,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1375462",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "La Granja",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249596580,
+    "lat": -2.2000000,
+    "lon": -79.6000000,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1378360",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Pila",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249596653,
+    "lat": -2.1336177,
+    "lon": -79.6329533,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1376758",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Matilde",
+      "place": "hamlet",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249596654,
+    "lat": -2.1333330,
+    "lon": -79.6166670,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1376757",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Matilde",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249596683,
+    "lat": -2.1289136,
+    "lon": -79.5935005,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_capital": "municipality",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:county": "Milagro",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Milagro",
+      "note": "position to be confirmed, landsat is cloud-covered",
+      "place": "city",
+      "population": "140103",
+      "source": "GNS;wikipedi",
+      "url": "http://www.milagro.gov.ec",
+      "wikidata": "Q773238",
+      "wikipedia": "es:Milagro (Ecuador)"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249596696,
+    "lat": -2.1117157,
+    "lon": -79.5029853,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Mariscal Sucre",
+      "place": "village",
+      "source": "GNS",
+      "wikidata": "Q111381752",
+      "wikipedia": "de:Mariscal Sucre (Guayas)"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249597902,
+    "lat": -2.1535381,
+    "lon": -79.6685553,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1380678",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "San Nicolás",
+      "place": "hamlet",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249598883,
+    "lat": -2.0166670,
+    "lon": -79.6166670,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1380057",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "San Antonio",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249599806,
+    "lat": -2.1669834,
+    "lon": -79.5163958,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1381563",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Sitio Córdova",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249600565,
+    "lat": -2.1492072,
+    "lon": -79.5175489,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1382685",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Venecia",
+      "place": "hamlet",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 249600800,
+    "lat": -2.0833330,
+    "lon": -79.6333330,
+    "tags": {
+      "gns_classification": "PPL",
+      "gns_uni": "-1382834",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Viterbo Puig",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 968160900,
+    "lat": -2.1368088,
+    "lon": -79.6076969,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:city": "Milagro",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Coronel Enrique Valdez",
+      "place": "quarter",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 968160935,
+    "lat": -2.1276031,
+    "lon": -79.5878571,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:city": "Milagro",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Camilo Andrade",
+      "place": "quarter",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 968161036,
+    "lat": -2.1396148,
+    "lon": -79.5865263,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:city": "Milagro",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Ernesto Seminario",
+      "place": "quarter",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 968161052,
+    "lat": -2.1173987,
+    "lon": -79.5878249,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:city": "Milagro",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Chirijos",
+      "place": "quarter",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243089338,
+    "lat": 42.2198375,
+    "lon": -1.7428064,
+    "tags": {
+      "name": "Soto Pinos",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243089624,
+    "lat": 42.2529869,
+    "lon": -1.7767693,
+    "tags": {
+      "name": "Monte Alto",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243089644,
+    "lat": 42.2605182,
+    "lon": -1.7778238,
+    "tags": {
+      "name": "La Corraliza de Sánchez",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243090782,
+    "lat": 42.2250936,
+    "lon": -1.7351287,
+    "tags": {
+      "name": "Canemar",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243091742,
+    "lat": 42.2298387,
+    "lon": -1.7391177,
+    "tags": {
+      "name": "Mora",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243096102,
+    "lat": 42.2383770,
+    "lon": -1.7367175,
+    "tags": {
+      "name": "La Carreraza",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243099195,
+    "lat": 42.2412538,
+    "lon": -1.7485621,
+    "tags": {
+      "name": "Cercijo",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243100198,
+    "lat": 42.2428307,
+    "lon": -1.7846381,
+    "tags": {
+      "name": "Monte Hondo",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243100539,
+    "lat": 42.2234780,
+    "lon": -1.7471083,
+    "tags": {
+      "name": "El Postural",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243101765,
+    "lat": 42.2285171,
+    "lon": -1.7483657,
+    "tags": {
+      "name": "Raso Corral",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243103187,
+    "lat": 42.2333624,
+    "lon": -1.7980295,
+    "tags": {
+      "name": "Granja Fría",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243103598,
+    "lat": 42.2435769,
+    "lon": -1.7567946,
+    "tags": {
+      "name": "Soto de la Pena",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243106152,
+    "lat": 42.2482286,
+    "lon": -1.7505939,
+    "tags": {
+      "name": "Corbarán",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243106463,
+    "lat": 42.2203196,
+    "lon": -1.7740204,
+    "tags": {
+      "name": "El Ortigoso",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243111605,
+    "lat": 42.2552857,
+    "lon": -1.7602134,
+    "tags": {
+      "name": "El Soto Bajo",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243113602,
+    "lat": 42.2422135,
+    "lon": -1.7310048,
+    "tags": {
+      "name": "Montecillo",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243118743,
+    "lat": 42.2307572,
+    "lon": -1.7858274,
+    "tags": {
+      "name": "Badina",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243119860,
+    "lat": 42.2152865,
+    "lon": -1.7327320,
+    "tags": {
+      "name": "Cerradilla",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243122761,
+    "lat": 42.2343364,
+    "lon": -1.7272362,
+    "tags": {
+      "name": "La Almenara",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243126167,
+    "lat": 42.2328191,
+    "lon": -1.7622049,
+    "tags": {
+      "name": "Las Rozas",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243129565,
+    "lat": 42.2353108,
+    "lon": -1.7511278,
+    "tags": {
+      "name": "Soto Bajo",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243132130,
+    "lat": 42.2369056,
+    "lon": -1.7923872,
+    "tags": {
+      "name": "Las Sardas",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243132711,
+    "lat": 42.2169021,
+    "lon": -1.7428647,
+    "tags": {
+      "name": "Hormiguero",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243136177,
+    "lat": 42.2280613,
+    "lon": -1.7322944,
+    "tags": {
+      "name": "Vizcaina",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243144959,
+    "lat": 42.2359784,
+    "lon": -1.7405345,
+    "tags": {
+      "name": "Sarramián",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243148020,
+    "lat": 42.2440500,
+    "lon": -1.7391011,
+    "tags": {
+      "name": "Abadía",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243149034,
+    "lat": 42.2333193,
+    "lon": -1.7742804,
+    "tags": {
+      "name": "La Cantera",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243149267,
+    "lat": 42.2186620,
+    "lon": -1.7514442,
+    "tags": {
+      "name": "El Espeso",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243151132,
+    "lat": 42.2322426,
+    "lon": -1.7357856,
+    "tags": {
+      "name": "Escobares",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243154628,
+    "lat": 42.2363570,
+    "lon": -1.8088194,
+    "tags": {
+      "name": "Monte de San Juan",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243155189,
+    "lat": 42.2261664,
+    "lon": -1.7658006,
+    "tags": {
+      "name": "Soto de las Rozas",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243155474,
+    "lat": 42.2323639,
+    "lon": -1.8171958,
+    "tags": {
+      "name": "Dehesa de San Juan y Ramillo",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243158500,
+    "lat": 42.2482478,
+    "lon": -1.7589938,
+    "tags": {
+      "name": "El Raso",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 1243159756,
+    "lat": 42.2259324,
+    "lon": -1.8014665,
+    "tags": {
+      "name": "Cofín",
+      "place": "locality",
+      "source": "Instituto Geográfico Nacional",
+      "source:date": "201011"
+    }
+  },
+  {
+    "type": "node",
+    "id": 4533909426,
+    "lat": 42.2418183,
+    "lon": -1.7628016,
+    "tags": {
+      "capital": "8",
+      "ele": "295",
+      "name": "Milagro",
+      "name:es": "Milagro",
+      "place": "village",
+      "population": "3728",
+      "population:date": "2025",
+      "ref:ine": "31169000301",
+      "wikidata": "Q644537",
+      "wikipedia": "es:Milagro (Navarra)"
+    }
+  },
+  {
+    "type": "node",
+    "id": 5053585766,
+    "lat": -2.1326574,
+    "lon": -79.4965983,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Manga del Jejen",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 5053585768,
+    "lat": -2.1123295,
+    "lon": -79.4644439,
+    "tags": {
+      "gns_classification": "PPL",
+      "is_in:country": "Ecuador",
+      "is_in:country_code": "EC",
+      "is_in:state": "Provincia del Guayas",
+      "name": "Vuelta del Piano",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 7327750203,
+    "lat": -3.6231569,
+    "lon": -79.6674872,
+    "tags": {
+      "name": "San Jacinto",
+      "place": "hamlet"
+    }
+  },
+  {
+    "type": "node",
+    "id": 7327752457,
+    "lat": -3.6270544,
+    "lon": -79.6617151,
+    "tags": {
+      "name": "Milagro",
+      "place": "village"
+    }
+  },
+  {
+    "type": "node",
+    "id": 11969484011,
+    "lat": -2.1519237,
+    "lon": -79.6407133,
+    "tags": {
+      "name": "Paraíso de Chobo",
+      "place": "village",
+      "source": "GNS"
+    }
+  },
+  {
+    "type": "node",
+    "id": 11969484038,
+    "lat": -2.1838620,
+    "lon": -79.6177000,
+    "tags": {
+      "name": "5 de Junio",
+      "place": "village"
+    }
+  },
+  {
+    "type": "node",
+    "id": 12186658240,
+    "lat": -2.2197980,
+    "lon": -79.5158158,
+    "tags": {
+      "name": "Recinto Venecia de Chimbo",
+      "place": "hamlet"
+    }
+  },
+  {
+    "type": "way",
+    "id": 534372298,
+    "center": {
+      "lat": -2.1382235,
+      "lon": -79.5984448
+    },
+    "tags": {
+      "landuse": "residential",
+      "name": "Quinta Patricia",
+      "place": "neighbourhood"
+    }
+  },
+  {
+    "type": "relation",
+    "id": 121336,
+    "center": {
+      "lat": 43.6401870,
+      "lon": -116.6533560
+    },
+    "tags": {
+      "admin_level": "8",
+      "border_type": "city",
+      "boundary": "administrative",
+      "gnis:feature_id": "2409956",
+      "name": "Caldwell",
+      "place": "city",
+      "source": "TIGER/Line® 2008 Place Shapefiles (http://www.census.gov/geo/www/tiger/)",
+      "type": "boundary",
+      "wikidata": "Q849592",
+      "wikipedia": "en:Caldwell, Idaho"
+    }
+  },
+  {
+    "type": "relation",
+    "id": 2667867,
+    "center": {
+      "lat": -2.1377945,
+      "lon": -79.6484185
+    },
+    "tags": {
+      "admin_level": "8",
+      "boundary": "administrative",
+      "is_in:county": "Milagro",
+      "is_in:state": "Guayas",
+      "municipality_code": "09-10-51",
+      "name": "Chobo",
+      "place": "municipality",
+      "type": "boundary",
+      "wikidata": "Q110930270",
+      "wikipedia": "de:Chobo"
+    }
+  },
+  {
+    "type": "relation",
+    "id": 2667868,
+    "center": {
+      "lat": -2.0799000,
+      "lon": -79.5079047
+    },
+    "tags": {
+      "admin_level": "8",
+      "boundary": "administrative",
+      "is_in:county": "Milagro",
+      "is_in:state": "Guayas",
+      "municipality_code": "09-10-53",
+      "name": "Mariscal Sucre (Huaques)",
+      "place": "municipality",
+      "type": "boundary"
+    }
+  },
+  {
+    "type": "relation",
+    "id": 2667869,
+    "center": {
+      "lat": -2.1111146,
+      "lon": -79.5785415
+    },
+    "tags": {
+      "admin_level": "8",
+      "boundary": "administrative",
+      "is_in:county": "Milagro",
+      "is_in:state": "Guayas",
+      "municipality_code": "09-10-50",
+      "name": "Milagro",
+      "place": "municipality",
+      "type": "boundary",
+      "wikidata": "Q773238",
+      "wikipedia": "es:Milagro (Ecuador)"
+    }
+  },
+  {
+    "type": "relation",
+    "id": 2667870,
+    "center": {
+      "lat": -2.1725334,
+      "lon": -79.4962259
+    },
+    "tags": {
+      "admin_level": "8",
+      "boundary": "administrative",
+      "is_in:county": "Milagro",
+      "is_in:state": "Guayas",
+      "municipality_code": "09-10-54",
+      "name": "Roberto Astudillo",
+      "place": "municipality",
+      "type": "boundary",
+      "wikidata": "Q111779500",
+      "wikipedia": "de:Roberto Astudillo"
+    }
+  }
+  
+    ]
+  }
+  

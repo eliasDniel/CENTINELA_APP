@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
+import '../../../subscriptions/domain/constants/zonas_administrativas.dart';
 import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
 import '../widgets/map_active_filters_banner.dart';
 import '../../domain/entities/map_alert_entity.dart';
@@ -111,10 +112,14 @@ class _MapPageState extends ConsumerState<MapPage> {
   Future<void> _openFiltersSheet(MapState state) async {
     AlertLevel? selectedLevel = state.levelFilter;
     AlertSource? selectedSource = state.sourceFilter;
+    String? selectedZona = state.zonaFilter;
     String? selectedBarrio = state.barrioFilter;
     var selectedRadius = state.proximityRadiusMeters ?? 3000;
-    final barrioChips = ref.read(mapBarrioFilterChipsProvider);
-    final showBarrioFilter = ref.read(showMapBarrioFilterProvider);
+    final zonaChips = ref.read(mapZonaFilterChipsProvider);
+    final auth = ref.read(authProvider);
+    final homeBarrio = auth.user?.barrio;
+    final subscribed = ref.read(barriosSubscribedProvider);
+    final isVisitor = auth.user?.isVisitor ?? true;
     final usesProximity = ref.read(mapUsesProximityRadiusProvider);
     final isLoggedIn = !(ref.read(authProvider).user?.isVisitor ?? true) &&
         ref.read(authProvider).user != null;
@@ -175,6 +180,43 @@ class _MapPageState extends ConsumerState<MapPage> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+                    const Text(
+                      'Zona',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isLoggedIn
+                          ? 'Tu zona y otras zonas administrativas'
+                          : 'Explorar por zona administrativa',
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: zonaChips.map((chip) {
+                        final isSelected = selectedZona == chip.value ||
+                            (chip.value == null && selectedZona == null);
+                        return FilterChip(
+                          label: Text(chip.label),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setStateSheet(() {
+                              selectedZona = chip.value;
+                              selectedBarrio = null;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
                     if (usesProximity) ...[
                       const Text(
                         'Cerca de ti',
@@ -205,7 +247,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                       ),
                       const SizedBox(height: 14),
                     ],
-                    if (showBarrioFilter) ...[
+                    if (selectedZona != null &&
+                        zonaTieneBarrios(selectedZona!)) ...[
                       const Text(
                         'Barrio',
                         style: TextStyle(
@@ -216,27 +259,55 @@ class _MapPageState extends ConsumerState<MapPage> {
                       const SizedBox(height: 6),
                       Text(
                         isLoggedIn
-                            ? 'Solo barrios a los que estás suscrito'
-                            : 'Explorar por zona',
+                            ? 'Tu barrio y los que hayas suscrito'
+                            : 'Barrios de la zona seleccionada',
                         style: const TextStyle(
                           color: Colors.white38,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: barrioChips.map((chip) {
-                          final isSelected = selectedBarrio == chip.value;
-                          return FilterChip(
-                            label: Text(chip.label),
-                            selected: isSelected,
-                            onSelected: (_) {
-                              setStateSheet(() => selectedBarrio = chip.value);
-                            },
+                      Builder(
+                        builder: (context) {
+                          final zonaBarrios = barriosDeZona(selectedZona!);
+                          final chips = <({String? value, String label})>[
+                            (
+                              value: null,
+                              label: isLoggedIn && !isVisitor
+                                  ? 'Todos mis barrios'
+                                  : 'Todos',
+                            ),
+                          ];
+                          if (!isVisitor &&
+                              homeBarrio != null &&
+                              homeBarrio.isNotEmpty &&
+                              zonaBarrios.contains(homeBarrio)) {
+                            chips.add((value: homeBarrio, label: '$homeBarrio (tú)'));
+                          }
+                          for (final b in zonaBarrios) {
+                            if (b == homeBarrio) continue;
+                            if (!isVisitor && subscribed.contains(b)) {
+                              chips.add((value: b, label: b));
+                            } else if (isVisitor || auth.user == null) {
+                              chips.add((value: b, label: b));
+                            }
+                          }
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: chips.map((chip) {
+                              final isSelected = selectedBarrio == chip.value;
+                              return FilterChip(
+                                label: Text(chip.label),
+                                selected: isSelected,
+                                onSelected: (_) {
+                                  setStateSheet(
+                                      () => selectedBarrio = chip.value);
+                                },
+                              );
+                            }).toList(),
                           );
-                        }).toList(),
+                        },
                       ),
                       const SizedBox(height: 14),
                     ],
@@ -260,7 +331,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                       runSpacing: 8,
                       children: [
                         filterChip<AlertSource>(label: 'Todos', value: null, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
-                        filterChip<AlertSource>(label: 'Sensores IoT', value: AlertSource.sensor_audio, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
+                        filterChip<AlertSource>(label: 'Sensores', value: AlertSource.sensor_audio, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
                         filterChip<AlertSource>(label: 'Ciudadanos', value: AlertSource.ciudadano, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
                       ],
                     ),
@@ -288,9 +359,14 @@ class _MapPageState extends ConsumerState<MapPage> {
                           ref.read(mapProvider.notifier).applyFilters(
                                 level: selectedLevel,
                                 source: selectedSource,
-                                barrioFilter:
-                                    showBarrioFilter ? selectedBarrio : null,
-                                clearBarrioFilter: !showBarrioFilter ||
+                                zonaFilter: selectedZona,
+                                clearZonaFilter: selectedZona == null,
+                                barrioFilter: selectedZona != null &&
+                                        zonaTieneBarrios(selectedZona!)
+                                    ? selectedBarrio
+                                    : null,
+                                clearBarrioFilter: selectedZona == null ||
+                                    !zonaTieneBarrios(selectedZona!) ||
                                     selectedBarrio == null,
                                 proximityRadiusMeters: usesProximity
                                     ? selectedRadius
@@ -367,6 +443,13 @@ class _MapPageState extends ConsumerState<MapPage> {
         if (next == null || next.id == previous?.id) return;
         // La SOS del propio usuario ya tiene confirmación en Inicio.
         if (next.type == AlertType.sos) return;
+        final auth = ref.read(authProvider);
+        final userZona = auth.user?.zona;
+        final effectiveZona = ref.read(
+          mapProvider.select((s) => s.zonaFilter ?? userZona),
+        );
+        if (effectiveZona != null && next.zona != effectiveZona) return;
+
         final monitored = ref.read(monitoredBarriosProvider);
         final barrioFilter = ref.read(
           mapProvider.select((s) => s.barrioFilter),
@@ -374,12 +457,16 @@ class _MapPageState extends ConsumerState<MapPage> {
         if (barrioFilter != null && next.barrio != barrioFilter) return;
         if (barrioFilter == null &&
             monitored.isNotEmpty &&
+            next.barrio.isNotEmpty &&
             !monitored.contains(next.barrio)) {
           return;
         }
+        final location = next.barrio.isNotEmpty
+            ? next.barrio
+            : next.zona;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🔔 Nueva alerta en ${next.barrio}'),
+            content: Text('🔔 Nueva alerta en $location'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -440,8 +527,8 @@ class _MapPageState extends ConsumerState<MapPage> {
       final category = categorize(alert.barrio);
       final hasCaption = category != BarrioMapCategory.other;
       return Marker(
-        width: 48,
-        height: hasCaption ? 80 : 50,
+        width: 60,
+        height: hasCaption ? 100 : 70,
         alignment: Alignment.topCenter,
         point: alert.position,
         child: AlertMarkerWidget(

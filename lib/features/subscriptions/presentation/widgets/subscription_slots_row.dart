@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/utils/app_colors.dart';
-import '../../domain/constants/milagro_barrios.dart';
+import '../../domain/constants/zonas_administrativas.dart';
 
-/// Visualiza: [Barrio propio] + 3 slots adicionales.
+/// Visualiza: [Zona/Barrio propio] + 3 slots adicionales.
 class SubscriptionSlotsRow extends StatelessWidget {
   const SubscriptionSlotsRow({
     super.key,
+    required this.homeZona,
     required this.homeBarrio,
     required this.subscribedBarrios,
   });
 
-  final String homeBarrio;
+  final String homeZona;
+  final String? homeBarrio;
   final List<String> subscribedBarrios;
 
   @override
   Widget build(BuildContext context) {
     final slots = List<String?>.filled(kMaxBarriosAdicionales, null);
-    for (var i = 0; i < subscribedBarrios.length && i < kMaxBarriosAdicionales; i++) {
+    for (var i = 0;
+        i < subscribedBarrios.length && i < kMaxBarriosAdicionales;
+        i++) {
       slots[i] = subscribedBarrios[i];
     }
 
+    final homeLabel = homeBarrio ?? homeZona;
+
     return Row(
       children: [
-        Expanded(child: _SlotChip(label: homeBarrio, isHome: true, isEmpty: false)),
+        Expanded(
+            child: _SlotChip(label: homeLabel, isHome: true, isEmpty: false)),
         const SizedBox(width: 8),
         ...slots.map(
           (barrio) => Expanded(
@@ -85,11 +92,11 @@ class _SlotChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             isEmpty ? 'Libre' : label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: isEmpty ? AppConfig.textTertiary : Colors.white,
             ),
@@ -97,7 +104,8 @@ class _SlotChip extends StatelessWidget {
           if (isHome)
             Text(
               'Propio',
-              style: TextStyle(fontSize: 9, color: AppConfig.success.withOpacity(0.9)),
+              style: TextStyle(
+                  fontSize: 9, color: AppConfig.success.withOpacity(0.9)),
             ),
         ],
       ),

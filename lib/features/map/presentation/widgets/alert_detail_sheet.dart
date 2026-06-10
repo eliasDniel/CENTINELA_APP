@@ -150,7 +150,7 @@ class AlertDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '📍 ${barrioCategoryLabel(barrioCategory, alert.barrio)}',
+                          '📍 ${locationLabel(zona: alert.zona, barrio: alert.barrio, category: barrioCategory)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,

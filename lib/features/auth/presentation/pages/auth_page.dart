@@ -104,10 +104,12 @@ class _AuthPageState extends ConsumerState<AuthPage>
                           // Register tab
                           RegisterForm(
                             onSubmit: () {},
-                            onRegister: (alias, password, barrio, phone) async {
+                            onRegister:
+                                (alias, password, zona, barrio, phone) async {
                               await authNotifier.register(
                                 alias,
                                 password,
+                                zona,
                                 barrio,
                                 phone: phone,
                               );

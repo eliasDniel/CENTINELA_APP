@@ -49,13 +49,15 @@ Future<MapAlertEntity> sendSosAlert(
 
   final auth = ref.read(authProvider);
   final location = ref.read(userLocationProvider);
-  final barrio = auth.user?.barrio ?? 'Centro';
+  final zona = auth.user?.zona ?? 'Milagro';
+  final barrio = auth.user?.barrio ?? '';
   final pseudonym = auth.user?.uuid;
 
   final repository = ref.read(mapRepositoryProvider);
   final alert = repository.publishSosAlert(
     lat: location.position.latitude,
     lng: location.position.longitude,
+    zona: zona,
     barrio: barrio,
     pseudonym: pseudonym,
     timestamp: DateTime.now(),
