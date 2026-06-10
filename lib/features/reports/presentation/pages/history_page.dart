@@ -9,7 +9,7 @@ import '../../domain/constants/incident_types.dart';
 import '../widgets/report_card_widget.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
-  const HistoryPage({Key? key}) : super(key: key);
+  const HistoryPage({super.key});
 
   @override
   ConsumerState<HistoryPage> createState() => _HistoryPageState();
@@ -18,6 +18,7 @@ class HistoryPage extends ConsumerStatefulWidget {
 class _HistoryPageState extends ConsumerState<HistoryPage> {
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Consumer(
       builder: (context, ref, _) {
         final authState = ref.watch(authProvider);
@@ -60,9 +61,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                           error: (err, stack) =>
                               Center(child: Text('Error: $err')),
                           data: (reports) {
-                            int countByType(String type) => reports
-                                .where((r) => r.type == type)
-                                .length;
+                            int countByType(String type) =>
+                                reports.where((r) => r.type == type).length;
 
                             const statTypes = [
                               'robo',
@@ -74,139 +74,154 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             return ListView(
                               padding: const EdgeInsets.all(0),
                               children: [
-                                // Header Section
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    24,
-                                    24,
-                                    24,
-                                    0,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Mi Historial',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 25,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        'Resumen de tus reportes de seguridad',
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                // Stats Grid
-                                Container(
-                                  margin: const EdgeInsets.all(
-                                    AppConfig.horizontalMargin,
-                                  ),
-                                  child: GridView.count(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                    childAspectRatio: 1.5,
-                                    shrinkWrap: true,
-
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    children: statTypes
-                                        .map(
-                                          (type) => _StatCard(
-                                            icon: incidentTypeIcon(type),
-                                            iconColor: incidentTypeColor(type),
-                                            number: '${countByType(type)}',
-                                            label: incidentTypeLabel(type),
-                                          ),
-                                        )
-                                        .toList(),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                // Recent Reports Section
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Reportes Recientes',
-                                        style: TextStyle(
-                                          color: Color(0xFF8A8A8E),
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                      TextButton.icon(
-                                        icon: const Icon(
-                                          Icons.filter_list,
-                                          size: 16,
-                                        ),
-                                        label: const Text('Filtrar'),
-                                        onPressed: () {},
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: const Color(
-                                            0xFF1E90FF,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Reports List
-                                if (reports.isEmpty)
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32),
-                                      child: Column(
-                                        children: [
-                                          const Icon(
-                                            Icons.description_outlined,
-                                            size: 64,
-                                            color: Colors.grey,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'No hay reportes aún',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    padding: EdgeInsets.symmetric(
+                                // SECCIÓN HEADER → 10% de pantalla
+                                SizedBox(
+                                  height: size.height * 0.10,
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(
                                       horizontal: AppConfig.horizontalMargin,
                                     ),
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: reports.length,
-                                    itemBuilder: (context, index) {
-                                      return ReportCardWidget(
-                                        report: reports[index],
-                                      );
-                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          'Mi Historial',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          'Resumen de tus reportes de seguridad',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                ),
+                                // SECCIÓN GRID STATS → 40% de pantalla
+                                SizedBox(
+                                  height: size.height * 0.40,
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: AppConfig.horizontalMargin,
+                                    ),
+                                    child: GridView.count(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 10,
+                                      childAspectRatio:
+                                          (size.width / 2 -
+                                              AppConfig.horizontalMargin -
+                                              5) /
+                                          ((size.height * 0.40 - 10) / 2),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      children: statTypes
+                                          .map(
+                                            (type) => _StatCard(
+                                              icon: incidentTypeIcon(type),
+                                              iconColor: incidentTypeColor(
+                                                type,
+                                              ),
+                                              number: '${countByType(type)}',
+                                              label: incidentTypeLabel(type),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                                ),
+
+                                // SECCIÓN HEADER REPORTES RECIENTES → 10% de pantalla
+                                SizedBox(
+                                  height: size.height * 0.10,
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: AppConfig.horizontalMargin,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          'Reportes Recientes',
+                                          style: TextStyle(
+                                            color: Color(0xFF8A8A8E),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            Icons.filter_list,
+                                            size: 16,
+                                          ),
+                                          label: const Text('Filtrar'),
+                                          onPressed: () {},
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: const Color(
+                                              0xFF1E90FF,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                // SECCIÓN LISTA → 40% restante
+                                SizedBox(
+                                  height: size.height * 0.40,
+                                  child: reports.isEmpty
+                                      ? Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.description_outlined,
+                                                size: 64,
+                                                color: Colors.grey,
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'No hay reportes aún',
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.titleMedium,
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : ListView.builder(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal:
+                                                AppConfig.horizontalMargin,
+                                          ),
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          itemCount: reports.length,
+                                          itemBuilder: (context, index) {
+                                            return ReportCardWidget(
+                                              report: reports[index],
+                                            );
+                                          },
+                                        ),
+                                ),
                               ],
                             );
                           },

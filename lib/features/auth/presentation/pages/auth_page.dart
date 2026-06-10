@@ -86,10 +86,9 @@ class _AuthPageState extends ConsumerState<AuthPage>
                         ),
                       ),
                     ),
-                    SizedBox(height: size.height * 0.04),
+                    SizedBox(height: size.height * 0.03),
                     // Forms - 40% de la altura
                     SizedBox(
-                 
                       height: size.height * 0.4,
                       child: TabBarView(
                         controller: _tabController,

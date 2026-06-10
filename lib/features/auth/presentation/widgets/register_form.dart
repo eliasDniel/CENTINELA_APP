@@ -8,11 +8,11 @@ class RegisterForm extends StatefulWidget {
   final bool isLoading;
 
   const RegisterForm({
-    Key? key,
+    super.key,
     required this.onSubmit,
     required this.onRegister,
     required this.isLoading,
-  }) : super(key: key);
+  });
 
   @override
   State<RegisterForm> createState() => _RegisterFormState();
@@ -67,91 +67,93 @@ class _RegisterFormState extends State<RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextFormField(
-          controller: _aliasController,
-          decoration: InputDecoration(
-            labelText: 'Alias',
-            hintText: 'Tu pseudónimo',
-            errorText: _aliasError,
-            errorBorder: _aliasError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _aliasController,
+            decoration: InputDecoration(
+              labelText: 'Alias',
+              hintText: 'Tu pseudónimo',
+              errorText: _aliasError,
+              errorBorder: _aliasError != null
+                  ? OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppConfig.error, width: 2),
+                    )
+                  : null,
+            ),
+            enabled: !widget.isLoading,
           ),
-          enabled: !widget.isLoading,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _passwordController,
-          decoration: InputDecoration(
-            labelText: 'Contraseña',
-            hintText: 'Tu contraseña',
-            errorText: _passwordError,
-            errorBorder: _passwordError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _passwordController,
+            decoration: InputDecoration(
+              labelText: 'Contraseña',
+              hintText: 'Tu contraseña',
+              errorText: _passwordError,
+              errorBorder: _passwordError != null
+                  ? OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppConfig.error, width: 2),
+                    )
+                  : null,
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+            obscureText: _obscurePassword,
+            enabled: !widget.isLoading,
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _selectedBarrio,
+            decoration: InputDecoration(
+              labelText: 'Barrio',
+              errorText: _barrioError,
+              errorBorder: _barrioError != null
+                  ? OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppConfig.error, width: 2),
+                    )
+                  : null,
+            ),
+            items: _barrios.map((barrio) {
+              return DropdownMenuItem(value: barrio, child: Text(barrio));
+            }).toList(),
+            onChanged: !widget.isLoading ? (value) {
+              setState(() => _selectedBarrio = value ?? _selectedBarrio);
+            } : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _phoneController,
+            decoration: const InputDecoration(
+              labelText: 'Teléfono (opcional)',
+              hintText: 'opcional — se cifra en reposo',
+            ),
+            enabled: !widget.isLoading,
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: widget.isLoading ? null : _handleRegister,
+              child: widget.isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
+                      ),
+                    )
+                  : const Text('Registrarse'),
             ),
           ),
-          obscureText: _obscurePassword,
-          enabled: !widget.isLoading,
-        ),
-        const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          value: _selectedBarrio,
-          decoration: InputDecoration(
-            labelText: 'Barrio',
-            errorText: _barrioError,
-            errorBorder: _barrioError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-          ),
-          items: _barrios.map((barrio) {
-            return DropdownMenuItem(value: barrio, child: Text(barrio));
-          }).toList(),
-          onChanged: !widget.isLoading ? (value) {
-            setState(() => _selectedBarrio = value ?? _selectedBarrio);
-          } : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _phoneController,
-          decoration: const InputDecoration(
-            labelText: 'Teléfono (opcional)',
-            hintText: 'opcional — se cifra en reposo',
-          ),
-          enabled: !widget.isLoading,
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: widget.isLoading ? null : _handleRegister,
-            child: widget.isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
-                    ),
-                  )
-                : const Text('Registrarse'),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
