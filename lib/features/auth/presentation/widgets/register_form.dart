@@ -97,57 +97,76 @@ class _RegisterFormState extends State<RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _aliasController,
-            decoration: InputDecoration(
-              labelText: 'Alias',
-              hintText: 'Tu pseudónimo',
-              errorText: _aliasError,
-              errorBorder: _aliasError != null
-                  ? OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppConfig.error, width: 2),
-                    )
-                  : null,
-            ),
-            enabled: !widget.isLoading,
+    return Column(
+      children: [
+        TextFormField(
+          controller: _aliasController,
+          decoration: InputDecoration(
+            labelText: 'Alias',
+            hintText: 'Tu pseudónimo',
+            errorText: _aliasError,
+            errorBorder: _aliasError != null
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: AppConfig.error, width: 2),
+                  )
+                : null,
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _passwordController,
-            decoration: InputDecoration(
-              labelText: 'Contraseña',
-              hintText: 'Tu contraseña',
-              errorText: _passwordError,
-              errorBorder: _passwordError != null
-                  ? OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppConfig.error, width: 2),
-                    )
-                  : null,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+          enabled: !widget.isLoading,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _passwordController,
+          decoration: InputDecoration(
+            labelText: 'Contraseña',
+            hintText: 'Tu contraseña',
+            errorText: _passwordError,
+            errorBorder: _passwordError != null
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: AppConfig.error, width: 2),
+                  )
+                : null,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
               ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
-            obscureText: _obscurePassword,
-            enabled: !widget.isLoading,
           ),
+          obscureText: _obscurePassword,
+          enabled: !widget.isLoading,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _selectedZona,
+          decoration: InputDecoration(
+            labelText: 'Zona administrativa',
+            errorText: _zonaError,
+            errorBorder: _zonaError != null
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: AppConfig.error, width: 2),
+                  )
+                : null,
+          ),
+          items: kZonasAdministrativas.map((zona) {
+            return DropdownMenuItem(value: zona, child: Text(zona));
+          }).toList(),
+          onChanged: !widget.isLoading ? _onZonaChanged : null,
+        ),
+        if (_requiereBarrio) ...[
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedZona,
+            value: _selectedBarrio,
             decoration: InputDecoration(
-              labelText: 'Zona administrativa',
-              errorText: _zonaError,
-              errorBorder: _zonaError != null
+              labelText: 'Barrio',
+              errorText: _barrioError,
+              errorBorder: _barrioError != null
                   ? OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
@@ -155,94 +174,73 @@ class _RegisterFormState extends State<RegisterForm> {
                     )
                   : null,
             ),
-            items: kZonasAdministrativas.map((zona) {
-              return DropdownMenuItem(value: zona, child: Text(zona));
+            items: _barriosDeZonaSeleccionada.map((barrio) {
+              return DropdownMenuItem(value: barrio, child: Text(barrio));
             }).toList(),
-            onChanged: !widget.isLoading ? _onZonaChanged : null,
+            onChanged: !widget.isLoading
+                ? (value) {
+                    setState(() {
+                      _selectedBarrio = value;
+                      _barrioError = null;
+                    });
+                  }
+                : null,
           ),
-          if (_requiereBarrio) ...[
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedBarrio,
-              decoration: InputDecoration(
-                labelText: 'Barrio',
-                errorText: _barrioError,
-                errorBorder: _barrioError != null
-                    ? OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppConfig.error, width: 2),
-                      )
-                    : null,
-              ),
-              items: _barriosDeZonaSeleccionada.map((barrio) {
-                return DropdownMenuItem(value: barrio, child: Text(barrio));
-              }).toList(),
-              onChanged: !widget.isLoading
-                  ? (value) {
-                      setState(() {
-                        _selectedBarrio = value;
-                        _barrioError = null;
-                      });
-                    }
-                  : null,
-            ),
-          ] else ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppConfig.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppConfig.border),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppConfig.primary, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Esta zona no tiene barrios específicos. '
-                      'Las alertas se mostrarán a nivel de toda la zona.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppConfig.textSecondary,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneController,
-            decoration: const InputDecoration(
-              labelText: 'Teléfono (opcional)',
-              hintText: 'opcional — se cifra en reposo',
-            ),
-            enabled: !widget.isLoading,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
+        ] else ...[
+          const SizedBox(height: 12),
+          Container(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: widget.isLoading ? null : _handleRegister,
-              child: widget.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
-                      ),
-                    )
-                  : const Text('Registrarse'),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppConfig.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppConfig.border),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: AppConfig.primary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Esta zona no tiene barrios específicos. '
+                    'Las alertas se mostrarán a nivel de toda la zona.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppConfig.textSecondary,
+                        ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _phoneController,
+          decoration: const InputDecoration(
+            labelText: 'Teléfono (opcional)',
+            hintText: 'opcional — se cifra en reposo',
+          ),
+          enabled: !widget.isLoading,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: widget.isLoading ? null : _handleRegister,
+            child: widget.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
+                    ),
+                  )
+                : const Text('Registrarse'),
+          ),
+        ),
+      ],
     );
   }
 }

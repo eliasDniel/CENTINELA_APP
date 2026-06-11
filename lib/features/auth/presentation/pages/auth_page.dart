@@ -35,7 +35,6 @@ class _AuthPageState extends ConsumerState<AuthPage>
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final authNotifier = ref.read(authProvider.notifier);
-    final size = MediaQuery.of(context).size;
 
     ref.listen(authProvider, (previous, next) {
       if (next.user != null && previous?.user == null) {
@@ -54,142 +53,175 @@ class _AuthPageState extends ConsumerState<AuthPage>
         centerTitle: true,
         elevation: 0,
       ),
-      body: Container(
-        margin: EdgeInsets.all(AppConfig.horizontalMargin),
-        child: SizedBox(
-          height:
-              size.height -
-              kToolbarHeight -
-              MediaQuery.of(context).padding.top,
-          child: Column(
-            children: [
-              DefaultTabController(
-                length: 2,
-                child: Column(
-                  children: [
-                    TabBar(
-                      dividerColor: AppConfig.primaryLight,
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(text: 'Entrar'),
-                        Tab(text: 'Registrarse'),
-                      ],
-                    ),
-                    SizedBox(height: size.height * 0.03),
-                    // Image or logo - 20% de la altura
-                    Container(
-                      height: size.height * 0.20,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/anonimo.png'),
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: size.height * 0.03),
-                    // Forms - 40% de la altura
-                    SizedBox(
-                      height: size.height * 0.4,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          // Login tab
-                          LoginForm(
-                            onSubmit: () {},
-                            onLogin: (alias, password) {
-                              authNotifier.login(alias, password);
-                            },
-                            isLoading: authState.isLoading,
-                          ),
-                          // Register tab
-                          RegisterForm(
-                            onSubmit: () {},
-                            onRegister:
-                                (alias, password, zona, barrio, phone) async {
-                              await authNotifier.register(
-                                alias,
-                                password,
-                                zona,
-                                barrio,
-                                phone: phone,
-                              );
-                              // Show UUID dialog
-                              if (mounted && authState.user != null) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Pseudónimo privado'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Text(
-                                          'Tu pseudónimo único protege tu identidad:',
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: AppConfig.surface,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: AppConfig.primary,
-                                            ),
-                                          ),
-                                          child: SelectableText(
-                                            authState.user!.uuid,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontFamily: 'monospace',
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    actions: [
-                                      ElevatedButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context),
-                                        child: const Text('Continuar'),
-                                      ),
-                                    ],
-                                  ),
-                                  
-                                );
-                              }
-                            },
-                            isLoading: authState.isLoading,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Privacy badge
-              PrivacyBadgeWidget(
-                uuid: authState.user?.uuid ?? 'Pendiente de autenticación',
-              ),
-              SizedBox(height: size.height * 0.02),
-              // Visitor button
-              OutlinedButton.icon(
-                onPressed: () {
-                  authNotifier.loginAsVisitor();
-                },
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Ingresar como Visitante'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-              ),
-            ],
-          ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConfig.horizontalMargin,
         ),
+        child: Column(
+          children: [
+            TabBar(
+              dividerColor: AppConfig.primaryLight,
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Entrar'),
+                Tab(text: 'Registrarse'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _AuthTabContent(
+                    subtitle:
+                        '¿Ya tienes cuenta? Inicia sesión con tu alias.',
+                    switchTabLabel: '¿No tienes cuenta? Regístrate',
+                    onSwitchTab: () => _tabController.animateTo(1),
+                    child: LoginForm(
+                      onSubmit: () {},
+                      onLogin: (alias, password) {
+                        authNotifier.login(alias, password);
+                      },
+                      isLoading: authState.isLoading,
+                    ),
+                  ),
+                  _AuthTabContent(
+                    subtitle:
+                        'Crea tu cuenta para reportar y recibir alertas en tu barrio.',
+                    switchTabLabel: '¿Ya tienes cuenta? Inicia sesión',
+                    onSwitchTab: () => _tabController.animateTo(0),
+                    child: RegisterForm(
+                      onSubmit: () {},
+                      onRegister: (alias, password, zona, barrio, phone) async {
+                        await authNotifier.register(
+                          alias,
+                          password,
+                          zona,
+                          barrio,
+                          phone: phone,
+                        );
+                        if (mounted && authState.user != null) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Pseudónimo privado'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Tu pseudónimo único protege tu identidad:',
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppConfig.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppConfig.primary,
+                                      ),
+                                    ),
+                                    child: SelectableText(
+                                      authState.user!.uuid,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Continuar'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
+                      isLoading: authState.isLoading,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppConfig.horizontalMargin,
+          8,
+          AppConfig.horizontalMargin,
+          8,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PrivacyBadgeWidget(
+              uuid: authState.user?.uuid ?? 'Pendiente de autenticación',
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () {
+                authNotifier.loginAsVisitor();
+              },
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('Ingresar como Visitante'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthTabContent extends StatelessWidget {
+  const _AuthTabContent({
+    required this.subtitle,
+    required this.child,
+    required this.switchTabLabel,
+    required this.onSwitchTab,
+  });
+
+  final String subtitle;
+  final Widget child;
+  final String switchTabLabel;
+  final VoidCallback onSwitchTab;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppConfig.textSecondary,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          child,
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: onSwitchTab,
+              child: Text(switchTabLabel),
+            ),
+          ),
+        ],
       ),
     );
   }

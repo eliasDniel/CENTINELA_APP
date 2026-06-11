@@ -53,73 +53,71 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _aliasController,
-            decoration: InputDecoration(
-              labelText: 'Alias',
-              hintText: 'Tu pseudónimo',
-              errorText: _aliasError,
-              errorBorder: _aliasError != null
-                  ? OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                    )
-                  : null,
-            ),
-            enabled: !widget.isLoading,
+    return Column(
+      children: [
+        TextFormField(
+          controller: _aliasController,
+          decoration: InputDecoration(
+            labelText: 'Alias',
+            hintText: 'Tu pseudónimo',
+            errorText: _aliasError,
+            errorBorder: _aliasError != null
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
+                  )
+                : null,
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _passwordController,
-            decoration: InputDecoration(
-              labelText: 'Contraseña',
-              hintText: 'Tu contraseña',
-              errorText: _passwordError,
-              errorBorder: _passwordError != null
-                  ? OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                    )
-                  : null,
-              suffixIcon: IconButton(
-                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-              ),
-            ),
-            obscureText: _obscurePassword,
-            enabled: !widget.isLoading,
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: widget.isLoading
-                  ? null
-                  : () => context.push('/auth/forgot-password'),
-              child: const Text('¿Olvidaste tu contraseña?'),
+          enabled: !widget.isLoading,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _passwordController,
+          decoration: InputDecoration(
+            labelText: 'Contraseña',
+            hintText: 'Tu contraseña',
+            errorText: _passwordError,
+            errorBorder: _passwordError != null
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
+                  )
+                : null,
+            suffixIcon: IconButton(
+              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: widget.isLoading ? null : _handleLogin,
-              child: widget.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
-                      ),
-                    )
-                  : const Text('Entrar'),
-            ),
+          obscureText: _obscurePassword,
+          enabled: !widget.isLoading,
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: widget.isLoading
+                ? null
+                : () => context.push('/auth/forgot-password'),
+            child: const Text('¿Olvidaste tu contraseña?'),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: widget.isLoading ? null : _handleLogin,
+            child: widget.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
+                    ),
+                  )
+                : const Text('Entrar'),
+          ),
+        ),
+      ],
     );
   }
 }

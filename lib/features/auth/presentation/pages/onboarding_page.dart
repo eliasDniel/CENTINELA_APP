@@ -1,6 +1,8 @@
 // RF: Onboarding page - Introduction to users
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ms_undraw/ms_undraw.dart';
+import '../../../../core/utils/app_colors.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -12,6 +14,24 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   late PageController _pageController;
   int _currentPage = 0;
+
+  static const _slides = [
+    (
+      illustration: UnDrawIllustration.alert,
+      title: 'Reporta incidentes',
+      subtitle: 'Reporta incidentes en segundos',
+    ),
+    (
+      illustration: UnDrawIllustration.click_here,
+      title: 'Botón SOS',
+      subtitle: 'SOS de emergencia con un toque',
+    ),
+    (
+      illustration: UnDrawIllustration.current_location,
+      title: 'Mapa de alertas',
+      subtitle: 'Mantente informado en tu barrio',
+    ),
+  ];
 
   @override
   void initState() {
@@ -34,35 +54,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
             controller: _pageController,
             onPageChanged: (index) => setState(() => _currentPage = index),
             children: [
-              _buildSlide(
-                icon: Icons.report_problem,
-                title: 'Reporta incidentes',
-                subtitle: 'Reporta incidentes en segundos',
-              ),
-              _buildSlide(
-                icon: Icons.emergency,
-                title: 'Botón SOS',
-                subtitle: 'SOS de emergencia con un toque',
-              ),
-              _buildSlide(
-                icon: Icons.map,
-                title: 'Mapa de alertas',
-                subtitle: 'Mantente informado en tu barrio',
-              ),
+              for (final slide in _slides)
+                _buildSlide(
+                  illustration: slide.illustration,
+                  title: slide.title,
+                  subtitle: slide.subtitle,
+                ),
             ],
           ),
-          // Skip button
           Positioned(
             top: 40,
             right: 16,
-            child: _currentPage < 2
+            child: _currentPage < _slides.length - 1
                 ? TextButton(
                     onPressed: () => context.go('/auth'),
                     child: const Text('Saltar'),
                   )
                 : const SizedBox.shrink(),
           ),
-          // Dots indicator
           Positioned(
             bottom: 100,
             left: 0,
@@ -70,7 +79,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                3,
+                _slides.length,
                 (index) => Container(
                   width: _currentPage == index ? 24 : 8,
                   height: 8,
@@ -78,21 +87,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: _currentPage == index
-                        ? Theme.of(context).primaryColor
-                        : Colors.grey,
+                        ? AppConfig.primary
+                        : AppConfig.textTertiary,
                   ),
                 ),
               ),
             ),
           ),
-          // Action button
           Positioned(
             bottom: 30,
             left: 24,
             right: 24,
             child: ElevatedButton(
               onPressed: () {
-                if (_currentPage == 2) {
+                if (_currentPage == _slides.length - 1) {
                   context.go('/auth');
                 } else {
                   _pageController.nextPage(
@@ -104,7 +112,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              child: Text(_currentPage == 2 ? 'Comenzar' : 'Siguiente'),
+              child: Text(
+                _currentPage == _slides.length - 1 ? 'Comenzar' : 'Siguiente',
+              ),
             ),
           ),
         ],
@@ -113,34 +123,45 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildSlide({
-    required IconData icon,
+    required UnDrawIllustration illustration,
     required String title,
     required String subtitle,
   }) {
-    return Center(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 120, color: Theme.of(context).primaryColor),
-              const SizedBox(height: 32),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.displaySmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 80, 24, 130),
+      child: Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: UnDraw(
+              illustration: illustration,
+              color: AppConfig.primary,
+              fit: BoxFit.contain,
+              padding: EdgeInsets.zero,
+            ),
           ),
-        ),
+          Expanded(
+            flex: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.displaySmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppConfig.textSecondary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
