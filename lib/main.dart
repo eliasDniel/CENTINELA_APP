@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'BarrioSeguro',
+      title: 'BarrioSeguro Cambios 2.0',
       theme: AppTheme.darkTheme,
       routerConfig: goRouter,
       debugShowCheckedModeBanner: false,
