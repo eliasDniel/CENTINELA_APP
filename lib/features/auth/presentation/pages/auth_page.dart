@@ -9,7 +9,7 @@ import '../widgets/register_form.dart';
 import '../widgets/privacy_badge_widget.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
-  const AuthPage({Key? key}) : super(key: key);
+  const AuthPage({super.key});
 
   @override
   ConsumerState<AuthPage> createState() => _AuthPageState();
@@ -207,7 +207,7 @@ class _AuthTabContent extends StatelessWidget {
         children: [
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: AppConfig.textSecondary,
                 ),
             textAlign: TextAlign.center,

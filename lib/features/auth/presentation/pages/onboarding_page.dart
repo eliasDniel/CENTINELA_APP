@@ -1,7 +1,7 @@
 // RF: Onboarding page - Introduction to users
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ms_undraw/ms_undraw.dart';
+import 'package:lottie/lottie.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -17,17 +17,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const _slides = [
     (
-      illustration: UnDrawIllustration.alert,
+      icon: Icons.warning_amber_outlined,
       title: 'Reporta incidentes',
       subtitle: 'Reporta incidentes en segundos',
     ),
     (
-      illustration: UnDrawIllustration.click_here,
+      icon: Icons.crisis_alert_outlined,
       title: 'Botón SOS',
       subtitle: 'SOS de emergencia con un toque',
     ),
     (
-      illustration: UnDrawIllustration.current_location,
+      icon: Icons.location_on_outlined,
       title: 'Mapa de alertas',
       subtitle: 'Mantente informado en tu barrio',
     ),
@@ -56,7 +56,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               for (final slide in _slides)
                 _buildSlide(
-                  illustration: slide.illustration,
+                  icon: slide.icon,
                   title: slide.title,
                   subtitle: slide.subtitle,
                 ),
@@ -123,7 +123,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildSlide({
-    required UnDrawIllustration illustration,
+    required IconData icon,
     required String title,
     required String subtitle,
   }) {
@@ -133,11 +133,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
         children: [
           Expanded(
             flex: 3,
-            child: UnDraw(
-              illustration: illustration,
-              color: AppConfig.primary,
-              fit: BoxFit.contain,
-              padding: EdgeInsets.zero,
+            child: Icon(
+              icon,
+              size: 160,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           Expanded(
@@ -147,15 +146,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.displaySmall,
+                  style: Theme.of(context).textTheme.displayMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppConfig.textSecondary,
-                      ),
+                    color: AppConfig.textSecondary,
+                    fontSize: 14
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
