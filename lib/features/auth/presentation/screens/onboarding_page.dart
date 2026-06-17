@@ -1,7 +1,6 @@
 // RF: Onboarding page - Introduction to users
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -154,7 +153,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   subtitle,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppConfig.textSecondary,
-                    fontSize: 14
+                    fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
                 ),

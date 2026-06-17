@@ -5,7 +5,6 @@ import 'package:centinela_milagro/features/notifications/presentation/notificati
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/sos_provider.dart';
 import '../widgets/sos_button_widget.dart';
@@ -41,15 +40,21 @@ class _HomeHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final user = auth.user;
-    final isVisitor = user?.isVisitor ?? false;
-
+    // Comentado: isVisitor, nombre y barrio pendientes en UserEntity
+    // final isVisitor = user?.isVisitor ?? false;
+    // final name = isVisitor ? 'visitante' : (user?.nombre ?? 'ciudadano');
+    // final subtitle = isVisitor
+    //     ? 'Explora el mapa de alertas en un radio de 3 km sin crear cuenta. '
+    //           'Inicia sesión para reportar incidentes y recibir avisos de tu barrio.'
+    //     : 'Estás en el barrio ${user?.barrio ?? '—'}. '
+    //           'Puedes enviar SOS o revisar alertas en el mapa.';
+    final isVisitor = user == null;
     final greeting = isVisitor ? 'Hola,' : 'Bienvenido de nuevo,';
-    final name = isVisitor ? 'visitante' : (user?.alias ?? 'ciudadano');
+    final name = user == null ? 'visitante' : (user.email.split('@').first);
     final subtitle = isVisitor
         ? 'Explora el mapa de alertas en un radio de 3 km sin crear cuenta. '
               'Inicia sesión para reportar incidentes y recibir avisos de tu barrio.'
-        : 'Estás en el barrio ${user?.barrio ?? '—'}. '
-              'Puedes enviar SOS o revisar alertas en el mapa.';
+        : 'Puedes enviar SOS o revisar alertas en el mapa.';
 
     return Container(
       margin: const EdgeInsets.all(AppConfig.horizontalMargin),
@@ -96,9 +101,12 @@ class _HomeHeader extends ConsumerWidget {
           const SizedBox(width: 12),
           Stack(
             children: [
-              IconButton(onPressed: () {
-                context.go('/home/0/${NotificationsScreen.routeName}');
-              }, icon: Icon(Icons.notification_important_outlined, size: 24)),
+              IconButton(
+                onPressed: () {
+                  context.go('/home/0/${NotificationsScreen.routeName}');
+                },
+                icon: Icon(Icons.notification_important_outlined, size: 24),
+              ),
               Positioned(
                 top: 10,
                 right: 10,
@@ -129,10 +137,7 @@ class _HomeHeader extends ConsumerWidget {
 }
 
 class _HomeSosSection extends StatelessWidget {
-  const _HomeSosSection({
-    required this.size,
-    required this.onEmergencySent,
-  });
+  const _HomeSosSection({required this.size, required this.onEmergencySent});
 
   final Size size;
   final Future<void> Function() onEmergencySent;
@@ -178,10 +183,7 @@ class _HomeSosSection extends StatelessWidget {
   }
 }
 
-Future<void> _handleSosSent(
-  BuildContext context,
-  WidgetRef ref,
-) async {
+Future<void> _handleSosSent(BuildContext context, WidgetRef ref) async {
   showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -276,7 +278,8 @@ class _HomeLocationCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final user = auth.user;
-    final isVisitor = user?.isVisitor ?? false;
+    // final isVisitor = user?.isVisitor ?? false;
+    final isVisitor = user == null;
     final location = ref.watch(userLocationProvider);
 
     return Card(
@@ -325,7 +328,8 @@ class _HomeLocationCard extends ConsumerWidget {
                     Text(
                       isVisitor
                           ? 'Toca para ver alertas cerca de ti en el mapa'
-                          : 'Barrio ${user?.barrio ?? '—'} · Ver distancia a incidentes en el mapa',
+                          : 'Ver alertas en el mapa',
+                      // 'Barrio ${user?.barrio ?? '—'} · Ver distancia a incidentes en el mapa',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppConfig.primaryLight,
                       ),

@@ -115,14 +115,17 @@ class _MapPageState extends ConsumerState<MapPage> {
     String? selectedZona = state.zonaFilter;
     String? selectedBarrio = state.barrioFilter;
     var selectedRadius = state.proximityRadiusMeters ?? 3000;
-    final zonaChips = ref.read(mapZonaFilterChipsProvider);
     final auth = ref.read(authProvider);
-    final homeBarrio = auth.user?.barrio;
+    final zonaChips = ref.read(mapZonaFilterChipsProvider);
+    // final homeBarrio = auth.user?.barrio;
+    // final isVisitor = auth.user?.isVisitor ?? true;
+    // final isLoggedIn = !(ref.read(authProvider).user?.isVisitor ?? true) &&
+    //     ref.read(authProvider).user != null;
+    final homeBarrio = null;
+    final isVisitor = auth.user == null;
+    final isLoggedIn = auth.user != null;
     final subscribed = ref.read(barriosSubscribedProvider);
-    final isVisitor = auth.user?.isVisitor ?? true;
     final usesProximity = ref.read(mapUsesProximityRadiusProvider);
-    final isLoggedIn = !(ref.read(authProvider).user?.isVisitor ?? true) &&
-        ref.read(authProvider).user != null;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -137,7 +140,9 @@ class _MapPageState extends ConsumerState<MapPage> {
               required T? selectedValue,
               required ValueChanged<T?> onChanged,
             }) {
-              final isSelected = value == null ? selectedValue == null : selectedValue == value;
+              final isSelected = value == null
+                  ? selectedValue == null
+                  : selectedValue == value;
               return FilterChip(
                 label: Text(label),
                 selected: isSelected,
@@ -202,7 +207,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                       spacing: 8,
                       runSpacing: 8,
                       children: zonaChips.map((chip) {
-                        final isSelected = selectedZona == chip.value ||
+                        final isSelected =
+                            selectedZona == chip.value ||
                             (chip.value == null && selectedZona == null);
                         return FilterChip(
                           label: Text(chip.label),
@@ -282,7 +288,10 @@ class _MapPageState extends ConsumerState<MapPage> {
                               homeBarrio != null &&
                               homeBarrio.isNotEmpty &&
                               zonaBarrios.contains(homeBarrio)) {
-                            chips.add((value: homeBarrio, label: '$homeBarrio (tú)'));
+                            chips.add((
+                              value: homeBarrio,
+                              label: '$homeBarrio (tú)',
+                            ));
                           }
                           for (final b in zonaBarrios) {
                             if (b == homeBarrio) continue;
@@ -302,7 +311,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                                 selected: isSelected,
                                 onSelected: (_) {
                                   setStateSheet(
-                                      () => selectedBarrio = chip.value);
+                                    () => selectedBarrio = chip.value,
+                                  );
                                 },
                               );
                             }).toList(),
@@ -311,28 +321,75 @@ class _MapPageState extends ConsumerState<MapPage> {
                       ),
                       const SizedBox(height: 14),
                     ],
-                    const Text('Nivel', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Nivel',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        filterChip<AlertLevel>(label: 'Todos', value: null, selectedValue: selectedLevel, onChanged: (value) => selectedLevel = value),
-                        filterChip<AlertLevel>(label: 'Vigilancia', value: AlertLevel.vigilancia, selectedValue: selectedLevel, onChanged: (value) => selectedLevel = value),
-                        filterChip<AlertLevel>(label: 'Alerta', value: AlertLevel.alerta, selectedValue: selectedLevel, onChanged: (value) => selectedLevel = value),
-                        filterChip<AlertLevel>(label: 'Emergencia', value: AlertLevel.emergencia, selectedValue: selectedLevel, onChanged: (value) => selectedLevel = value),
+                        filterChip<AlertLevel>(
+                          label: 'Todos',
+                          value: null,
+                          selectedValue: selectedLevel,
+                          onChanged: (value) => selectedLevel = value,
+                        ),
+                        filterChip<AlertLevel>(
+                          label: 'Vigilancia',
+                          value: AlertLevel.vigilancia,
+                          selectedValue: selectedLevel,
+                          onChanged: (value) => selectedLevel = value,
+                        ),
+                        filterChip<AlertLevel>(
+                          label: 'Alerta',
+                          value: AlertLevel.alerta,
+                          selectedValue: selectedLevel,
+                          onChanged: (value) => selectedLevel = value,
+                        ),
+                        filterChip<AlertLevel>(
+                          label: 'Emergencia',
+                          value: AlertLevel.emergencia,
+                          selectedValue: selectedLevel,
+                          onChanged: (value) => selectedLevel = value,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 18),
-                    const Text('Fuente', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Fuente',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        filterChip<AlertSource>(label: 'Todos', value: null, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
-                        filterChip<AlertSource>(label: 'Sensores', value: AlertSource.sensor_audio, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
-                        filterChip<AlertSource>(label: 'Ciudadanos', value: AlertSource.ciudadano, selectedValue: selectedSource, onChanged: (value) => selectedSource = value),
+                        filterChip<AlertSource>(
+                          label: 'Todos',
+                          value: null,
+                          selectedValue: selectedSource,
+                          onChanged: (value) => selectedSource = value,
+                        ),
+                        filterChip<AlertSource>(
+                          label: 'Sensores',
+                          value: AlertSource.sensor_audio,
+                          selectedValue: selectedSource,
+                          onChanged: (value) => selectedSource = value,
+                        ),
+                        filterChip<AlertSource>(
+                          label: 'Ciudadanos',
+                          value: AlertSource.ciudadano,
+                          selectedValue: selectedSource,
+                          onChanged: (value) => selectedSource = value,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -341,9 +398,9 @@ class _MapPageState extends ConsumerState<MapPage> {
                           ? 'Visitante: filtras por distancia. Ciudadanos: por barrio sin límite km.'
                           : 'Pin: letra = nivel (E/A/V). Borde = tu barrio o suscrito.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white38,
-                            fontSize: 11,
-                          ),
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -353,19 +410,25 @@ class _MapPageState extends ConsumerState<MapPage> {
                           backgroundColor: AppConfig.primaryDark,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         onPressed: () {
-                          ref.read(mapProvider.notifier).applyFilters(
+                          ref
+                              .read(mapProvider.notifier)
+                              .applyFilters(
                                 level: selectedLevel,
                                 source: selectedSource,
                                 zonaFilter: selectedZona,
                                 clearZonaFilter: selectedZona == null,
-                                barrioFilter: selectedZona != null &&
+                                barrioFilter:
+                                    selectedZona != null &&
                                         zonaTieneBarrios(selectedZona!)
                                     ? selectedBarrio
                                     : null,
-                                clearBarrioFilter: selectedZona == null ||
+                                clearBarrioFilter:
+                                    selectedZona == null ||
                                     !zonaTieneBarrios(selectedZona!) ||
                                     selectedBarrio == null,
                                 proximityRadiusMeters: usesProximity
@@ -461,9 +524,7 @@ class _MapPageState extends ConsumerState<MapPage> {
             !monitored.contains(next.barrio)) {
           return;
         }
-        final location = next.barrio.isNotEmpty
-            ? next.barrio
-            : next.zona;
+        final location = next.barrio.isNotEmpty ? next.barrio : next.zona;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('🔔 Nueva alerta en $location'),
@@ -473,12 +534,12 @@ class _MapPageState extends ConsumerState<MapPage> {
       },
     );
 
-    ref.listen<LatLng>(
-      mapProvider.select((state) => state.center),
-      (previous, next) {
-        _mapController.move(next, 14.2);
-      },
-    );
+    ref.listen<LatLng>(mapProvider.select((state) => state.center), (
+      previous,
+      next,
+    ) {
+      _mapController.move(next, 14.2);
+    });
 
     ref.listen(userHeadingProvider, (previous, next) {
       if (!next.isAvailable) return;
@@ -510,9 +571,7 @@ class _MapPageState extends ConsumerState<MapPage> {
     if (state.allAlerts.isEmpty) {
       return const Scaffold(
         backgroundColor: Color(0xFF10131A),
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
@@ -547,7 +606,6 @@ class _MapPageState extends ConsumerState<MapPage> {
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
-          
           IconButton(
             onPressed: () => _openFiltersSheet(state),
             icon: const Icon(Icons.filter_list_rounded),
@@ -571,7 +629,8 @@ class _MapPageState extends ConsumerState<MapPage> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.barrioseguro.app',
                 tileProvider: NetworkTileProvider(),
@@ -648,9 +707,7 @@ class _MapPageState extends ConsumerState<MapPage> {
                   tooltip: 'Modo brújula',
                   child: Icon(
                     Icons.explore,
-                    color: heading.isAvailable
-                        ? Colors.white
-                        : Colors.white38,
+                    color: heading.isAvailable ? Colors.white : Colors.white38,
                   ),
                 ),
                 FloatingActionButton(

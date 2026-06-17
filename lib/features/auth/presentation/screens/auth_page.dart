@@ -1,7 +1,6 @@
 // RF-0301, RF-0302: Auth page with login and register tabs
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/login_form.dart';
@@ -34,18 +33,6 @@ class _AuthPageState extends ConsumerState<AuthPage>
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final authNotifier = ref.read(authProvider.notifier);
-
-    ref.listen(authProvider, (previous, next) {
-      if (next.user != null && previous?.user == null) {
-        context.go('/home/0');
-      }
-      if (next.error != null && next.error!.isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.error!)));
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -72,77 +59,17 @@ class _AuthPageState extends ConsumerState<AuthPage>
                 controller: _tabController,
                 children: [
                   _AuthTabContent(
-                    subtitle:
-                        '¿Ya tienes cuenta? Inicia sesión con tu alias.',
+                    subtitle: '¿Ya tienes cuenta? Inicia sesión.',
                     switchTabLabel: '¿No tienes cuenta? Regístrate',
                     onSwitchTab: () => _tabController.animateTo(1),
-                    child: LoginForm(
-                      onSubmit: () {},
-                      onLogin: (alias, password) {
-                        authNotifier.login(alias, password);
-                      },
-                      isLoading: authState.isLoading,
-                    ),
+                    child: LoginForm(),
                   ),
                   _AuthTabContent(
                     subtitle:
                         'Crea tu cuenta para reportar y recibir alertas en tu barrio.',
                     switchTabLabel: '¿Ya tienes cuenta? Inicia sesión',
                     onSwitchTab: () => _tabController.animateTo(0),
-                    child: RegisterForm(
-                      onSubmit: () {},
-                      onRegister: (alias, password, zona, barrio, phone) async {
-                        await authNotifier.register(
-                          alias,
-                          password,
-                          zona,
-                          barrio,
-                          phone: phone,
-                        );
-                        if (mounted && authState.user != null) {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Pseudónimo privado'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Tu pseudónimo único protege tu identidad:',
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: AppConfig.surface,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppConfig.primary,
-                                      ),
-                                    ),
-                                    child: SelectableText(
-                                      authState.user!.uuid,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: 'monospace',
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Continuar'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                      },
-                      isLoading: authState.isLoading,
-                    ),
+                    child: RegisterForm(),
                   ),
                 ],
               ),
@@ -166,7 +93,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () {
-                authNotifier.loginAsVisitor();
+                // authNotifier.loginAsVisitor();
               },
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Ingresar como Visitante'),
@@ -207,9 +134,9 @@ class _AuthTabContent extends StatelessWidget {
         children: [
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppConfig.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppConfig.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),

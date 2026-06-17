@@ -19,7 +19,8 @@ int shellTabIndexFromContext(BuildContext context) {
   return int.tryParse(page ?? '0') ?? 0;
 }
 
-bool isMapTabActive(BuildContext context) => shellTabIndexFromContext(context) == 1;
+bool isMapTabActive(BuildContext context) =>
+    shellTabIndexFromContext(context) == 1;
 
 /// Enfoca la SOS en el mapa sin navegar (si ya estás en la pestaña mapa).
 void focusSosOnMapIfReady(WidgetRef ref) {
@@ -43,9 +44,7 @@ Future<MapAlertEntity> sendSosAlert(
   WidgetRef ref, {
   bool offline = false,
 }) async {
-  await Future.delayed(
-    Duration(milliseconds: offline ? 400 : 900),
-  );
+  await Future.delayed(Duration(milliseconds: offline ? 400 : 900));
 
   final auth = ref.read(authProvider);
   final location = ref.read(userLocationProvider);

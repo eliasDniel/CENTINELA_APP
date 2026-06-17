@@ -25,17 +25,15 @@ class SubscriptionsManagePage extends ConsumerWidget {
     final selectable = ref.watch(selectableBarriosEnZonaProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Elegir barrios'),
-      ),
+      appBar: AppBar(title: const Text('Elegir barrios')),
       body: ListView(
         padding: const EdgeInsets.all(AppConfig.horizontalMargin),
         children: [
           Text(
             'Zona: $homeZona',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppConfig.primary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: AppConfig.primary),
           ),
           const SizedBox(height: 12),
           SubscriptionSlotsRow(
@@ -47,8 +45,8 @@ class SubscriptionsManagePage extends ConsumerWidget {
           Text(
             '${subscribed.length}/$kMaxBarriosAdicionales cupos usados',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: canAddMore ? AppConfig.textSecondary : AppConfig.warning,
-                ),
+              color: canAddMore ? AppConfig.textSecondary : AppConfig.warning,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -59,7 +57,10 @@ class SubscriptionsManagePage extends ConsumerWidget {
           if (selectable.isEmpty)
             Card(
               child: ListTile(
-                leading: Icon(Icons.info_outline, color: AppConfig.textTertiary),
+                leading: Icon(
+                  Icons.info_outline,
+                  color: AppConfig.textTertiary,
+                ),
                 title: const Text('Sin barrios adicionales'),
                 subtitle: Text(
                   zonaTieneBarrios(homeZona)

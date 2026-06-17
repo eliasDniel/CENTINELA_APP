@@ -1,132 +1,120 @@
-// RF-0301, RF-0302: Auth state and notifier for Riverpod
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../domain/usecases/login_usecase.dart';
-import '../../domain/usecases/register_usecase.dart';
-import '../../domain/usecases/login_as_visitor_usecase.dart';
-import '../../domain/usecases/update_location_usecase.dart';
-import '../../infrastructure/datasources/auth_local_datasource.dart';
-import '../../infrastructure/repositories/auth_repository_impl.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/auth_repository_provider.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/services/key_value_storage_impl.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import '../../domain/domain.dart';
+import '../../infrastructure/infrastructure.dart';
+import 'services/key_value_storage.dart';
 
-class AuthState {
-  final UserEntity? user;
-  final bool isLoading;
-  final String? error;
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  final keyValueStorageService = KeyValueStorageImpl();
+  return AuthNotifier(
+    authRepository: authRepository,
+    keyValueStorageService: keyValueStorageService,
+  );
+});
 
-  AuthState({
-    this.user,
-    this.isLoading = false,
-    this.error,
-  });
+class AuthNotifier extends StateNotifier<AuthState> {
+  final AuthRepository authRepository;
+  final KeyValueStorageService keyValueStorageService;
 
-  bool get isAuthenticated => user != null;
-
-  AuthState copyWith({
-    UserEntity? user,
-    bool? isLoading,
-    String? error,
-  }) {
-    return AuthState(
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-    );
-  }
-}
-
-class AuthNotifier extends Notifier<AuthState> {
-  late AuthRepository repository;
-
-  @override
-  AuthState build() {
-    repository = ref.watch(authRepositoryProvider);
-    return AuthState();
+  AuthNotifier({
+    required this.authRepository,
+    required this.keyValueStorageService,
+  }) : super(AuthState()) {
+    checkAuthStatus();
   }
 
-  Future<void> login(String alias, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<bool> loginUser(String email, String password) async {
     try {
-      final loginUseCase = LoginUseCase(repository);
-      final user = await loginUseCase(alias, password);
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
-    }
-  }
+      final user = await authRepository.login(email, password);
 
-  Future<void> register(
-    String alias,
-    String password,
-    String zona,
-    String barrio, {
-    String? phone,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final registerUseCase = RegisterUseCase(repository);
-      final user = await registerUseCase(
-        alias,
-        password,
-        zona,
-        barrio,
-        phone: phone,
-      );
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
-    }
-  }
-
-  Future<void> loginAsVisitor() async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final loginAsVisitorUseCase = LoginAsVisitorUseCase(repository);
-      final user = await loginAsVisitorUseCase();
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
-    }
-  }
-
-  Future<bool> updateLocation(String zona, String barrio) async {
-    final alias = state.user?.alias;
-    if (alias == null) return false;
-
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final useCase = UpdateLocationUseCase(repository);
-      final user = await useCase(alias, zona, barrio);
-      state = state.copyWith(user: user, isLoading: false);
+      _setLoggedUser(user);
       return true;
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
+    } on CustomError catch (e) {
+      logoutUser(e.message);
       return false;
     }
   }
 
-  void logout() {
-    state = AuthState();
+  Future<bool> registerUser({
+    required String email,
+    required String password,
+    required String alias,
+    String? phone,
+    required String zonaId,
+  }) async {
+    try {
+      final message = await authRepository.register(
+        email: email,
+        password: password,
+        alias: alias,
+        phone: phone,
+        zonaId: zonaId,
+      );
+      return message;
+    } on CustomError catch (e) {
+      logoutUser(e.message);
+      return false;
+    }
+  }
+
+  void checkAuthStatus() async {
+    final token = await keyValueStorageService.getValue<String>('token');
+    if (token == null) {
+      return logoutUser();
+    }
+    try {
+      final user = await authRepository.checkStatus(token);
+      _setLoggedUser(user);
+    } catch (e) {
+      logoutUser();
+    }
+  }
+
+  void _setLoggedUser(UserEntity user) async {
+    await keyValueStorageService.setKeyValue('token', user.token);
+    await keyValueStorageService.setKeyValue(
+      'refresh_token',
+      user.refreshToken,
+    ); // <-- nuevo
+    state = state.copyWith(
+      authStatus: AuthStatus.authenticated,
+      user: user,
+      errorMessage: '',
+    );
+  }
+
+  Future<void> logoutUser([String? errorMessage]) async {
+    await keyValueStorageService.removeKey('token');
+    state = state.copyWith(
+      authStatus: AuthStatus.unauthenticated,
+      user: null,
+      errorMessage: errorMessage,
+    );
   }
 }
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dataSource = AuthLocalDataSource();
-  return AuthRepositoryImpl(dataSource);
-});
+enum AuthStatus { authenticated, unauthenticated, checking }
 
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
-  return AuthNotifier();
-});
+class AuthState {
+  final AuthStatus authStatus;
+  final UserEntity? user;
+  final String errorMessage;
+
+  AuthState({
+    this.authStatus = AuthStatus.checking,
+    this.user,
+    this.errorMessage = '',
+  });
+
+  AuthState copyWith({
+    AuthStatus? authStatus,
+    UserEntity? user,
+    String? errorMessage,
+  }) => AuthState(
+    authStatus: authStatus ?? this.authStatus,
+    user: user ?? this.user,
+    errorMessage: errorMessage ?? this.errorMessage,
+  );
+}

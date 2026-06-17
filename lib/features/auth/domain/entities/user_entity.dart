@@ -1,20 +1,28 @@
-// RF-0301: User entity for domain layer
 class UserEntity {
-  final String alias;
   final String uuid;
-  final String zona;
-  final String barrio;
-  final String? phone;
-  final bool isVisitor;
+  final String email;
+  final String rol;
+  final String token;
+  final String refreshToken; // <-- nuevo
+  final String zonaId;
 
   UserEntity({
-    required this.alias,
     required this.uuid,
-    required this.zona,
-    required this.barrio,
-    this.phone,
-    required this.isVisitor,
+    required this.email,
+    required this.rol,
+    required this.token,
+    required this.refreshToken, // <-- nuevo
+    required this.zonaId,
   });
 
-  bool get tieneBarrio => barrio.isNotEmpty;
+  bool get tieneZona => zonaId.isNotEmpty;
+
+  // ── Getters temporales ──────────────────────────────────────────────────
+  // Permiten compilar toda la app mientras se implementan los campos reales.
+  String get nombre => email.split('@').first;
+  String? get barrio => null;
+  String? get zona => null; // Antes era zonaNombre, pero ahora no está
+  bool get tieneBarrio => false;
+  bool get isVisitor => rol == 'visitante' || token.isEmpty;
+  // ────────────────────────────────────────────────────────────────────────
 }

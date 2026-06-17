@@ -96,7 +96,9 @@ class MapState {
       sourceFilter: sourceFilter,
       onlyMonitoredBarrios: onlyMonitoredBarrios ?? this.onlyMonitoredBarrios,
       zonaFilter: clearZonaFilter ? null : (zonaFilter ?? this.zonaFilter),
-      barrioFilter: clearBarrioFilter ? null : (barrioFilter ?? this.barrioFilter),
+      barrioFilter: clearBarrioFilter
+          ? null
+          : (barrioFilter ?? this.barrioFilter),
       proximityRadiusMeters: clearProximityRadius
           ? null
           : (proximityRadiusMeters ?? this.proximityRadiusMeters),
@@ -135,10 +137,7 @@ class MapNotifier extends Notifier<MapState> {
       (prev, next) {
         if (prev != null && prev != next) {
           final newZona = ref.read(authProvider).user?.zona;
-          state = state.copyWith(
-            zonaFilter: newZona,
-            clearBarrioFilter: true,
-          );
+          state = state.copyWith(zonaFilter: newZona, clearBarrioFilter: true);
         }
         _refilter();
       },
@@ -208,7 +207,10 @@ class MapNotifier extends Notifier<MapState> {
     return alerts.where((alert) {
       final levelMatches =
           state.levelFilter == null || alert.level == state.levelFilter;
-      final sourceMatches = _matchesSourceFilter(alert.source, state.sourceFilter);
+      final sourceMatches = _matchesSourceFilter(
+        alert.source,
+        state.sourceFilter,
+      );
       final zonaMatches = _matchesZonaFilter(
         alert.zona,
         effectiveZona: effectiveZona,
@@ -233,8 +235,7 @@ class MapNotifier extends Notifier<MapState> {
           zonaMatches &&
           barrioMatches &&
           proximityMatches;
-    }).toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    }).toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   bool _matchesZonaFilter(
@@ -269,8 +270,7 @@ class MapNotifier extends Notifier<MapState> {
       return true;
     }
 
-    final zonaSinBarrios =
-        userZona != null && !zonaTieneBarrios(userZona);
+    final zonaSinBarrios = userZona != null && !zonaTieneBarrios(userZona);
     if (zonaSinBarrios || userBarrio == null || userBarrio.isEmpty) {
       return true;
     }
@@ -339,8 +339,9 @@ class MapNotifier extends Notifier<MapState> {
     final lvl = level ?? state.levelFilter;
     final src = source ?? state.sourceFilter;
     final isCitizen = _isLoggedInCitizen();
-    final onlyMonitored =
-        isCitizen ? true : (onlyMonitoredBarrios ?? state.onlyMonitoredBarrios);
+    final onlyMonitored = isCitizen
+        ? true
+        : (onlyMonitoredBarrios ?? state.onlyMonitoredBarrios);
 
     String? zona;
     if (clearZonaFilter) {
@@ -351,12 +352,14 @@ class MapNotifier extends Notifier<MapState> {
       zona = state.zonaFilter;
     }
 
-    final barrio = clearBarrioFilter ? null : (barrioFilter ?? state.barrioFilter);
+    final barrio = clearBarrioFilter
+        ? null
+        : (barrioFilter ?? state.barrioFilter);
     final proximity = isCitizen
         ? null
         : (clearProximityRadius
-            ? null
-            : (proximityRadiusMeters ?? state.proximityRadiusMeters));
+              ? null
+              : (proximityRadiusMeters ?? state.proximityRadiusMeters));
 
     state = state.copyWith(
       levelFilter: lvl,
@@ -373,10 +376,7 @@ class MapNotifier extends Notifier<MapState> {
   }
 
   void setBarrioFilter(String? barrio) {
-    applyFilters(
-      barrioFilter: barrio,
-      clearBarrioFilter: barrio == null,
-    );
+    applyFilters(barrioFilter: barrio, clearBarrioFilter: barrio == null);
   }
 
   void centerOnAlert(MapAlertEntity alert) {
@@ -390,8 +390,7 @@ class MapNotifier extends Notifier<MapState> {
 
     var filtered = _applyCurrentFilters(updated);
 
-    if (alert.type == AlertType.sos &&
-        !filtered.any((a) => a.id == alert.id)) {
+    if (alert.type == AlertType.sos && !filtered.any((a) => a.id == alert.id)) {
       state = state.copyWith(
         levelFilter: null,
         sourceFilter: null,
@@ -428,15 +427,13 @@ class MapNotifier extends Notifier<MapState> {
       filtered = state.filteredAlerts;
     }
 
-    state = state.copyWith(
-      center: alert.position,
-      lastIncomingAlert: null,
-    );
+    state = state.copyWith(center: alert.position, lastIncomingAlert: null);
   }
 }
 
-final mapProvider =
-    NotifierProvider.autoDispose<MapNotifier, MapState>(MapNotifier.new);
+final mapProvider = NotifierProvider.autoDispose<MapNotifier, MapState>(
+  MapNotifier.new,
+);
 
 final mapUsesProximityRadiusProvider = Provider<bool>((ref) {
   final auth = ref.watch(authProvider);
@@ -465,54 +462,54 @@ final showMapBarrioFilterProvider = Provider<bool>((ref) {
 
 final mapZonaFilterChipsProvider =
     Provider<List<({String? value, String label})>>((ref) {
-  final auth = ref.watch(authProvider);
-  final isVisitor = auth.user?.isVisitor ?? true;
-  final userZona = auth.user?.zona;
+      final auth = ref.watch(authProvider);
+      final isVisitor = auth.user?.isVisitor ?? true;
+      final userZona = auth.user?.zona;
 
-  if (isVisitor || auth.user == null) {
-    return [
-      (value: null, label: 'Todas las zonas'),
-      ...kZonasAdministrativas.map((z) => (value: z, label: z)),
-    ];
-  }
+      if (isVisitor || auth.user == null) {
+        return [
+          (value: null, label: 'Todas las zonas'),
+          ...kZonasAdministrativas.map((z) => (value: z, label: z)),
+        ];
+      }
 
-  return [
-    (value: userZona, label: '$userZona (tú)'),
-    ...kZonasAdministrativas
-        .where((z) => z != userZona)
-        .map((z) => (value: z, label: z)),
-  ];
-});
+      return [
+        (value: userZona, label: '$userZona (tú)'),
+        ...kZonasAdministrativas
+            .where((z) => z != userZona)
+            .map((z) => (value: z, label: z)),
+      ];
+    });
 
 final mapBarrioFilterChipsProvider =
     Provider<List<({String? value, String label})>>((ref) {
-  if (!ref.watch(showMapBarrioFilterProvider)) return [];
+      if (!ref.watch(showMapBarrioFilterProvider)) return [];
 
-  final auth = ref.watch(authProvider);
-  final home = auth.user?.barrio;
-  final isVisitor = auth.user?.isVisitor ?? true;
-  final effectiveZona = ref.watch(mapEffectiveZonaProvider) ?? 'Milagro';
-  final zonaBarrios = barriosDeZona(effectiveZona);
+      final auth = ref.watch(authProvider);
+      final home = auth.user?.barrio;
+      final isVisitor = auth.user?.isVisitor ?? true;
+      final effectiveZona = ref.watch(mapEffectiveZonaProvider) ?? 'Milagro';
+      final zonaBarrios = barriosDeZona(effectiveZona);
 
-  if (isVisitor || home == null || home.isEmpty) {
-    return [
-      (value: null, label: 'Todos'),
-      ...zonaBarrios.map((b) => (value: b, label: b)),
-    ];
-  }
+      if (isVisitor || home == null || home.isEmpty) {
+        return [
+          (value: null, label: 'Todos'),
+          ...zonaBarrios.map((b) => (value: b, label: b)),
+        ];
+      }
 
-  final subscribed = ref.watch(barriosSubscribedProvider);
-  final chips = <({String? value, String label})>[
-    (value: null, label: 'Todos mis barrios'),
-    (value: home, label: '$home (tú)'),
-  ];
-  for (final b in subscribed) {
-    if (b != home && zonaBarrios.contains(b)) {
-      chips.add((value: b, label: b));
-    }
-  }
-  return chips;
-});
+      final subscribed = ref.watch(barriosSubscribedProvider);
+      final chips = <({String? value, String label})>[
+        (value: null, label: 'Todos mis barrios'),
+        (value: home, label: '$home (tú)'),
+      ];
+      for (final b in subscribed) {
+        if (b != home && zonaBarrios.contains(b)) {
+          chips.add((value: b, label: b));
+        }
+      }
+      return chips;
+    });
 
 final mapActiveFiltersSummaryProvider = Provider<String?>((ref) {
   final state = ref.watch(mapProvider);
@@ -561,9 +558,7 @@ String _levelLabel(AlertLevel level) {
 
 String _sourceLabel(AlertSource source) {
   return switch (source) {
-    AlertSource.sensor_audio ||
-    AlertSource.sensor_video =>
-      'Sensor',
+    AlertSource.sensor_audio || AlertSource.sensor_video => 'Sensor',
     AlertSource.sensor_hidrico => 'Hídrico',
     AlertSource.ciudadano => 'Ciudadano',
   };

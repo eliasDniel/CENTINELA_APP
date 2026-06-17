@@ -15,21 +15,21 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final _aliasController = TextEditingController();
+  final _emailController = TextEditingController();
   String? _error;
   bool _loading = false;
   bool _sent = false;
 
   @override
   void dispose() {
-    _aliasController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    final alias = _aliasController.text.trim();
-    if (alias.isEmpty) {
-      setState(() => _error = 'Ingresa tu alias');
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() => _error = 'Ingresa tu correo electrónico');
       return;
     }
 
@@ -66,9 +66,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           const SizedBox(height: 8),
           Text(
             _sent
-                ? 'Si el alias está registrado, enviamos un enlace simulado '
+                ? 'Si el correo está registrado, enviamos un enlace simulado '
                     'para restablecer tu contraseña.'
-                : 'Ingresa tu alias. Te enviaremos instrucciones para '
+                : 'Ingresa tu correo. Te enviaremos instrucciones para '
                     'crear una nueva contraseña (simulación).',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppConfig.textSecondary,
@@ -78,13 +78,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           const SizedBox(height: 28),
           if (!_sent) ...[
             TextField(
-              controller: _aliasController,
+              controller: _emailController,
               enabled: !_loading,
+              keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: 'Alias',
-                hintText: 'Tu pseudónimo registrado',
+                labelText: 'Correo electrónico',
+                hintText: 'tu@correo.com',
                 errorText: _error,
-                prefixIcon: const Icon(Icons.person_outline),
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
             ),
             const SizedBox(height: 24),
@@ -113,7 +114,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Enlace enviado a alias@centinela.sim (demo)',
+                      'Enlace enviado a tu@correo.com (demo)',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),

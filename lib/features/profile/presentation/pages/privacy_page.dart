@@ -16,7 +16,8 @@ class PrivacyPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
 
-    if (user == null || user.isVisitor) {
+    // if (user == null || user.isVisitor) {
+    if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Privacidad')),
         body: Center(
@@ -60,9 +61,9 @@ class PrivacyPage extends ConsumerWidget {
                   '(UUID), nunca tu alias real ni tu teléfono. Tus reportes y '
                   'alertas SOS se vinculan a ese identificador anónimo.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppConfig.textSecondary,
-                        height: 1.45,
-                      ),
+                    color: AppConfig.textSecondary,
+                    height: 1.45,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Container(
@@ -75,8 +76,11 @@ class PrivacyPage extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.fingerprint,
-                          color: AppConfig.primaryLight, size: 22),
+                      const Icon(
+                        Icons.fingerprint,
+                        color: AppConfig.primaryLight,
+                        size: 22,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -84,16 +88,12 @@ class PrivacyPage extends ConsumerWidget {
                           children: [
                             Text(
                               'Tu pseudónimo',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
+                              style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(color: AppConfig.textTertiary),
                             ),
                             SelectableText(
                               user.uuid,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     fontFamily: 'monospace',
                                     fontWeight: FontWeight.w600,
@@ -105,9 +105,7 @@ class PrivacyPage extends ConsumerWidget {
                       IconButton(
                         tooltip: 'Copiar',
                         onPressed: () {
-                          Clipboard.setData(
-                            ClipboardData(text: user.uuid),
-                          );
+                          Clipboard.setData(ClipboardData(text: user.uuid));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Pseudónimo copiado'),
@@ -165,8 +163,10 @@ class PrivacyPage extends ConsumerWidget {
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.privacy_tip_outlined,
-                      color: AppConfig.primary),
+                  leading: const Icon(
+                    Icons.privacy_tip_outlined,
+                    color: AppConfig.primary,
+                  ),
                   title: const Text('Política de privacidad'),
                   subtitle: const Text('LOPDP Ecuador · tratamiento de datos'),
                   trailing: const Icon(Icons.chevron_right),
@@ -179,8 +179,10 @@ class PrivacyPage extends ConsumerWidget {
                 const Divider(height: 1, color: Colors.white24),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading:
-                      const Icon(Icons.gavel_outlined, color: AppConfig.primary),
+                  leading: const Icon(
+                    Icons.gavel_outlined,
+                    color: AppConfig.primary,
+                  ),
                   title: const Text('Términos de uso'),
                   subtitle: const Text('Condiciones del servicio Centinela'),
                   trailing: const Icon(Icons.chevron_right),
@@ -196,18 +198,18 @@ class PrivacyPage extends ConsumerWidget {
           const SizedBox(height: 24),
           Text(
             'Derecho al olvido (LOPDP Art. 19)',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             'Puedes eliminar tu cuenta y todos tus datos de forma permanente. '
             'Esta acción no se puede deshacer.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppConfig.textSecondary,
-                  height: 1.4,
-                ),
+              color: AppConfig.textSecondary,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
@@ -267,9 +269,9 @@ class PrivacyPage extends ConsumerWidget {
                   child: Text(
                     body,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppConfig.textSecondary,
-                          height: 1.5,
-                        ),
+                      color: AppConfig.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -330,7 +332,8 @@ class PrivacyPage extends ConsumerWidget {
 
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
-    ref.read(authProvider.notifier).logout();
+    // ref.read(authProvider.notifier).logout(); // método correcto: logoutUser
+    ref.read(authProvider.notifier).logoutUser();
     context.go('/auth');
   }
 }
@@ -360,9 +363,9 @@ class _SectionCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -401,15 +404,15 @@ class _DataRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   detail,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppConfig.textSecondary,
-                      ),
+                    color: AppConfig.textSecondary,
+                  ),
                 ),
               ],
             ),

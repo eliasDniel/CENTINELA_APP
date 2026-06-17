@@ -15,46 +15,48 @@ final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
   return ReportsRepositoryImpl(dataSource);
 });
 
-final recentReportsProvider =
-    FutureProvider<List<ReportEntity>>((ref) async {
+final recentReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
   final repository = ref.watch(reportsRepositoryProvider);
   final usecase = GetRecentReportsUseCase(repository);
   return usecase();
 });
 
 final submitReportProvider = FutureProvider.autoDispose
-    .family<ReportEntity, (String, String, double, double, String)>(
-  (ref, params) async {
-    final repository = ref.watch(reportsRepositoryProvider);
-    final usecase = SubmitReportUseCase(repository);
-    return usecase(params.$1, params.$2, params.$3, params.$4, params.$5);
-  },
-);
+    .family<ReportEntity, (String, String, double, double, String)>((
+      ref,
+      params,
+    ) async {
+      final repository = ref.watch(reportsRepositoryProvider);
+      final usecase = SubmitReportUseCase(repository);
+      return usecase(params.$1, params.$2, params.$3, params.$4, params.$5);
+    });
 
 final userReportsProvider = FutureProvider.autoDispose
     .family<List<ReportEntity>, String>((ref, userId) async {
-  final repository = ref.watch(reportsRepositoryProvider);
-  final usecase = GetUserHistoryUseCase(repository);
-  return usecase(userId);
-});
+      final repository = ref.watch(reportsRepositoryProvider);
+      final usecase = GetUserHistoryUseCase(repository);
+      return usecase(userId);
+    });
 
 // RF-0309: Reportes filtrados por barrio propio del usuario
 final myBarrioReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
   final authState = ref.watch(authProvider);
   final allReports = await ref.watch(recentReportsProvider.future);
-  
+
   if (authState.user == null) {
     return [];
   }
-  
+
   return allReports.where((r) => r.barrio == authState.user!.barrio).toList();
 });
 
 // RF-0309: Reportes de barrios suscritos
-final subscribedReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
+final subscribedReportsProvider = FutureProvider<List<ReportEntity>>((
+  ref,
+) async {
   final subscribed = ref.watch(barriosSubscribedProvider);
   final allReports = await ref.watch(recentReportsProvider.future);
-  
+
   return allReports.where((r) => subscribed.contains(r.barrio)).toList();
 });
 
@@ -62,10 +64,9 @@ final subscribedReportsProvider = FutureProvider<List<ReportEntity>>((ref) async
 final allReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
   final myBarrio = await ref.watch(myBarrioReportsProvider.future);
   final subscribed = await ref.watch(subscribedReportsProvider.future);
-  
+
   final combined = {...myBarrio, ...subscribed}.toList();
   combined.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-  
+
   return combined;
 });
-

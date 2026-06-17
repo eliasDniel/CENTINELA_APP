@@ -1,246 +1,213 @@
-// RF-0302: Register form widget
+// register_form.dart
+import 'package:centinela_milagro/core/utils/app_snackbar.dart';
+import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/register_form_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/app_colors.dart';
-import '../../../subscriptions/domain/constants/zonas_administrativas.dart';
+import 'custom_auth_field.dart';
 
-class RegisterForm extends StatefulWidget {
-  final VoidCallback onSubmit;
-  final Function(String, String, String, String, String?) onRegister;
-  final bool isLoading;
-
-  const RegisterForm({
-    super.key,
-    required this.onSubmit,
-    required this.onRegister,
-    required this.isLoading,
-  });
+class RegisterForm extends ConsumerStatefulWidget {
+  const RegisterForm({super.key});
 
   @override
-  State<RegisterForm> createState() => _RegisterFormState();
+  ConsumerState<RegisterForm> createState() => _RegisterFormState();
 }
 
-class _RegisterFormState extends State<RegisterForm> {
-  late TextEditingController _aliasController;
-  late TextEditingController _passwordController;
-  late TextEditingController _phoneController;
-  bool _obscurePassword = true;
-  String? _aliasError;
-  String? _passwordError;
-  String? _zonaError;
-  String? _barrioError;
-  String _selectedZona = kZonasAdministrativas.first;
-  String? _selectedBarrio;
-
-  List<String> get _barriosDeZonaSeleccionada =>
-      barriosDeZona(_selectedZona);
-
-  bool get _requiereBarrio => zonaTieneBarrios(_selectedZona);
+class _RegisterFormState extends ConsumerState<RegisterForm> {
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _aliasCtrl;
+  late final TextEditingController _passwordCtrl;
+  late final TextEditingController _phoneCtrl;
 
   @override
   void initState() {
     super.initState();
-    _aliasController = TextEditingController();
-    _passwordController = TextEditingController();
-    _phoneController = TextEditingController();
-    _selectedBarrio = _barriosDeZonaSeleccionada.isNotEmpty
-        ? _barriosDeZonaSeleccionada.first
-        : null;
+    _emailCtrl = TextEditingController();
+    _aliasCtrl = TextEditingController();
+    _passwordCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
-    _aliasController.dispose();
-    _passwordController.dispose();
-    _phoneController.dispose();
+    _emailCtrl.dispose();
+    _aliasCtrl.dispose();
+    _passwordCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
-  void _onZonaChanged(String? zona) {
-    if (zona == null) return;
-    setState(() {
-      _selectedZona = zona;
-      final barrios = barriosDeZona(zona);
-      _selectedBarrio = barrios.isNotEmpty ? barrios.first : null;
-      _zonaError = null;
-      _barrioError = null;
-    });
-  }
-
-  void _handleRegister() {
-    setState(() {
-      _aliasError =
-          _aliasController.text.isEmpty ? 'El alias no puede estar vacío' : null;
-      _passwordError = _passwordController.text.isEmpty
-          ? 'La contraseña no puede estar vacía'
-          : null;
-      _zonaError =
-          _selectedZona.isEmpty ? 'La zona no puede estar vacía' : null;
-      _barrioError = _requiereBarrio &&
-              (_selectedBarrio == null || _selectedBarrio!.isEmpty)
-          ? 'Debes seleccionar un barrio'
-          : null;
-    });
-
-    if (_aliasError == null &&
-        _passwordError == null &&
-        _zonaError == null &&
-        _barrioError == null) {
-      widget.onRegister(
-        _aliasController.text,
-        _passwordController.text,
-        _selectedZona,
-        _selectedBarrio ?? '',
-        _phoneController.text.isNotEmpty ? _phoneController.text : null,
-      );
-    }
+  void _clearFields() {
+    _emailCtrl.clear();
+    _aliasCtrl.clear();
+    _passwordCtrl.clear();
+    _phoneCtrl.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    final registerForm = ref.watch(registerFormProvider);
+    final notifier = ref.read(registerFormProvider.notifier);
+
+    ref.listen(registerFormProvider, (previous, next) {
+      if (next.isRegistered && !(previous?.isRegistered ?? false)) {
+        _clearFields();
+        AppSnackBar.show(
+          context,
+          message: 'Revisa tu email para verificar tu cuenta',
+          type: SnackBarType.success,
+        );
+      }
+
+      if (next.errorMessage.isNotEmpty &&
+          previous?.errorMessage != next.errorMessage) {
+        AppSnackBar.show(
+          context,
+          message: next.errorMessage,
+          type: SnackBarType.error,
+        );
+      }
+    });
+
     return Column(
       children: [
-        TextFormField(
-          controller: _aliasController,
-          decoration: InputDecoration(
-            labelText: 'Alias',
-            hintText: 'Tu pseudónimo',
-            errorText: _aliasError,
-            errorBorder: _aliasError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-          ),
-          enabled: !widget.isLoading,
+        CustomAuthField(
+          controller: _emailCtrl,
+          isTopField: true,
+          label: 'Correo electrónico',
+          hint: 'ejemplo@correo.com',
+          prefixIcon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          enabled: !registerForm.isPosting,
+          errorMessage: registerForm.email.errorMessage,
+          onChanged: notifier.onEmailChanged,
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _passwordController,
-          decoration: InputDecoration(
-            labelText: 'Contraseña',
-            hintText: 'Tu contraseña',
-            errorText: _passwordError,
-            errorBorder: _passwordError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-              ),
-              onPressed: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
-            ),
-          ),
-          obscureText: _obscurePassword,
-          enabled: !widget.isLoading,
+        CustomAuthField(
+          controller: _aliasCtrl,
+          label: 'Alias',
+          hint: 'NICKNAME DE BATALLA',
+          prefixIcon: Icons.person_outline,
+          enabled: !registerForm.isPosting,
+          errorMessage: registerForm.alias.errorMessage,
+          onChanged: notifier.onAliasChanged,
         ),
         const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          value: _selectedZona,
-          decoration: InputDecoration(
-            labelText: 'Zona administrativa',
-            errorText: _zonaError,
-            errorBorder: _zonaError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-          ),
-          items: kZonasAdministrativas.map((zona) {
-            return DropdownMenuItem(value: zona, child: Text(zona));
-          }).toList(),
-          onChanged: !widget.isLoading ? _onZonaChanged : null,
+        _CustomPasswordField(
+          controller: _passwordCtrl,
+          isPosting: registerForm.isPosting,
+          isFormPosted: registerForm.isFormPosted,
+          passwordValid: registerForm.password.isValid,
+          errorMessage: registerForm.password.errorMessage,
+          onChanged: notifier.onPasswordChanged,
         ),
-        if (_requiereBarrio) ...[
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: _selectedBarrio,
-            decoration: InputDecoration(
-              labelText: 'Barrio',
-              errorText: _barrioError,
-              errorBorder: _barrioError != null
-                  ? OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppConfig.error, width: 2),
-                    )
-                  : null,
-            ),
-            items: _barriosDeZonaSeleccionada.map((barrio) {
-              return DropdownMenuItem(value: barrio, child: Text(barrio));
-            }).toList(),
-            onChanged: !widget.isLoading
-                ? (value) {
-                    setState(() {
-                      _selectedBarrio = value;
-                      _barrioError = null;
-                    });
-                  }
-                : null,
-          ),
-        ] else ...[
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppConfig.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppConfig.border),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: AppConfig.primary, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Esta zona no tiene barrios específicos. '
-                    'Las alertas se mostrarán a nivel de toda la zona.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppConfig.textSecondary,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _phoneController,
-          decoration: const InputDecoration(
-            labelText: 'Teléfono (opcional)',
-            hintText: 'opcional — se cifra en reposo',
-          ),
-          enabled: !widget.isLoading,
+        CustomAuthField(
+          controller: _phoneCtrl,
+          isBottomField: true,
+          label: 'Teléfono (opcional)',
+          hint: '09XXXXXXXX',
+          prefixIcon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          enabled: !registerForm.isPosting,
+          onChanged: notifier.onPhoneChanged,
+          // Solo muestra error si tiene contenido
+          errorMessage: registerForm.phone.value.isEmpty
+              ? null
+              : registerForm.phone.errorMessage,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+DropdownButtonFormField<ZonaEntity>(
+  value: registerForm.zona.value.isNotEmpty
+      ? registerForm.zonas.firstWhere(
+          (zona) => zona.id == registerForm.zona.value,
+          orElse: () => registerForm.zonas.first,
+        )
+      : null,
+  decoration: const InputDecoration(
+    labelText: 'Zona / Parroquia',
+    prefixIcon: Icon(Icons.map_outlined),
+    floatingLabelBehavior: FloatingLabelBehavior.always, // <-- esto
+  ),
+  hint: const Text('Selecciona una zona'), // <-- opcional pero recomendado
+  items: registerForm.zonas.map((zona) {
+    return DropdownMenuItem(value: zona, child: Text(zona.nombre));
+  }).toList(),
+  onChanged: registerForm.isPosting
+      ? null
+      : (value) {
+          if (value != null) notifier.onZonaChanged(value.id);
+        },
+  validator: (_) =>
+      registerForm.isFormPosted && !registerForm.zona.isValid
+          ? registerForm.zona.errorMessage
+          : null,
+),
+        const SizedBox(height: 24),
+
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: widget.isLoading ? null : _handleRegister,
-            child: widget.isLoading
+            onPressed: registerForm.isPosting ? null : notifier.onSubmit,
+            child: registerForm.isPosting
                 ? const SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppConfig.textPrimary,
+                      ),
                     ),
                   )
-                : const Text('Registrarse'),
+                : const Text('Crear cuenta'),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CustomPasswordField extends StatefulWidget {
+  final TextEditingController controller;
+  final bool isPosting;
+  final bool isFormPosted;
+  final bool passwordValid;
+  final String? errorMessage;
+  final ValueChanged<String> onChanged;
+
+  const _CustomPasswordField({
+    required this.controller,
+    required this.isPosting,
+    required this.isFormPosted,
+    required this.passwordValid,
+    required this.errorMessage,
+    required this.onChanged,
+  });
+
+  @override
+  State<_CustomPasswordField> createState() => _CustomPasswordFieldState();
+}
+
+class _CustomPasswordFieldState extends State<_CustomPasswordField> {
+  bool _obscure = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomAuthField(
+      controller: widget.controller,
+      label: 'Contraseña',
+      hint: 'Mínimo 6 caracteres',
+      prefixIcon: Icons.lock_outline,
+      obscureText: _obscure,
+      enabled: !widget.isPosting,
+      errorMessage: widget.errorMessage,
+      onChanged: widget.onChanged,
+      suffixIcon: IconButton(
+        icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+        onPressed: () => setState(() => _obscure = !_obscure),
+      ),
     );
   }
 }

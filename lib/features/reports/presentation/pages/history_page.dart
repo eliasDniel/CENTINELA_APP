@@ -22,7 +22,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     return Consumer(
       builder: (context, ref, _) {
         final authState = ref.watch(authProvider);
-        final isVisitor = authState.user?.isVisitor ?? false;
+        // final isVisitor = authState.user?.isVisitor ?? false;
+        final isVisitor = authState.user == null;
         final userId = authState.user?.uuid ?? '';
 
         return Scaffold(

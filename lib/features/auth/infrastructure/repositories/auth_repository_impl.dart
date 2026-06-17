@@ -1,50 +1,41 @@
-// RF-0301, RF-0302: Auth repository implementation
-import '../../domain/entities/user_entity.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../datasources/auth_local_datasource.dart';
+import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
 
-class AuthRepositoryImpl implements AuthRepository {
-  final AuthLocalDataSource localDataSource;
+import '../../domain/domain.dart';
 
-  AuthRepositoryImpl(this.localDataSource);
+class AuthRepositoryImpl extends AuthRepository {
+  final AuthDatasource dataSources;
+
+  AuthRepositoryImpl({required this.dataSources});
 
   @override
-  Future<UserEntity> login(String alias, String password) async {
-    final model = await localDataSource.login(alias, password);
-    return model.toEntity();
+  Future<UserEntity> checkStatus(String token) {
+    return dataSources.checkStatus(token);
   }
 
   @override
-  Future<UserEntity> register(
-    String alias,
-    String password,
-    String zona,
-    String barrio, {
+  Future<UserEntity> login(String email, String password) {
+    return dataSources.login(email, password);
+  }
+
+  @override
+  Future<bool> register({
+    required String email,
+    required String password,
+    required String alias,
     String? phone,
-  }) async {
-    final model = await localDataSource.register(
-      alias,
-      password,
-      zona,
-      barrio,
+    required String zonaId,
+  }) {
+    return dataSources.register(
+      email: email,
+      password: password,
+      alias: alias,
       phone: phone,
+      zonaId: zonaId,
     );
-    return model.toEntity();
   }
 
   @override
-  Future<UserEntity> loginAsVisitor() async {
-    final model = await localDataSource.loginAsVisitor();
-    return model.toEntity();
-  }
-
-  @override
-  Future<UserEntity> updateLocation(
-    String alias,
-    String zona,
-    String barrio,
-  ) async {
-    final model = await localDataSource.updateLocation(alias, zona, barrio);
-    return model.toEntity();
+  Future<List<ZonaEntity>> getZonas() {
+    return dataSources.getZonas();
   }
 }
