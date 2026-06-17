@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
 import 'package:centinela_milagro/features/auth/domain/repositories/auth_repositories.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_provider.dart';
@@ -58,7 +60,7 @@ class RegisterFormState {
       phone: phone ?? this.phone,
       password: password ?? this.password,
       zona: zona ?? this.zona,
-      zonas: zonas ?? this.zonas
+      zonas: zonas ?? this.zonas,
     );
   }
 }
@@ -113,16 +115,27 @@ class RegisterFormNotifier extends StateNotifier<RegisterFormState> {
     );
   }
 
-void onPhoneChanged(String value) {
-  final phone = Phone.dirty(value);
-  state = state.copyWith(
-    phone: phone,
-    // Solo bloquea el form si el teléfono tiene contenido Y es inválido
-    isValid: value.isEmpty
-        ? Formz.validate([state.email, state.alias, state.password, state.zona])
-        : Formz.validate([phone, state.email, state.alias, state.password, state.zona]),
-  );
-}
+  void onPhoneChanged(String value) {
+    final phone = Phone.dirty(value);
+    state = state.copyWith(
+      phone: phone,
+      // Solo bloquea el form si el teléfono tiene contenido Y es inválido
+      isValid: value.isEmpty
+          ? Formz.validate([
+              state.email,
+              state.alias,
+              state.password,
+              state.zona,
+            ])
+          : Formz.validate([
+              phone,
+              state.email,
+              state.alias,
+              state.password,
+              state.zona,
+            ]),
+    );
+  }
 
   void onZonaChanged(String value) {
     final zona = Zona.dirty(value);
@@ -138,23 +151,22 @@ void onPhoneChanged(String value) {
 
     state = state.copyWith(isPosting: true, errorMessage: '');
 
-    //final isSuccess = await registerFormCallback(
-    //  email: state.email.value,
-    //  password: state.password.value,
-    //  alias: state.alias.value,
-    //  phone: state.phone.value.isEmpty ? null : state.phone.value,
-    //  zonaId: state.zona.value,
-    //);
-    final isSuccess = true;
-    _resetForm();
-    //if (true) {
+    final isSuccess = await registerFormCallback(
+      email: state.email.value,
+      password: state.password.value,
+      alias: state.alias.value,
+      phone: state.phone.value.isEmpty ? null : state.phone.value,
+      zonaId: state.zona.value,
+    );
 
-    //} else {
-    //  state = state.copyWith(
-    //    isPosting: false,
-    //    errorMessage: 'Error al registrar',
-    //  );
-    //}
+    if (isSuccess) {
+      _resetForm();
+    } else {
+      state = state.copyWith(
+        isPosting: false,
+        errorMessage: 'Error al registrar',
+      );
+    }
 
     state = state.copyWith(
       isPosting: false,
@@ -162,25 +174,27 @@ void onPhoneChanged(String value) {
       errorMessage: isSuccess ? '' : 'Error al registrar',
     );
   }
-void _touchEveryField() {
-  final email = Email.dirty(state.email.value);
-  final password = Password.dirty(state.password.value);
-  final alias = Alias.dirty(state.alias.value);
-  final zona = Zona.dirty(state.zona.value);
-  final phone = Phone.dirty(state.phone.value);
 
-  state = state.copyWith(
-    isFormPosted: true,
-    email: email,
-    password: password,
-    alias: alias,
-    zona: zona,
-    phone: phone,
-    isValid: state.phone.value.isEmpty
-        ? Formz.validate([email, password, alias, zona])
-        : Formz.validate([email, password, alias, zona, phone]),
-  );
-}
+  void _touchEveryField() {
+    final email = Email.dirty(state.email.value);
+    final password = Password.dirty(state.password.value);
+    final alias = Alias.dirty(state.alias.value);
+    final zona = Zona.dirty(state.zona.value);
+    final phone = Phone.dirty(state.phone.value);
+
+    state = state.copyWith(
+      isFormPosted: true,
+      email: email,
+      password: password,
+      alias: alias,
+      zona: zona,
+      phone: phone,
+      isValid: state.phone.value.isEmpty
+          ? Formz.validate([email, password, alias, zona])
+          : Formz.validate([email, password, alias, zona, phone]),
+    );
+  }
+
   Future<void> loadZonas() async {
     final result = await authRepository.getZonas();
     state = state.copyWith(zonas: result);
