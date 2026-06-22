@@ -127,7 +127,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             onPressed: () {
                               Navigator.pop(context);
                               authNotifier.logoutUser();
-                              context.go('/auth');
+                          
                             },
                             child: const Text('Cerrar sesión'),
                           ),

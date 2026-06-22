@@ -2,6 +2,7 @@ import 'package:centinela_milagro/core/utils/router_notifier.dart';
 import 'package:centinela_milagro/features/auth/presentation/screens/auth_page.dart';
 import 'package:centinela_milagro/features/auth/presentation/screens/forgot_password_page.dart';
 import 'package:centinela_milagro/features/auth/presentation/screens/reset_password_page.dart';
+import 'package:centinela_milagro/features/auth/presentation/screens/onboarding_page.dart';
 import 'package:centinela_milagro/features/auth/presentation/screens/splash_page.dart';
 import 'package:centinela_milagro/features/core/presentation/pages/shell_page.dart';
 import 'package:centinela_milagro/features/notifications/presentation/notifications_screens.dart';
@@ -37,7 +38,14 @@ final appRouterProvider = Provider((ref) {
       ),
       GoRoute(
         path: '/reset-password',
-        builder: (context, state) => const ResetPasswordPage(),
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          return ResetPasswordPage(resetToken: token);
+        },
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingPage(),
       ),
 
       // App principal
@@ -104,31 +112,40 @@ final appRouterProvider = Provider((ref) {
     redirect: (context, state) {
       final isGoingTo = state.matchedLocation;
       final authStatus = goRouterNotifier.authStatus;
+      final onboardingCompleted = goRouterNotifier.onboardingCompleted;
 
-      // Splash: esperar mientras verifica
-      if (isGoingTo == '/splash' && authStatus == AuthStatus.checking) {
-        return null;
+      if (authStatus == AuthStatus.checking || onboardingCompleted == null) {
+        if (isGoingTo == '/splash') return null;
+        return '/splash';
       }
 
-      // No autenticado: solo puede ir a login, register, forgot/reset password
       if (authStatus == AuthStatus.unauthenticated) {
-        final allowedRoutes = [
+        const allowedRoutes = [
           '/login',
           '/register',
           '/forgot-password',
           '/reset-password',
+          '/onboarding',
         ];
         if (allowedRoutes.contains(isGoingTo)) return null;
+        if (isGoingTo == '/splash') {
+          return onboardingCompleted ? '/login' : '/onboarding';
+        }
         return '/login';
       }
 
-      // Autenticado: no puede volver a auth screens
       if (authStatus == AuthStatus.authenticated) {
-        final authRoutes = ['/login', '/register', '/splash'];
+        const authRoutes = [
+          '/login',
+          '/register',
+          '/splash',
+          '/onboarding',
+        ];
         if (authRoutes.contains(isGoingTo)) return '/home/0';
       }
 
       return null;
     },
+    
   );
 });

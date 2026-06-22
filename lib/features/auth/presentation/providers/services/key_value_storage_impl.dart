@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'key_value_storage.dart';
 
 class KeyValueStorageImpl implements KeyValueStorageService {

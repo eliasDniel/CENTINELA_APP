@@ -1,16 +1,18 @@
 // RF: Onboarding page - Introduction to users
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/app_colors.dart';
+import '../providers/onboarding_provider.dart';
 
-class OnboardingPage extends StatefulWidget {
+class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
+  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends State<OnboardingPage> {
+class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -44,6 +46,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
+  Future<void> _finishOnboarding() async {
+    await ref.read(onboardingCompletedProvider.notifier).complete();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +74,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             right: 16,
             child: _currentPage < _slides.length - 1
                 ? TextButton(
-                    onPressed: () => context.go('/auth'),
+                    onPressed: _finishOnboarding,
                     child: const Text('Saltar'),
                   )
                 : const SizedBox.shrink(),
@@ -100,7 +108,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: ElevatedButton(
               onPressed: () {
                 if (_currentPage == _slides.length - 1) {
-                  context.go('/auth');
+                  _finishOnboarding();
                 } else {
                   _pageController.nextPage(
                     duration: const Duration(milliseconds: 300),

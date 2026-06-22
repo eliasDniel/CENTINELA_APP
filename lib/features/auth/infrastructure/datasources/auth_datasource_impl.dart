@@ -1,4 +1,6 @@
 import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
+import 'package:centinela_milagro/features/auth/infrastructure/models/check_status.dart';
+import 'package:centinela_milagro/features/auth/infrastructure/utils/auth_refresh_lock.dart';
 
 import 'package:dio/dio.dart';
 
@@ -48,25 +50,46 @@ class AuthDataSourceImpl extends AuthDatasource {
           'zonaId': zonaId,
         },
       );
-      return response.statusCode == 201;
+      return response.statusCode == 201 || response.statusCode == 200;
     } on DioException catch (e) {
       _handleDioError(e);
     }
   }
 
   @override
-  Future<UserEntity> checkStatus(String token) async {
-    try {
-      final refreshToken = await keyValueStorageService.getValue<String>(
-        'refresh_token',
-      );
-      if (refreshToken == null) throw CustomError('No refresh token');
+  Future<UserEntity> checkStatus(String token) {
+    return AuthRefreshLock.run(() => _refreshSession(token));
+  }
 
+  Future<UserEntity> _refreshSession(String token) async {
+    try {
       final response = await _dio.post(
         '/auth/refresh',
+        data: {'refreshToken': token},
+      );
+      return UserMappers.fromCheckStatus(
+        CheckStatusResponse.fromJson(
+          Map<String, dynamic>.from(response.data as Map),
+        ),
+      );
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  @override
+  Future<bool> logout(String refreshToken) async {
+    try {
+      final response = await _dio.post(
+        '/auth/logout',
         data: {'refreshToken': refreshToken},
       );
-      return UserMappers.fromCheckStatus(response.data);
+      if (response.statusCode == 200) {
+        await keyValueStorageService.removeKey('token');
+        await keyValueStorageService.removeKey('refresh_token');
+        return true;
+      }
+      throw CustomError(response.data['message']);
     } on DioException catch (e) {
       _handleDioError(e);
     }
@@ -83,6 +106,44 @@ class AuthDataSourceImpl extends AuthDatasource {
     }
   }
 
+  @override
+  Future<PasswordRecoveryResult> forgotPassword(String email) async {
+    try {
+      final response = await _dio.post(
+        '/auth/forgot-password',
+        data: {'email': email.trim()},
+      );
+      final data = Map<String, dynamic>.from(response.data as Map);
+      return PasswordRecoveryResult(
+        message: data['message']?.toString() ??
+            'Si el correo existe, se ha enviado un token de recuperación.',
+        resetToken: data['tokenResetPwd']?.toString(),
+      );
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  @override
+  Future<String> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/reset-password',
+        data: {
+          'token': token.trim(),
+          'newPassword': newPassword,
+        },
+      );
+      final data = Map<String, dynamic>.from(response.data as Map);
+      return data['message']?.toString() ?? 'Contraseña actualizada correctamente';
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
   Never _handleDioError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout) {
       throw CustomError('Revisar conexión');
@@ -91,6 +152,9 @@ class AuthDataSourceImpl extends AuthDatasource {
       throw CustomError(
         e.response?.data['message'] ?? 'Credenciales inválidas',
       );
+    }
+    if (e.response?.data is Map && e.response?.data['message'] != null) {
+      throw CustomError(e.response!.data['message'].toString());
     }
     throw CustomError('Error inesperado');
   }

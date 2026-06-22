@@ -1,6 +1,7 @@
 // register_form.dart
 import 'package:centinela_milagro/core/utils/app_snackbar.dart';
 import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/auth_provider.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/register_form_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,9 +21,11 @@ class _RegisterFormState extends ConsumerState<RegisterForm> {
   late final TextEditingController _passwordCtrl;
   late final TextEditingController _phoneCtrl;
 
+
   @override
   void initState() {
     super.initState();
+    ref.read(registerFormProvider.notifier).loadZonas();
     _emailCtrl = TextEditingController();
     _aliasCtrl = TextEditingController();
     _passwordCtrl = TextEditingController();

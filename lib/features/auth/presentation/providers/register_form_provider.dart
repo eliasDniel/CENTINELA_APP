@@ -79,9 +79,7 @@ class RegisterFormNotifier extends StateNotifier<RegisterFormState> {
   RegisterFormNotifier({
     required this.registerFormCallback,
     required this.authRepository,
-  }) : super(RegisterFormState()) {
-    loadZonas();
-  }
+  }) : super(RegisterFormState());
 
   void onAliasChanged(String value) {
     final alias = Alias.dirty(value);

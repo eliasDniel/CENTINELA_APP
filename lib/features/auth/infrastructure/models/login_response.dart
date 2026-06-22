@@ -17,8 +17,8 @@ class LoginResponse {
     accessToken: json["accessToken"],
     refreshToken: json["refreshToken"],
     user: User.fromJson(json["user"]),
-    message: json["message"],
-    zonaPrincipalId: json["zonaPrincipalId"],
+    message: json["message"] ?? '',
+    zonaPrincipalId: json["zonaPrincipalId"]?.toString() ?? '',
   );
 
   Map<String, dynamic> toJson() => {

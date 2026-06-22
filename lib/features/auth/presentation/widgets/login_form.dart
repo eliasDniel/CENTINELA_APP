@@ -76,7 +76,7 @@ class _LoginFormState extends ConsumerState<LoginForm> {
           child: TextButton(
             onPressed: loginForm.isPosting
                 ? null
-                : () => context.push('/auth/forgot-password'),
+                : () => context.push('/forgot-password'),
             child: const Text('¿Olvidaste tu contraseña?'),
           ),
         ),

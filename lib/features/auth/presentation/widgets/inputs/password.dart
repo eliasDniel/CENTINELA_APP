@@ -35,4 +35,14 @@ class Password extends FormzInput<String, PasswordError> {
 
     return null;
   }
+
+  /// Validación alineada con ms-auth (`@MinLength(8)` + `@IsStrongPassword`).
+  static String? validateStrongPassword(String value) {
+    if (value.isEmpty || value.trim().isEmpty) return 'El campo es requerido';
+    if (value.length < 8) return 'Mínimo 8 caracteres';
+    if (!passwordRegExp.hasMatch(value)) {
+      return 'Debe tener mayúscula, minúscula y un número';
+    }
+    return null;
+  }
 }

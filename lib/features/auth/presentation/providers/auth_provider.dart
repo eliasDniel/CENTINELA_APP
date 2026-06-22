@@ -1,4 +1,6 @@
+import 'package:centinela_milagro/features/auth/infrastructure/utils/access_token.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_repository_provider.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/auth_session_keys.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/services/key_value_storage_impl.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../../domain/domain.dart';
@@ -17,6 +19,7 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository authRepository;
   final KeyValueStorageService keyValueStorageService;
+  bool _isCheckingAuth = false;
 
   AuthNotifier({
     required this.authRepository,
@@ -28,8 +31,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> loginUser(String email, String password) async {
     try {
       final user = await authRepository.login(email, password);
-
-      _setLoggedUser(user);
+      await _setLoggedUser(user);
       return true;
     } on CustomError catch (e) {
       logoutUser(e.message);
@@ -60,24 +62,147 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   void checkAuthStatus() async {
-    final token = await keyValueStorageService.getValue<String>('token');
-    if (token == null) {
-      return logoutUser();
-    }
+    if (_isCheckingAuth) return;
+    _isCheckingAuth = true;
+
     try {
-      final user = await authRepository.checkStatus(token);
-      _setLoggedUser(user);
+      final refreshToken = await keyValueStorageService.getValue<String>(
+        AuthSessionKeys.refreshToken,
+      );
+      if (refreshToken == null) {
+        return logoutUser();
+      }
+
+      final accessToken = await keyValueStorageService.getValue<String>(
+        AuthSessionKeys.token,
+      );
+
+      // Hot reload / re-apertura: no rotar el refresh si el JWT aún es válido.
+      if (accessToken != null && isAccessTokenValid(accessToken)) {
+        final restored = await _restoreUserFromStorage(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+        if (restored != null) {
+          state = state.copyWith(
+            authStatus: AuthStatus.authenticated,
+            user: restored,
+            errorMessage: '',
+          );
+          return;
+        }
+      }
+
+      final user = await authRepository.checkStatus(refreshToken);
+      await _setLoggedUser(user);
     } catch (e) {
-      logoutUser();
+      if (e is CustomError && e.message == 'Revisar conexión') {
+        final offline = await _tryRestoreOfflineSession();
+        if (offline != null) {
+          state = state.copyWith(
+            authStatus: AuthStatus.authenticated,
+            user: offline,
+            errorMessage: '',
+          );
+          return;
+        }
+      }
+
+      final recovered = await _tryRecoverSessionAfterRefreshRace();
+      if (recovered == null) {
+        logoutUser();
+      }
+    } finally {
+      _isCheckingAuth = false;
     }
   }
 
-  void _setLoggedUser(UserEntity user) async {
-    await keyValueStorageService.setKeyValue('token', user.token);
+  Future<UserEntity?> _tryRestoreOfflineSession() async {
+    final accessToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.token,
+    );
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (accessToken == null || refreshToken == null) return null;
+    if (!isAccessTokenValid(accessToken)) return null;
+
+    return _restoreUserFromStorage(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+  }
+
+  Future<UserEntity?> _tryRecoverSessionAfterRefreshRace() async {
+    final accessToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.token,
+    );
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (accessToken == null || refreshToken == null) return null;
+    if (!isAccessTokenValid(accessToken)) return null;
+
+    final recovered = await _restoreUserFromStorage(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+    if (recovered == null) return null;
+
+    state = state.copyWith(
+      authStatus: AuthStatus.authenticated,
+      user: recovered,
+      errorMessage: '',
+    );
+    return recovered;
+  }
+
+  Future<UserEntity?> _restoreUserFromStorage({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    final uuid = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userUuid,
+    );
+    final email = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userEmail,
+    );
+    final rol = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userRol,
+    );
+    final zonaId = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userZonaId,
+    );
+
+    if (uuid == null || email == null || rol == null) return null;
+
+    return UserEntity(
+      uuid: uuid,
+      email: email,
+      rol: rol,
+      token: accessToken,
+      refreshToken: refreshToken,
+      zonaId: zonaId ?? '',
+    );
+  }
+
+  Future<void> _setLoggedUser(UserEntity user) async {
+    await keyValueStorageService.setKeyValue(AuthSessionKeys.token, user.token);
     await keyValueStorageService.setKeyValue(
-      'refresh_token',
+      AuthSessionKeys.refreshToken,
       user.refreshToken,
-    ); // <-- nuevo
+    );
+    await keyValueStorageService.setKeyValue(AuthSessionKeys.userUuid, user.uuid);
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userEmail,
+      user.email,
+    );
+    await keyValueStorageService.setKeyValue(AuthSessionKeys.userRol, user.rol);
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userZonaId,
+      user.zonaId,
+    );
+
     state = state.copyWith(
       authStatus: AuthStatus.authenticated,
       user: user,
@@ -86,12 +211,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logoutUser([String? errorMessage]) async {
-    await keyValueStorageService.removeKey('token');
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (refreshToken != null) {
+      try {
+        await authRepository.logout(refreshToken);
+      } catch (_) {
+        // Si la sesión ya expiró, igual limpiamos el almacenamiento local.
+      }
+    }
+
+    await _clearStoredSession();
+
     state = state.copyWith(
       authStatus: AuthStatus.unauthenticated,
       user: null,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? '',
     );
+  }
+
+  Future<void> _clearStoredSession() async {
+    for (final key in AuthSessionKeys.all) {
+      await keyValueStorageService.removeKey(key);
+    }
   }
 }
 

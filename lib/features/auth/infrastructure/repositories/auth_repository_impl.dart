@@ -34,8 +34,27 @@ class AuthRepositoryImpl extends AuthRepository {
     );
   }
 
+    
+  @override
+  Future<bool> logout(String token) {
+    return dataSources.logout(token);
+  }
+
   @override
   Future<List<ZonaEntity>> getZonas() {
     return dataSources.getZonas();
+  }
+
+  @override
+  Future<PasswordRecoveryResult> forgotPassword(String email) {
+    return dataSources.forgotPassword(email);
+  }
+
+  @override
+  Future<String> resetPassword({
+    required String token,
+    required String newPassword,
+  }) {
+    return dataSources.resetPassword(token: token, newPassword: newPassword);
   }
 }
