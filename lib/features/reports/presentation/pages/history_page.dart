@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/reports_provider.dart';
-import '../../domain/constants/incident_types.dart';
 import '../widgets/report_card_widget.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
@@ -17,6 +16,18 @@ class HistoryPage extends ConsumerStatefulWidget {
 
 class _HistoryPageState extends ConsumerState<HistoryPage> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadReports());
+  }
+
+  void _loadReports() {
+    if (ref.read(authProvider).user != null) {
+      ref.read(reportsProvider.notifier).loadHistory();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Consumer(
@@ -24,7 +35,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
         final authState = ref.watch(authProvider);
         // final isVisitor = authState.user?.isVisitor ?? false;
         final isVisitor = authState.user == null;
-        final userId = authState.user?.uuid ?? '';
 
         return Scaffold(
           body: SafeArea(
@@ -49,28 +59,29 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                   )
                 : RefreshIndicator(
                     onRefresh: () async {
-                      await Future.delayed(const Duration(seconds: 1));
+                      if (ref.read(authProvider).user != null) {
+                        await ref.read(reportsProvider.notifier).loadHistory();
+                      }
                     },
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final userReportsAsync = ref.watch(
-                          userReportsProvider(userId),
-                        );
-                        return userReportsAsync.when(
-                          loading: () =>
-                              const Center(child: CircularProgressIndicator()),
-                          error: (err, stack) =>
-                              Center(child: Text('Error: $err')),
-                          data: (reports) {
-                            int countByType(String type) =>
-                                reports.where((r) => r.type == type).length;
+                    child: Builder(
+                      builder: (context) {
+                        final reportsState = ref.watch(reportsProvider);
 
-                            const statTypes = [
-                              'robo',
-                              'sicariato',
-                              'sospechoso',
-                              'accidente',
-                            ];
+                        if (reportsState.isLoading && reportsState.reports.isEmpty) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (reportsState.errorMessage.isNotEmpty &&
+                            reportsState.reports.isEmpty) {
+                          return Center(
+                            child: Text('Error: ${reportsState.errorMessage}'),
+                          );
+                        }
+
+                        final reports = reportsState.reports;
+                         
 
                             return ListView(
                               padding: const EdgeInsets.all(0),
@@ -109,84 +120,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                     ),
                                   ),
                                 ),
-                                // SECCIÓN GRID STATS → 40% de pantalla
-                                SizedBox(
-                                  height: size.height * 0.40,
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: AppConfig.horizontalMargin,
-                                    ),
-                                    child: GridView.count(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
-                                      childAspectRatio:
-                                          (size.width / 2 -
-                                              AppConfig.horizontalMargin -
-                                              5) /
-                                          ((size.height * 0.40 - 10) / 2),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      children: statTypes
-                                          .map(
-                                            (type) => _StatCard(
-                                              icon: incidentTypeIcon(type),
-                                              iconColor: incidentTypeColor(
-                                                type,
-                                              ),
-                                              number: '${countByType(type)}',
-                                              label: incidentTypeLabel(type),
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ),
-                                ),
-
-                                // SECCIÓN HEADER REPORTES RECIENTES → 10% de pantalla
-                                SizedBox(
-                                  height: size.height * 0.10,
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: AppConfig.horizontalMargin,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        const Text(
-                                          'Reportes Recientes',
-                                          style: TextStyle(
-                                            color: Color(0xFF8A8A8E),
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                        TextButton.icon(
-                                          icon: const Icon(
-                                            Icons.filter_list,
-                                            size: 16,
-                                          ),
-                                          label: const Text('Filtrar'),
-                                          onPressed: () {},
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: const Color(
-                                              0xFF1E90FF,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
+                               
                                 // SECCIÓN LISTA → 40% restante
                                 SizedBox(
-                                  height: size.height * 0.40,
+                                  height: size.height * 0.80,
                                   child: reports.isEmpty
                                       ? Center(
                                           child: Column(
@@ -225,8 +162,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 ),
                               ],
                             );
-                          },
-                        );
                       },
                     ),
                   ),

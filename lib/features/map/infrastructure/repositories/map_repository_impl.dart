@@ -1,39 +1,15 @@
-// RF-0306: implementación del repositorio del mapa
+import 'package:centinela_milagro/features/map/domain/datasources/map_datasource.dart';
+
 import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/repositories/map_repository.dart';
-import '../datasources/map_local_datasource.dart';
 
 class MapRepositoryImpl implements MapRepository {
-  final MapLocalDataSource localDataSource;
+  final MapDatasource datasources;
 
-  MapRepositoryImpl(this.localDataSource);
-
-  @override
-  Future<List<MapAlertEntity>> getActiveAlerts() {
-    return localDataSource.getActiveAlerts();
-  }
+  MapRepositoryImpl({required this.datasources});
 
   @override
-  MapAlertEntity generateIncomingAlert() {
-    return localDataSource.createIncomingAlert();
-  }
-
-  @override
-  MapAlertEntity publishSosAlert({
-    required double lat,
-    required double lng,
-    required String zona,
-    required String barrio,
-    String? pseudonym,
-    DateTime? timestamp,
-  }) {
-    return localDataSource.addSosAlert(
-      lat: lat,
-      lng: lng,
-      zona: zona,
-      barrio: barrio,
-      pseudonym: pseudonym,
-      timestamp: timestamp,
-    );
+  Future<List<AlertEntity>> getActiveAlerts() {
+    return datasources.getActiveAlerts();
   }
 }

@@ -66,7 +66,7 @@ class RegisterFormState {
 }
 
 class RegisterFormNotifier extends StateNotifier<RegisterFormState> {
-  final Future<bool> Function({
+  final Future<String?> Function({
     required String email,
     required String password,
     required String alias,
@@ -149,7 +149,7 @@ class RegisterFormNotifier extends StateNotifier<RegisterFormState> {
 
     state = state.copyWith(isPosting: true, errorMessage: '');
 
-    final isSuccess = await registerFormCallback(
+    final errorMessage = await registerFormCallback(
       email: state.email.value,
       password: state.password.value,
       alias: state.alias.value,
@@ -157,19 +157,16 @@ class RegisterFormNotifier extends StateNotifier<RegisterFormState> {
       zonaId: state.zona.value,
     );
 
+    final isSuccess = errorMessage == null;
+
     if (isSuccess) {
       _resetForm();
-    } else {
-      state = state.copyWith(
-        isPosting: false,
-        errorMessage: 'Error al registrar',
-      );
     }
 
     state = state.copyWith(
       isPosting: false,
       isRegistered: isSuccess,
-      errorMessage: isSuccess ? '' : 'Error al registrar',
+      errorMessage: errorMessage ?? '',
     );
   }
 

@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../map/presentation/providers/map_provider.dart';
 import '../../../subscriptions/domain/constants/zonas_administrativas.dart';
 import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ChangeLocationPage extends ConsumerStatefulWidget {
@@ -119,7 +120,7 @@ class _ChangeLocationPageState extends ConsumerState<ChangeLocationPage> {
       // final error = ref.read(authProvider).error;
       final error = ref.read(authProvider).errorMessage;
       if (error.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+        AppAlert.error(context, error);
       }
       return;
     }
@@ -135,14 +136,11 @@ class _ChangeLocationPageState extends ConsumerState<ChangeLocationPage> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _selectedBarrio != null && _selectedBarrio!.isNotEmpty
-                ? 'Ubicación actualizada: $_selectedZona · $_selectedBarrio'
-                : 'Zona actualizada: $_selectedZona',
-          ),
-        ),
+      AppAlert.success(
+        context,
+        _selectedBarrio != null && _selectedBarrio!.isNotEmpty
+            ? 'Ubicación actualizada: $_selectedZona · $_selectedBarrio'
+            : 'Zona actualizada: $_selectedZona',
       );
       context.pop();
     }

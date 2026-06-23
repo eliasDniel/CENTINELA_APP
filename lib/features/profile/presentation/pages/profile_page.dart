@@ -11,6 +11,7 @@ import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
 import '../../../notifications/presentation/notifications_screens.dart';
 import '../../../notifications/presentation/providers/notification_settings_provider.dart';
 import '../providers/profile_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -379,11 +380,7 @@ class CardProfile extends StatelessWidget {
             // UUID copiable
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('UUID copiado: ${authState.user?.uuid}'),
-                  ),
-                );
+                AppAlert.info(context, 'UUID copiado: ${authState.user?.uuid}');
               },
               child: Column(
                 children: [

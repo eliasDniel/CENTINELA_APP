@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class PrivacyPage extends ConsumerWidget {
@@ -106,11 +107,10 @@ class PrivacyPage extends ConsumerWidget {
                         tooltip: 'Copiar',
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: user.uuid));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pseudónimo copiado'),
-                              duration: Duration(seconds: 2),
-                            ),
+                          AppAlert.success(
+                            context,
+                            'Pseudónimo copiado',
+                            duration: const Duration(seconds: 2),
                           );
                         },
                         icon: const Icon(Icons.copy, size: 18),

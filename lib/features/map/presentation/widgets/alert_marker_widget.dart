@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../subscriptions/domain/barrio_membership.dart';
+import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
+import '../../domain/entities/map_alert_extensions.dart';
 import 'map_alert_styles.dart';
 
 class AlertMarkerWidget extends StatelessWidget {
@@ -13,7 +15,7 @@ class AlertMarkerWidget extends StatelessWidget {
     required this.onTap,
   });
 
-  final MapAlertEntity alert;
+  final AlertEntity alert;
   final BarrioMapCategory barrioCategory;
   final VoidCallback onTap;
 
@@ -42,7 +44,7 @@ class AlertMarkerWidget extends StatelessWidget {
             _PinHead(
               level: level,
               barrioBorder: barrioBorder,
-              icon: iconForAlertType(alert.type),
+              icon: iconForAlertType(alert.alertType),
               pulse: alert.level == AlertLevel.emergencia && !dimmed,
             ),
             CustomPaint(

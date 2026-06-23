@@ -1,40 +1,30 @@
-// RF-0303, RF-0304: Reports repository implementation
-import '../../domain/entities/report_entity.dart';
+import 'package:centinela_milagro/features/reports/domain/entities/report_entity.dart';
+
+import '../../domain/datasources/report_datasources.dart';
 import '../../domain/repositories/reports_repository.dart';
-import '../datasources/reports_local_datasource.dart';
 
 class ReportsRepositoryImpl implements ReportsRepository {
-  final ReportsLocalDataSource localDataSource;
+  final ReportsDatasources datasources;
 
-  ReportsRepositoryImpl(this.localDataSource);
+  ReportsRepositoryImpl({required this.datasources});
 
   @override
-  Future<List<ReportEntity>> getRecentReports() async {
-    final models = await localDataSource.getRecentReports();
-    return models.map((m) => m.toEntity()).toList();
+  Future<List<ReportEntity>> getHistoryReports() {
+    return datasources.getHistoryReports();
   }
 
   @override
-  Future<ReportEntity> submitReport(
-    String type,
-    String description,
-    double latitude,
-    double longitude,
-    String userId,
-  ) async {
-    final model = await localDataSource.submitReport(
-      type,
-      description,
-      latitude,
-      longitude,
-      userId,
-    );
-    return model.toEntity();
+  Future<ReportEntity> sosAlert(String type, String description, double latitude, double longitude) {
+    return datasources.sosAlert(type, description, latitude, longitude);
   }
 
   @override
-  Future<List<ReportEntity>> getUserHistory(String userId) async {
-    final models = await localDataSource.getUserHistory(userId);
-    return models.map((m) => m.toEntity()).toList();
+  Future<ReportEntity> submitReport(Map<String, dynamic> data) {
+    return datasources.submitReport(data);
+  }
+
+  @override
+  Future<ReportEntity> getReportById(String id) {
+    return datasources.getReportById(id);
   }
 }

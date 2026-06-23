@@ -40,7 +40,7 @@ class LoginFormState {
 }
 
 class LoginFormNotifier extends StateNotifier<LoginFormState> {
-  final Future<bool> Function({required String email, required String password})
+  final Future<String?> Function({required String email, required String password})
   loginFormCallback;
 
   LoginFormNotifier({required this.loginFormCallback})
@@ -68,14 +68,14 @@ class LoginFormNotifier extends StateNotifier<LoginFormState> {
 
     state = state.copyWith(isPosting: true, errorMessage: '');
 
-    final isSuccess = await loginFormCallback(
+    final errorMessage = await loginFormCallback(
       email: state.email.value,
       password: state.password.value,
     );
 
     state = state.copyWith(
       isPosting: false,
-      errorMessage: isSuccess ? '' : 'Credenciales inválidas',
+      errorMessage: errorMessage ?? '',
     );
   }
 

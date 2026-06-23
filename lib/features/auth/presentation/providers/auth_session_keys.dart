@@ -5,6 +5,7 @@ abstract final class AuthSessionKeys {
   static const userEmail = 'user_email';
   static const userRol = 'user_rol';
   static const userZonaId = 'user_zona_id';
+  static const userZonaNombre = 'user_zona_nombre';
 
   static const all = [
     token,
@@ -13,5 +14,6 @@ abstract final class AuthSessionKeys {
     userEmail,
     userRol,
     userZonaId,
+    userZonaNombre,
   ];
 }

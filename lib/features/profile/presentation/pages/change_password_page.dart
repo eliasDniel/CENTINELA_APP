@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ChangePasswordPage extends ConsumerStatefulWidget {
@@ -59,13 +60,8 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contraseña cambiada correctamente'),
-        backgroundColor: AppConfig.success,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    AppAlert.success(context, 'Contraseña cambiada correctamente',
+        duration: const Duration(seconds: 2));
     context.pop();
   }
 

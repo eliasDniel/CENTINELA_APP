@@ -1,4 +1,4 @@
-import 'package:centinela_milagro/core/utils/app_snackbar.dart';
+import 'package:centinela_milagro/core/utils/app_alert.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_repository_provider.dart';
 import 'package:centinela_milagro/features/auth/presentation/widgets/inputs/password.dart';
@@ -80,11 +80,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       if (!mounted) return;
       setState(() => _loading = false);
 
-      AppSnackBar.show(
-        context,
-        message: message,
-        type: SnackBarType.success,
-      );
+      AppAlert.success(context, message);
       context.go('/login');
     } on CustomError catch (e) {
       if (!mounted) return;

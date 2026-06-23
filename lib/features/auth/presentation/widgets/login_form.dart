@@ -1,5 +1,5 @@
 // login_form.dart
-import 'package:centinela_milagro/core/utils/app_snackbar.dart';
+import 'package:centinela_milagro/core/utils/app_alert.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/login_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,11 +39,7 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     ref.listen(loginFormProvider, (previous, next) {
       if (next.errorMessage.isNotEmpty &&
           previous?.errorMessage != next.errorMessage) {
-        AppSnackBar.show(
-          context,
-          message: next.errorMessage,
-          type: SnackBarType.error,
-        );
+        AppAlert.error(context, next.errorMessage);
       }
     });
 

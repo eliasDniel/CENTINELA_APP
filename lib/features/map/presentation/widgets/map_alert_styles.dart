@@ -1,7 +1,7 @@
 // Estilos suaves y consistentes para alertas en el mapa
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/map_alert_entity.dart';
+import '../../domain/constants/map_alert_enums.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
 
 class MapAlertLevelStyle {

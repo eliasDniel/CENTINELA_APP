@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/app_colors.dart';
 
+import 'sos_confirm_dialog.dart';
+
 class SOSButtonWidget extends StatefulWidget {
   final Future<void> Function() onEmergencySent;
 
@@ -102,32 +104,11 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
         ScaleTransition(
           scale: _scale,
           child: GestureDetector(
-            onTap: () {
-              showDialog<void>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: const Text('Confirmar alerta de emergencia'),
-                  content: const Text(
-                    'Se enviará tu ubicación a los contactos y operadores de Centinela Milagro.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Cancelar'),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppConfig.error,
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(dialogContext);
-                        await widget.onEmergencySent();
-                      },
-                      child: const Text('ENVIAR ALERTA'),
-                    ),
-                  ],
-                ),
-              );
+            onTap: () async {
+              final confirmed = await SosConfirmDialog.show(context);
+              if (confirmed == true) {
+                await widget.onEmergencySent();
+              }
             },
             child: Container(
               width: 180,

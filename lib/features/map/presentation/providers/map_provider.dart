@@ -1,6 +1,7 @@
 // RF-0306: estado del mapa con Riverpod
 import 'dart:async';
 
+import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -8,27 +9,16 @@ import '../../../../core/location/user_location_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../subscriptions/domain/constants/zonas_administrativas.dart';
 import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
+import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
+import '../../domain/entities/map_alert_extensions.dart';
 import '../../domain/repositories/map_repository.dart';
-import '../../domain/usecases/get_active_alerts_usecase.dart';
-import '../../infrastructure/datasources/map_local_datasource.dart';
-import '../../infrastructure/repositories/map_repository_impl.dart';
-
-final mapLocalDataSourceProvider = Provider<MapLocalDataSource>((ref) {
-  return MapLocalDataSource();
-});
-
-final mapRepositoryProvider = Provider<MapRepository>((ref) {
-  return MapRepositoryImpl(ref.watch(mapLocalDataSourceProvider));
-});
-
-final getActiveAlertsUseCaseProvider = Provider<GetActiveAlertsUseCase>((ref) {
-  return GetActiveAlertsUseCase(ref.watch(mapRepositoryProvider));
-});
+import 'map_repository_provider.dart';
 
 class MapState {
-  final List<MapAlertEntity> allAlerts;
-  final List<MapAlertEntity> filteredAlerts;
+  final List<AlertEntity> allAlerts;
+  final List<AlertEntity> filteredAlerts;
+  final Map<String, LatLng> positions;
   final AlertLevel? levelFilter;
   final AlertSource? sourceFilter;
   final bool onlyMonitoredBarrios;
@@ -37,11 +27,14 @@ class MapState {
   final int? proximityRadiusMeters;
   final int secondsSinceUpdate;
   final LatLng center;
-  final MapAlertEntity? lastIncomingAlert;
+  final AlertEntity? lastIncomingAlert;
+  final bool isLoading;
+  final String errorMessage;
 
   const MapState({
     required this.allAlerts,
     required this.filteredAlerts,
+    required this.positions,
     required this.levelFilter,
     required this.sourceFilter,
     required this.onlyMonitoredBarrios,
@@ -51,6 +44,8 @@ class MapState {
     required this.secondsSinceUpdate,
     required this.center,
     required this.lastIncomingAlert,
+    this.isLoading = false,
+    this.errorMessage = '',
   });
 
   factory MapState.initial({
@@ -61,6 +56,7 @@ class MapState {
     return MapState(
       allAlerts: const [],
       filteredAlerts: const [],
+      positions: const {},
       levelFilter: null,
       sourceFilter: null,
       onlyMonitoredBarrios: onlyMonitoredBarrios,
@@ -70,12 +66,14 @@ class MapState {
       secondsSinceUpdate: 0,
       center: milagroMapCenter,
       lastIncomingAlert: null,
+      isLoading: true,
     );
   }
 
   MapState copyWith({
-    List<MapAlertEntity>? allAlerts,
-    List<MapAlertEntity>? filteredAlerts,
+    List<AlertEntity>? allAlerts,
+    List<AlertEntity>? filteredAlerts,
+    Map<String, LatLng>? positions,
     AlertLevel? levelFilter,
     AlertSource? sourceFilter,
     bool? onlyMonitoredBarrios,
@@ -87,11 +85,14 @@ class MapState {
     bool clearProximityRadius = false,
     int? secondsSinceUpdate,
     LatLng? center,
-    MapAlertEntity? lastIncomingAlert,
+    AlertEntity? lastIncomingAlert,
+    bool? isLoading,
+    String? errorMessage,
   }) {
     return MapState(
       allAlerts: allAlerts ?? this.allAlerts,
       filteredAlerts: filteredAlerts ?? this.filteredAlerts,
+      positions: positions ?? this.positions,
       levelFilter: levelFilter,
       sourceFilter: sourceFilter,
       onlyMonitoredBarrios: onlyMonitoredBarrios ?? this.onlyMonitoredBarrios,
@@ -105,6 +106,8 @@ class MapState {
       secondsSinceUpdate: secondsSinceUpdate ?? this.secondsSinceUpdate,
       center: center ?? this.center,
       lastIncomingAlert: lastIncomingAlert,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -112,14 +115,12 @@ class MapState {
 class MapNotifier extends Notifier<MapState> {
   late final MapRepository _repository;
   Timer? _updateTimer;
-  Timer? _simulationTimer;
 
   @override
   MapState build() {
     _repository = ref.watch(mapRepositoryProvider);
     ref.onDispose(() {
       _updateTimer?.cancel();
-      _simulationTimer?.cancel();
     });
 
     final auth = ref.watch(authProvider);
@@ -171,31 +172,48 @@ class MapNotifier extends Notifier<MapState> {
   }
 
   Future<void> _bootstrap() async {
-    final alerts = await _repository.getActiveAlerts();
+    state = state.copyWith(isLoading: true, errorMessage: '');
+    try {
+      final alerts = (await _repository.getActiveAlerts())
+          .where((alert) => alert.estado == 'activa')
+          .toList();
+      if (!ref.mounted) return;
 
-    if (!ref.mounted) return;
+      final positions = positionsFromAlerts(alerts);
+      final auth = ref.read(authProvider);
+      final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
+      final proximity = isCitizen ? null : (state.proximityRadiusMeters ?? 3000);
+      final userZona = auth.user?.zona;
 
-    final auth = ref.read(authProvider);
-    final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
-    final proximity = isCitizen ? null : (state.proximityRadiusMeters ?? 3000);
-    final userZona = auth.user?.zona;
-
-    state = state.copyWith(
-      allAlerts: alerts,
-      onlyMonitoredBarrios: isCitizen,
-      proximityRadiusMeters: proximity,
-      zonaFilter: isCitizen ? userZona : state.zonaFilter,
-      filteredAlerts: _applyCurrentFilters(alerts),
-      secondsSinceUpdate: 0,
-      lastIncomingAlert: null,
-    );
-    _startSubtitleTimer();
-    _startSimulation();
+      state = state.copyWith(
+        allAlerts: alerts,
+        positions: positions,
+        onlyMonitoredBarrios: isCitizen,
+        proximityRadiusMeters: proximity,
+        zonaFilter: isCitizen ? userZona : state.zonaFilter,
+        filteredAlerts: _applyCurrentFilters(alerts),
+        secondsSinceUpdate: 0,
+        lastIncomingAlert: null,
+        isLoading: false,
+      );
+      _startSubtitleTimer();
+    } on CustomError catch (e) {
+      if (!ref.mounted) return;
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+    } catch (_) {
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'No se pudieron cargar las alertas del mapa',
+      );
+    }
   }
+
+  Future<void> refreshAlerts() => _bootstrap();
 
   static const _distance = Distance();
 
-  List<MapAlertEntity> _applyCurrentFilters(List<MapAlertEntity> alerts) {
+  List<AlertEntity> _applyCurrentFilters(List<AlertEntity> alerts) {
     final monitored = _monitoredBarrios();
     final auth = ref.read(authProvider);
     final user = auth.user;
@@ -212,7 +230,7 @@ class MapNotifier extends Notifier<MapState> {
         state.sourceFilter,
       );
       final zonaMatches = _matchesZonaFilter(
-        alert.zona,
+        alert.zonaNombre,
         effectiveZona: effectiveZona,
         isCitizen: isCitizen,
       );
@@ -226,7 +244,7 @@ class MapNotifier extends Notifier<MapState> {
         isCitizen: isCitizen,
       );
       final proximityMatches = _matchesProximity(
-        alert.position,
+        alert.positionAt(state.positions),
         center: _proximityCenter(),
         radiusMeters: state.proximityRadiusMeters,
       );
@@ -248,7 +266,7 @@ class MapNotifier extends Notifier<MapState> {
   }
 
   bool _matchesBarrioFilter(
-    MapAlertEntity alert, {
+    AlertEntity alert, {
     required String? barrioFilter,
     required bool onlyMonitoredBarrios,
     required List<String> monitored,
@@ -311,20 +329,6 @@ class MapNotifier extends Notifier<MapState> {
     });
   }
 
-  void _startSimulation() {
-    _simulationTimer?.cancel();
-    _simulationTimer = Timer.periodic(const Duration(seconds: 45), (_) {
-      final incoming = _repository.generateIncomingAlert();
-      final updatedAlerts = [incoming, ...state.allAlerts];
-      state = state.copyWith(
-        allAlerts: updatedAlerts,
-        filteredAlerts: _applyCurrentFilters(updatedAlerts),
-        secondsSinceUpdate: 0,
-        lastIncomingAlert: incoming,
-      );
-    });
-  }
-
   void applyFilters({
     AlertLevel? level,
     AlertSource? source,
@@ -379,18 +383,23 @@ class MapNotifier extends Notifier<MapState> {
     applyFilters(barrioFilter: barrio, clearBarrioFilter: barrio == null);
   }
 
-  void centerOnAlert(MapAlertEntity alert) {
-    state = state.copyWith(center: alert.position);
+  void centerOnAlert(AlertEntity alert) {
+    final position = state.positions[alert.id] ?? alert.position;
+    if (position != null) {
+      state = state.copyWith(center: position);
+    }
   }
 
-  void prependAlert(MapAlertEntity alert) {
+  void prependAlert(AlertEntity alert, LatLng position) {
     final updated = state.allAlerts.isEmpty
         ? [alert]
         : [alert, ...state.allAlerts];
 
+    final positions = {...state.positions, alert.id: position};
+
     var filtered = _applyCurrentFilters(updated);
 
-    if (alert.type == AlertType.sos && !filtered.any((a) => a.id == alert.id)) {
+    if (alert.isSos && !filtered.any((a) => a.id == alert.id)) {
       state = state.copyWith(
         levelFilter: null,
         sourceFilter: null,
@@ -401,14 +410,15 @@ class MapNotifier extends Notifier<MapState> {
 
     state = state.copyWith(
       allAlerts: updated,
+      positions: positions,
       filteredAlerts: filtered,
-      lastIncomingAlert: alert.type == AlertType.sos ? null : alert,
+      lastIncomingAlert: alert.isSos ? null : alert,
       secondsSinceUpdate: 0,
-      center: alert.position,
+      center: position,
     );
   }
 
-  void focusPendingSos(MapAlertEntity pending) {
+  void focusPendingSos(AlertEntity pending) {
     if (state.allAlerts.isEmpty) return;
 
     final alert = state.allAlerts.firstWhere(
@@ -427,7 +437,11 @@ class MapNotifier extends Notifier<MapState> {
       filtered = state.filteredAlerts;
     }
 
-    state = state.copyWith(center: alert.position, lastIncomingAlert: null);
+    final position = state.positions[alert.id] ?? state.positions[pending.id];
+    state = state.copyWith(
+      center: position ?? state.center,
+      lastIncomingAlert: null,
+    );
   }
 }
 
@@ -442,7 +456,6 @@ final mapUsesProximityRadiusProvider = Provider<bool>((ref) {
 
 const mapProximityRadiusOptions = <int>[1000, 3000, 5000];
 
-/// Zona efectiva para chips de barrio (filtro explícito o zona del usuario).
 final mapEffectiveZonaProvider = Provider<String?>((ref) {
   final state = ref.watch(mapProvider);
   final auth = ref.watch(authProvider);

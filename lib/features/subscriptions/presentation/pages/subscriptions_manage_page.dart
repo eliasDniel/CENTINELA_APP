@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/constants/zonas_administrativas.dart';
@@ -81,12 +82,9 @@ class SubscriptionsManagePage extends ConsumerWidget {
                   if (value) {
                     final ok = notifier.subscribe(barrio, homeBarrio);
                     if (!ok) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Máximo 3 barrios adicionales. Quita uno primero.',
-                          ),
-                        ),
+                      AppAlert.warning(
+                        context,
+                        'Máximo 3 barrios adicionales. Quita uno primero.',
                       );
                     }
                   } else {

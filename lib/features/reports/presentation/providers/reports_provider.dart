@@ -1,72 +1,106 @@
-// RF-0303, RF-0304, RF-0307, RF-0308: Reports Riverpod providers
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
+import 'package:flutter_riverpod/legacy.dart';
+
 import '../../domain/entities/report_entity.dart';
 import '../../domain/repositories/reports_repository.dart';
-import '../../domain/usecases/get_recent_reports_usecase.dart';
-import '../../domain/usecases/submit_report_usecase.dart';
-import '../../domain/usecases/get_user_history_usecase.dart';
-import '../../infrastructure/datasources/reports_local_datasource.dart';
-import '../../infrastructure/repositories/reports_repository_impl.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
+import 'reports_repository_provider.dart';
 
-final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
-  final dataSource = ReportsLocalDataSource();
-  return ReportsRepositoryImpl(dataSource);
-});
+class ReportsState {
+  final List<ReportEntity> reports;
+  final bool isLoading;
+  final String errorMessage;
 
-final recentReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
-  final repository = ref.watch(reportsRepositoryProvider);
-  final usecase = GetRecentReportsUseCase(repository);
-  return usecase();
-});
+  const ReportsState({
+    this.reports = const [],
+    this.isLoading = false,
+    this.errorMessage = '',
+  });
 
-final submitReportProvider = FutureProvider.autoDispose
-    .family<ReportEntity, (String, String, double, double, String)>((
-      ref,
-      params,
-    ) async {
-      final repository = ref.watch(reportsRepositoryProvider);
-      final usecase = SubmitReportUseCase(repository);
-      return usecase(params.$1, params.$2, params.$3, params.$4, params.$5);
-    });
+  ReportsState copyWith({
+    List<ReportEntity>? reports,
+    bool? isLoading,
+    String? errorMessage,
+  }) {
+    return ReportsState(
+      reports: reports ?? this.reports,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
 
-final userReportsProvider = FutureProvider.autoDispose
-    .family<List<ReportEntity>, String>((ref, userId) async {
-      final repository = ref.watch(reportsRepositoryProvider);
-      final usecase = GetUserHistoryUseCase(repository);
-      return usecase(userId);
-    });
+class ReportsNotifier extends StateNotifier<ReportsState> {
+  final ReportsRepository repository;
 
-// RF-0309: Reportes filtrados por barrio propio del usuario
-final myBarrioReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final allReports = await ref.watch(recentReportsProvider.future);
+  ReportsNotifier({required this.repository}) : super(const ReportsState());
 
-  if (authState.user == null) {
-    return [];
+  Future<String?> loadHistory() async {
+    state = state.copyWith(isLoading: true, errorMessage: '');
+    try {
+      final reports = await repository.getHistoryReports();
+      state = state.copyWith(reports: reports, isLoading: false);
+      return null;
+    } on CustomError catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return e.message;
+    } catch (e) {
+      const message = 'No se pudo cargar el historial';
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return message;
+    }
   }
 
-  return allReports.where((r) => r.barrio == authState.user!.barrio).toList();
-});
+  Future<String?> sendSosAlert({
+    required double latitude,
+    required double longitude,
+    String description = 'Alerta SOS de emergencia',
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: '');
+    try {
+      final report = await repository.sosAlert(
+        'panico',
+        description,
+        latitude,
+        longitude,
+      );
+      state = state.copyWith(
+        reports: [report, ...state.reports],
+        isLoading: false,
+      );
+      return null;
+    } on CustomError catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return e.message;
+    } catch (e) {
+      const message = 'No se pudo enviar la alerta SOS';
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return message;
+    }
+  }
 
-// RF-0309: Reportes de barrios suscritos
-final subscribedReportsProvider = FutureProvider<List<ReportEntity>>((
+  Future<String?> submitReport(Map<String, dynamic> data) async {
+    state = state.copyWith(isLoading: true, errorMessage: '');
+    try {
+      final report = await repository.submitReport(data);
+      state = state.copyWith(
+        reports: [report, ...state.reports],
+        isLoading: false,
+      );
+      return null;
+    } on CustomError catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return e.message;
+    } catch (e) {
+      const message = 'No se pudo enviar el reporte';
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return message;
+    }
+  }
+}
+
+final reportsProvider = StateNotifierProvider<ReportsNotifier, ReportsState>((
   ref,
-) async {
-  final subscribed = ref.watch(barriosSubscribedProvider);
-  final allReports = await ref.watch(recentReportsProvider.future);
-
-  return allReports.where((r) => subscribed.contains(r.barrio)).toList();
-});
-
-// RF-0309: Todos los reportes combinados ordenados por fecha
-final allReportsProvider = FutureProvider<List<ReportEntity>>((ref) async {
-  final myBarrio = await ref.watch(myBarrioReportsProvider.future);
-  final subscribed = await ref.watch(subscribedReportsProvider.future);
-
-  final combined = {...myBarrio, ...subscribed}.toList();
-  combined.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-  return combined;
+) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return ReportsNotifier(repository: repository);
 });

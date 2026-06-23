@@ -28,18 +28,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
     checkAuthStatus();
   }
 
-  Future<bool> loginUser(String email, String password) async {
+  /// `null` si el login fue exitoso; mensaje de error del backend en caso contrario.
+  Future<String?> loginUser(String email, String password) async {
     try {
-      final user = await authRepository.login(email, password);
+      final user = await _enrichWithZona(await authRepository.login(email, password));
       await _setLoggedUser(user);
-      return true;
+      return null;
     } on CustomError catch (e) {
-      logoutUser(e.message);
-      return false;
+      state = state.copyWith(
+        authStatus: AuthStatus.unauthenticated,
+        user: null,
+        errorMessage: e.message,
+      );
+      return e.message;
     }
   }
 
-  Future<bool> registerUser({
+  /// `null` si el registro fue exitoso; mensaje de error del backend en caso contrario.
+  Future<String?> registerUser({
     required String email,
     required String password,
     required String alias,
@@ -47,17 +53,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String zonaId,
   }) async {
     try {
-      final message = await authRepository.register(
+      final ok = await authRepository.register(
         email: email,
         password: password,
         alias: alias,
         phone: phone,
         zonaId: zonaId,
       );
-      return message;
+      if (!ok) {
+        const fallback = 'No se pudo completar el registro';
+        state = state.copyWith(errorMessage: fallback);
+        return fallback;
+      }
+      state = state.copyWith(errorMessage: '');
+      return null;
     } on CustomError catch (e) {
-      logoutUser(e.message);
-      return false;
+      state = state.copyWith(errorMessage: e.message);
+      return e.message;
     }
   }
 
@@ -84,16 +96,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
           refreshToken: refreshToken,
         );
         if (restored != null) {
+          final enriched = await _enrichWithZona(restored);
           state = state.copyWith(
             authStatus: AuthStatus.authenticated,
-            user: restored,
+            user: enriched,
             errorMessage: '',
           );
+          if (enriched.zonaNombre != restored.zonaNombre) {
+            await keyValueStorageService.setKeyValue(
+              AuthSessionKeys.userZonaNombre,
+              enriched.zonaNombre ?? '',
+            );
+          }
           return;
         }
       }
 
-      final user = await authRepository.checkStatus(refreshToken);
+      final user = await _enrichWithZona(await authRepository.checkStatus(refreshToken));
       await _setLoggedUser(user);
     } catch (e) {
       if (e is CustomError && e.message == 'Revisar conexión') {
@@ -173,6 +192,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final zonaId = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.userZonaId,
     );
+    final zonaNombre = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userZonaNombre,
+    );
 
     if (uuid == null || email == null || rol == null) return null;
 
@@ -183,7 +205,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
       token: accessToken,
       refreshToken: refreshToken,
       zonaId: zonaId ?? '',
+      zonaNombre: zonaNombre,
     );
+  }
+
+  Future<UserEntity> _enrichWithZona(UserEntity user) async {
+    if (user.zonaId.isEmpty) return user;
+    if (user.zonaNombre != null && user.zonaNombre!.isNotEmpty) return user;
+
+    try {
+      final zonas = await authRepository.getZonas();
+      for (final zona in zonas) {
+        if (zona.id == user.zonaId) {
+          return user.copyWith(zonaNombre: zona.nombre);
+        }
+      }
+    } catch (_) {
+      // Si falla la carga de zonas, la sesión sigue válida sin nombre.
+    }
+    return user;
   }
 
   Future<void> _setLoggedUser(UserEntity user) async {
@@ -201,6 +241,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await keyValueStorageService.setKeyValue(
       AuthSessionKeys.userZonaId,
       user.zonaId,
+    );
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userZonaNombre,
+      user.zonaNombre ?? '',
     );
 
     state = state.copyWith(

@@ -1,5 +1,5 @@
 // register_form.dart
-import 'package:centinela_milagro/core/utils/app_snackbar.dart';
+import 'package:centinela_milagro/core/utils/app_alert.dart';
 import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_provider.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/register_form_provider.dart';
@@ -56,20 +56,15 @@ class _RegisterFormState extends ConsumerState<RegisterForm> {
     ref.listen(registerFormProvider, (previous, next) {
       if (next.isRegistered && !(previous?.isRegistered ?? false)) {
         _clearFields();
-        AppSnackBar.show(
+        AppAlert.success(
           context,
-          message: 'Revisa tu email para verificar tu cuenta',
-          type: SnackBarType.success,
+          'Revisa tu email para verificar tu cuenta',
         );
       }
 
       if (next.errorMessage.isNotEmpty &&
           previous?.errorMessage != next.errorMessage) {
-        AppSnackBar.show(
-          context,
-          message: next.errorMessage,
-          type: SnackBarType.error,
-        );
+        AppAlert.error(context, next.errorMessage);
       }
     });
 

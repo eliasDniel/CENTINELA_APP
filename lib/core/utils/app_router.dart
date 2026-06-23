@@ -9,7 +9,6 @@ import 'package:centinela_milagro/features/notifications/presentation/notificati
 import 'package:centinela_milagro/features/profile/presentation/pages/change_location_page.dart';
 import 'package:centinela_milagro/features/profile/presentation/pages/change_password_page.dart';
 import 'package:centinela_milagro/features/profile/presentation/pages/privacy_page.dart';
-import 'package:centinela_milagro/features/reports/domain/entities/report_entity.dart';
 import 'package:centinela_milagro/features/reports/presentation/pages/offline_queue_page.dart';
 import 'package:centinela_milagro/features/reports/presentation/pages/report_detail_page.dart';
 import 'package:centinela_milagro/features/reports/presentation/pages/report_page.dart';
@@ -69,8 +68,9 @@ final appRouterProvider = Provider((ref) {
             path: 'report/:reportId',
             name: ReportDetailPage.routeName,
             builder: (context, state) {
-              final report = state.extra as ReportEntity;
-              return ReportDetailPage(report: report);
+              
+              final reportId = state.pathParameters['reportId'] ?? '';
+              return ReportDetailPage(reportId: reportId);
             },
           ),
           GoRoute(

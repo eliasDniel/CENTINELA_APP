@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 enum ReportMediaKind { photo, video }
@@ -54,9 +55,7 @@ class ReportMediaPicker extends StatelessWidget {
       ));
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo obtener el archivo: $e')),
-      );
+      AppAlert.error(context, 'No se pudo obtener el archivo: $e');
     }
   }
 

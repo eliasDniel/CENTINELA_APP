@@ -6,14 +6,13 @@ import 'package:dio/dio.dart';
 
 import '../../../config/enviroment.dart';
 import '../../domain/domain.dart';
-import '../../presentation/providers/services/key_value_storage.dart';
+import '../utils/auth_api_error_message.dart';
 import '../infrastructure.dart';
 
 class AuthDataSourceImpl extends AuthDatasource {
-  final KeyValueStorageService keyValueStorageService;
   final Dio _dio;
 
-  AuthDataSourceImpl({required this.keyValueStorageService})
+  AuthDataSourceImpl()
     : _dio = Dio(BaseOptions(baseUrl: Enviroment.apiUrl));
 
   @override
@@ -85,8 +84,6 @@ class AuthDataSourceImpl extends AuthDatasource {
         data: {'refreshToken': refreshToken},
       );
       if (response.statusCode == 200) {
-        await keyValueStorageService.removeKey('token');
-        await keyValueStorageService.removeKey('refresh_token');
         return true;
       }
       throw CustomError(response.data['message']);
@@ -115,7 +112,8 @@ class AuthDataSourceImpl extends AuthDatasource {
       );
       final data = Map<String, dynamic>.from(response.data as Map);
       return PasswordRecoveryResult(
-        message: data['message']?.toString() ??
+        message:
+            data['message']?.toString() ??
             'Si el correo existe, se ha enviado un token de recuperación.',
         resetToken: data['tokenResetPwd']?.toString(),
       );
@@ -132,30 +130,40 @@ class AuthDataSourceImpl extends AuthDatasource {
     try {
       final response = await _dio.post(
         '/auth/reset-password',
-        data: {
-          'token': token.trim(),
-          'newPassword': newPassword,
-        },
+        data: {'token': token.trim(), 'newPassword': newPassword},
       );
       final data = Map<String, dynamic>.from(response.data as Map);
-      return data['message']?.toString() ?? 'Contraseña actualizada correctamente';
+      return data['message']?.toString() ??
+          'Contraseña actualizada correctamente';
     } on DioException catch (e) {
       _handleDioError(e);
     }
   }
 
   Never _handleDioError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
       throw CustomError('Revisar conexión');
     }
-    if (e.response?.statusCode == 401) {
-      throw CustomError(
-        e.response?.data['message'] ?? 'Credenciales inválidas',
-      );
+
+    final backendMessage = _extractErrorMessage(e);
+    if (backendMessage != null) {
+      throw CustomError(backendMessage);
     }
-    if (e.response?.data is Map && e.response?.data['message'] != null) {
-      throw CustomError(e.response!.data['message'].toString());
+
+    switch (e.response?.statusCode) {
+      case 401:
+        throw CustomError('Credenciales inválidas');
+      case 400:
+        throw CustomError('Solicitud inválida');
+      default:
+        throw CustomError('Error inesperado');
     }
-    throw CustomError('Error inesperado');
+  }
+
+  String? _extractErrorMessage(DioException e) {
+    return extractAuthApiErrorMessage(e.response?.data);
   }
 }

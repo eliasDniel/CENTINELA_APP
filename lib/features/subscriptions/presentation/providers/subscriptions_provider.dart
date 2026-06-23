@@ -38,27 +38,21 @@ final barriosSubscribedProvider =
       BarriosSubscribedNotifier.new,
     );
 
-/// Zona del usuario registrado.
 final userZonaProvider = Provider<String?>((ref) {
-  // return ref.watch(authProvider).user?.zona;
-  return 'Milagro';
+  return ref.watch(authProvider).user?.zona;
 });
 
-/// Barrio de registro + hasta 3 suscritos (solo si el usuario tiene barrio).\
 final monitoredBarriosProvider = Provider<List<String>>((ref) {
   final subscribed = ref.watch(barriosSubscribedProvider);
-  // final own = ref.watch(authProvider).user?.barrio;
-  const own = null;
+  final own = ref.watch(authProvider).user?.barrio;
   if (own == null || own.isEmpty) return List.unmodifiable(subscribed);
   return List.unmodifiable([own, ...subscribed]);
 });
 
-/// Indica si el usuario opera a nivel de zona (sin barrio específico).
 final userEsNivelZonaProvider = Provider<bool>((ref) {
   final user = ref.watch(authProvider).user;
   if (user == null) return false;
-  // return !user.tieneBarrio;
-  return true;
+  return !user.tieneBarrio;
 });
 
 final subscriptionSlotsUsedProvider = Provider<int>((ref) {
@@ -72,33 +66,26 @@ final canSubscribeMoreProvider = Provider<bool>((ref) {
 
 final barrioCategoryFnProvider =
     Provider<BarrioMapCategory Function(String)>((ref) {
-  final subscribed = ref.watch(barriosSubscribedProvider);
-  // final home = ref.watch(authProvider).user?.barrio;
-  const home = null;
-  return (barrio) => categorizeBarrio(
-    barrio,
-    homeBarrio: home?.isNotEmpty == true ? home : null,
-    subscribed: subscribed,
-  );
-});
+      final subscribed = ref.watch(barriosSubscribedProvider);
+      final home = ref.watch(authProvider).user?.barrio;
+      return (barrio) => categorizeBarrio(
+        barrio,
+        homeBarrio: home?.isNotEmpty == true ? home : null,
+        subscribed: subscribed,
+      );
+    });
 
-/// Barrios de la zona del usuario disponibles para suscribirse.
 final availableBarriosToSubscribeProvider = Provider<List<String>>((ref) {
   final subscribed = ref.watch(barriosSubscribedProvider);
-  // final own = ref.watch(authProvider).user?.barrio ?? '';
-  // final zona = ref.watch(authProvider).user?.zona ?? '';
-  const own = '';
-  const zona = 'Milagro';
+  final own = ref.watch(authProvider).user?.barrio ?? '';
+  final zona = ref.watch(authProvider).user?.zona ?? '';
   if (!zonaTieneBarrios(zona)) return const [];
   return barriosDeZona(zona).where((b) => b != own && !subscribed.contains(b)).toList();
 });
 
-/// Barrios seleccionables en la pantalla de gestión (misma zona, excluye propio).
 final selectableBarriosEnZonaProvider = Provider<List<String>>((ref) {
-  // final homeBarrio = ref.watch(authProvider).user?.barrio ?? '';
-  // final zona = ref.watch(authProvider).user?.zona ?? '';
-  const homeBarrio = '';
-  const zona = 'Milagro';
+  final homeBarrio = ref.watch(authProvider).user?.barrio ?? '';
+  final zona = ref.watch(authProvider).user?.zona ?? '';
   if (!zonaTieneBarrios(zona)) return const [];
   return barriosDeZona(zona).where((b) => b != homeBarrio).toList();
 });

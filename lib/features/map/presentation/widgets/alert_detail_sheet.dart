@@ -1,15 +1,20 @@
 // RF-0306: detalle expandible de la alerta seleccionada
 import 'package:flutter/material.dart';
 
+import 'package:latlong2/latlong.dart';
+
 import '../../../subscriptions/domain/barrio_membership.dart';
 import '../../../../core/location/user_location_provider.dart';
 import 'map_alert_styles.dart';
+import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
+import '../../domain/entities/map_alert_extensions.dart';
 
 class AlertDetailSheet extends StatelessWidget {
-  final MapAlertEntity alert;
+  final AlertEntity alert;
   final BarrioMapCategory barrioCategory;
   final double? distanceFromUser;
+  final LatLng? position;
   final VoidCallback onCenterMap;
 
   const AlertDetailSheet({
@@ -17,6 +22,7 @@ class AlertDetailSheet extends StatelessWidget {
     required this.alert,
     required this.barrioCategory,
     this.distanceFromUser,
+    this.position,
     required this.onCenterMap,
   });
 
@@ -121,7 +127,7 @@ class AlertDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    _typeText(alert.type),
+                    _typeText(alert.alertType),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -150,7 +156,7 @@ class AlertDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '📍 ${locationLabel(zona: alert.zona, barrio: alert.barrio, category: barrioCategory)}',
+                          '📍 ${locationLabel(zona: alert.zonaNombre, barrio: alert.barrio, category: barrioCategory)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -164,14 +170,15 @@ class AlertDetailSheet extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 8),
-                        Text('🕐 ${_timeAgo(alert.timestamp)}', style: const TextStyle(color: Colors.white70)),
+                        Text('🕐 ${_timeAgo(alert.timestampDate)}', style: const TextStyle(color: Colors.white70)),
                         const SizedBox(height: 8),
                         Text('📡 Fuente del dato: ${_sourceText(alert.source)}', style: const TextStyle(color: Colors.white70)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 14),
-                  if (alert.source == AlertSource.sensor_audio || alert.source == AlertSource.sensor_video)
+                  if (alert.source == AlertSource.sensor_audio ||
+                      alert.source == AlertSource.sensor_video)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
@@ -180,14 +187,14 @@ class AlertDetailSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(color: const Color(0xFF223041)),
                       ),
-                      child: Column(
+                      child: const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('🤖 Detectado por IA — YAMNet/YOLOv8n', style: TextStyle(color: Colors.white)),
-                          const SizedBox(height: 6),
+                          Text('🤖 Alerta operativa del sistema', style: TextStyle(color: Colors.white)),
+                          SizedBox(height: 6),
                           Text(
-                            'Confianza: ${(alert.confidence ?? 0.85).toStringAsFixed(2)} | Nodo: ${alert.nodeId ?? 'N/A'}',
-                            style: const TextStyle(color: Colors.white70),
+                            'Generada por sensores o IA del backend',
+                            style: TextStyle(color: Colors.white70),
                           ),
                         ],
                       ),
@@ -201,14 +208,14 @@ class AlertDetailSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(color: const Color(0xFF154A75)),
                       ),
-                      child: Column(
+                      child: const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('🌊 Sensor JSN-SR04T', style: TextStyle(color: Colors.white)),
-                          const SizedBox(height: 6),
+                          Text('🌊 Alerta hídrica', style: TextStyle(color: Colors.white)),
+                          SizedBox(height: 6),
                           Text(
-                            'Nivel actual: +${(alert.waterLevelDelta ?? 0).toStringAsFixed(1)}m sobre umbral',
-                            style: const TextStyle(color: Colors.white70),
+                            'Monitoreo hídrico del sistema CENTINELA',
+                            style: TextStyle(color: Colors.white70),
                           ),
                         ],
                       ),
@@ -228,17 +235,18 @@ class AlertDetailSheet extends StatelessWidget {
                           const Text('👤 Reporte ciudadano anónimo', style: TextStyle(color: Colors.white)),
                           const SizedBox(height: 6),
                           Text(
-                            'Pseudónimo: ${alert.pseudonym ?? 'anon-0000'}',
+                            'Código: ${alert.codigo}',
                             style: const TextStyle(color: Colors.white70),
                           ),
                         ],
                       ),
                     ),
                   const SizedBox(height: 14),
-                  Text(
-                    '📍 GPS: ${alert.lat.toStringAsFixed(4)}, ${alert.lng.toStringAsFixed(4)}',
-                    style: const TextStyle(color: Colors.white38, fontSize: 12),
-                  ),
+                  if (position != null)
+                    Text(
+                      '📍 GPS: ${position!.latitude.toStringAsFixed(4)}, ${position!.longitude.toStringAsFixed(4)}',
+                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
                   const SizedBox(height: 18),
                   SizedBox(
                     width: double.infinity,

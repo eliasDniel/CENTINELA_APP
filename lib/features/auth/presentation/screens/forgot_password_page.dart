@@ -1,4 +1,3 @@
-import 'package:centinela_milagro/core/utils/app_snackbar.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_repository_provider.dart';
 import 'package:centinela_milagro/features/auth/presentation/widgets/inputs/email.dart';
