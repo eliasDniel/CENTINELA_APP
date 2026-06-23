@@ -293,8 +293,10 @@ class _ReportFormState extends ConsumerState<ReportForm>
           maxLength: 280,
           maxLines: 5,
           enabled: !form.isPosting,
+           textAlignVertical: TextAlignVertical.top,
           decoration: InputDecoration(
-            labelText: 'Descripción del incidente',
+            contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 8),
+       
             hintText:
                 'Describe lo que pasó, dónde, cuándo y otros detalles relevantes...',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

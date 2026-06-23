@@ -1,4 +1,5 @@
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../domain/entities/report_entity.dart';
@@ -104,3 +105,16 @@ final reportsProvider = StateNotifierProvider<ReportsNotifier, ReportsState>((
   final repository = ref.watch(reportsRepositoryProvider);
   return ReportsNotifier(repository: repository);
 });
+
+/// Filtro activo en historial: '' = todos los reportes.
+final reportTypeFilterProvider = StateProvider<String>((ref) => '');
+
+final reportsFilteredProvider = Provider.family<List<ReportEntity>, String>((
+  ref,
+  filter,
+) {
+  final reports = ref.watch(reportsProvider).reports;
+  if (filter.isEmpty) return reports;
+  return reports.where((report) => report.tipo == filter).toList();
+});
+
