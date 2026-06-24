@@ -1,102 +1,78 @@
-// RF-0301: Login form widget
+// login_form.dart
+import 'package:centinela_milagro/core/utils/app_alert.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/login_form.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/utils/app_colors.dart';
+import 'custom_auth_field.dart';
 
-class LoginForm extends StatefulWidget {
-  final VoidCallback onSubmit;
-  final Function(String, String) onLogin;
-  final bool isLoading;
-
-  const LoginForm({
-    Key? key,
-    required this.onSubmit,
-    required this.onLogin,
-    required this.isLoading,
-  }) : super(key: key);
+class LoginForm extends ConsumerStatefulWidget {
+  const LoginForm({super.key});
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
+  ConsumerState<LoginForm> createState() => _LoginFormState();
 }
 
-class _LoginFormState extends State<LoginForm> {
-  late TextEditingController _aliasController;
-  late TextEditingController _passwordController;
-  bool _obscurePassword = true;
-  String? _aliasError;
-  String? _passwordError;
+class _LoginFormState extends ConsumerState<LoginForm> {
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _passwordCtrl;
 
   @override
   void initState() {
     super.initState();
-    _aliasController = TextEditingController();
-    _passwordController = TextEditingController();
+    _emailCtrl    = TextEditingController();
+    _passwordCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
-    _aliasController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
-  }
-
-  void _handleLogin() {
-    setState(() {
-      _aliasError = _aliasController.text.isEmpty ? 'El alias no puede estar vacío' : null;
-      _passwordError = _passwordController.text.isEmpty ? 'La contraseña no puede estar vacía' : null;
-    });
-
-    if (_aliasError == null && _passwordError == null) {
-      widget.onLogin(_aliasController.text, _passwordController.text);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loginForm = ref.watch(loginFormProvider);
+    final notifier  = ref.read(loginFormProvider.notifier);
+
+    ref.listen(loginFormProvider, (previous, next) {
+      if (next.errorMessage.isNotEmpty &&
+          previous?.errorMessage != next.errorMessage) {
+        AppAlert.error(context, next.errorMessage);
+      }
+    });
+
     return Column(
       children: [
-        TextFormField(
-          controller: _aliasController,
-          decoration: InputDecoration(
-            labelText: 'Alias',
-            hintText: 'Tu pseudónimo',
-            errorText: _aliasError,
-            errorBorder: _aliasError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-          ),
-          enabled: !widget.isLoading,
+        CustomAuthField(
+          controller: _emailCtrl,
+          isTopField: true,
+          label: 'Correo electrónico',
+          hint: 'ejemplo@correo.com',
+          prefixIcon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          enabled: !loginForm.isPosting,
+          errorMessage: loginForm.isFormPosted && !loginForm.email.isValid
+              ? loginForm.email.errorMessage
+              :null,
+          onChanged: notifier.onEmailChanged,
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _passwordController,
-          decoration: InputDecoration(
-            labelText: 'Contraseña',
-            hintText: 'Tu contraseña',
-            errorText: _passwordError,
-            errorBorder: _passwordError != null
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppConfig.error, width: 2),
-                  )
-                : null,
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            ),
-          ),
-          obscureText: _obscurePassword,
-          enabled: !widget.isLoading,
+        _PasswordField(
+          controller: _passwordCtrl,
+          isPosting: loginForm.isPosting,
+          isFormPosted: loginForm.isFormPosted,
+          passwordValid: loginForm.password.isValid,
+          errorMessage: loginForm.password.errorMessage,
+          onChanged: notifier.onPasswordChanged,
         ),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: widget.isLoading
+            onPressed: loginForm.isPosting
                 ? null
-                : () => context.push('/auth/forgot-password'),
+                : () => context.push('/forgot-password'),
             child: const Text('¿Olvidaste tu contraseña?'),
           ),
         ),
@@ -104,20 +80,63 @@ class _LoginFormState extends State<LoginForm> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: widget.isLoading ? null : _handleLogin,
-            child: widget.isLoading
+            onPressed: loginForm.isPosting ? null : notifier.onSubmit,
+            child: loginForm.isPosting
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppConfig.textPrimary),
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Entrar'),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PasswordField extends StatefulWidget {
+  final TextEditingController controller;
+  final bool isPosting;
+  final bool isFormPosted;
+  final bool passwordValid;
+  final String? errorMessage;
+  final ValueChanged<String> onChanged;
+
+  const _PasswordField({
+    required this.controller,
+    required this.isPosting,
+    required this.isFormPosted,
+    required this.passwordValid,
+    required this.errorMessage,
+    required this.onChanged,
+  });
+
+  @override
+  State<_PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<_PasswordField> {
+  bool _obscure = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomAuthField(
+      controller: widget.controller,
+      isBottomField: true,
+      label: 'Contraseña',
+      hint: 'Tu contraseña',
+      prefixIcon: Icons.lock_outline,
+      obscureText: _obscure,
+      enabled: !widget.isPosting,
+      errorMessage: widget.isFormPosted && !widget.passwordValid
+          ? widget.errorMessage
+          : null,
+      onChanged: widget.onChanged,
+      suffixIcon: IconButton(
+        icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+        onPressed: () => setState(() => _obscure = !_obscure),
+      ),
     );
   }
 }

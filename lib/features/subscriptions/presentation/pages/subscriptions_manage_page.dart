@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/constants/zonas_administrativas.dart';
@@ -25,17 +26,15 @@ class SubscriptionsManagePage extends ConsumerWidget {
     final selectable = ref.watch(selectableBarriosEnZonaProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Elegir barrios'),
-      ),
+      appBar: AppBar(title: const Text('Elegir barrios')),
       body: ListView(
         padding: const EdgeInsets.all(AppConfig.horizontalMargin),
         children: [
           Text(
             'Zona: $homeZona',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppConfig.primary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: AppConfig.primary),
           ),
           const SizedBox(height: 12),
           SubscriptionSlotsRow(
@@ -47,8 +46,8 @@ class SubscriptionsManagePage extends ConsumerWidget {
           Text(
             '${subscribed.length}/$kMaxBarriosAdicionales cupos usados',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: canAddMore ? AppConfig.textSecondary : AppConfig.warning,
-                ),
+              color: canAddMore ? AppConfig.textSecondary : AppConfig.warning,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -59,7 +58,10 @@ class SubscriptionsManagePage extends ConsumerWidget {
           if (selectable.isEmpty)
             Card(
               child: ListTile(
-                leading: Icon(Icons.info_outline, color: AppConfig.textTertiary),
+                leading: Icon(
+                  Icons.info_outline,
+                  color: AppConfig.textTertiary,
+                ),
                 title: const Text('Sin barrios adicionales'),
                 subtitle: Text(
                   zonaTieneBarrios(homeZona)
@@ -80,12 +82,9 @@ class SubscriptionsManagePage extends ConsumerWidget {
                   if (value) {
                     final ok = notifier.subscribe(barrio, homeBarrio);
                     if (!ok) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Máximo 3 barrios adicionales. Quita uno primero.',
-                          ),
-                        ),
+                      AppAlert.warning(
+                        context,
+                        'Máximo 3 barrios adicionales. Quita uno primero.',
                       );
                     }
                   } else {

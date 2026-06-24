@@ -2,7 +2,7 @@
 import 'package:centinela_milagro/features/map/presentation/pages/map_page.dart';
 import 'package:centinela_milagro/features/profile/presentation/pages/profile_page.dart';
 import 'package:centinela_milagro/features/reports/presentation/pages/history_page.dart';
-import 'package:centinela_milagro/features/reports/presentation/pages/home_page.dart';
+import 'package:centinela_milagro/features/reports/presentation/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

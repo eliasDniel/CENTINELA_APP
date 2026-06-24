@@ -1,11 +1,12 @@
 // RF-0304, RF-0307: Report card widget with redesigned layout
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/constants/incident_types.dart';
 import '../../domain/entities/report_entity.dart';
 import '../../../../core/utils/app_colors.dart';
 
-class ReportCardWidget extends StatelessWidget {
+class ReportCardWidget extends ConsumerWidget {
   final ReportEntity report;
 
   const ReportCardWidget({super.key, required this.report});
@@ -16,45 +17,41 @@ class ReportCardWidget extends StatelessWidget {
 
   Color _getBarrioColor(String barrio) {
     switch (barrio) {
-      case 'Chirijos':
+      case 'Milagro':
         return const Color(0xFF5856D6);
-      case 'Camilo Andrade':
+      case 'Chobo':
         return const Color(0xFFFF2D55);
-      case 'Ernesto Seminario':
+      case 'Mariscal Sucre':
         return AppConfig.warning;
-      case 'Coronel Enrique Valdez':
+      case 'Roberto Astudillo':
         return AppConfig.success;
-      case 'Paraíso de Chobo':
-        return AppConfig.primary;
-      case 'Otros recintos':
-        return const Color(0xFF90CAF9);
       default:
         return AppConfig.textTertiary;
     }
   }
 
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
+String _formatTime(String createdAt) {
+  final time = DateTime.parse(createdAt).toLocal();
+  final now = DateTime.now();
+  final diff = now.difference(time);
 
-    if (diff.inMinutes < 1) {
-      return 'justo ahora';
-    } else if (diff.inMinutes < 60) {
-      return 'hace ${diff.inMinutes} min';
-    } else if (diff.inHours < 24) {
-      return 'hace ${diff.inHours}h';
-    } else {
-      return 'hace ${diff.inDays}d';
-    }
+  if (diff.inMinutes < 1) {
+    return 'justo ahora';
+  } else if (diff.inMinutes < 60) {
+    return 'hace ${diff.inMinutes} min';
+  } else if (diff.inHours < 24) {
+    return 'hace ${diff.inHours}h';
+  } else {
+    return 'hace ${diff.inDays}d';
   }
-
+}
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'recibido':
-        return AppConfig.textTertiary;
-      case 'en_revision':
+      case 'PENDIENTE':
         return AppConfig.warning;
-      case 'atendido':
+      case 'EN_PROCESO':
+        return AppConfig.primary;
+      case 'RESUELTO':
         return AppConfig.success;
       default:
         return AppConfig.textSecondary;
@@ -63,11 +60,11 @@ class ReportCardWidget extends StatelessWidget {
 
   String _getStatusLabel(String status) {
     switch (status) {
-      case 'recibido':
+      case 'PENDIENTE':
         return '● Recibido';
-      case 'en_revision':
+      case 'EN_PROCESO':
         return '● En Revisión';
-      case 'atendido':
+      case 'RESUELTO':
         return '● Atendido';
       default:
         return status;
@@ -77,11 +74,12 @@ class ReportCardWidget extends StatelessWidget {
   String _getTitleForType(String type) => incidentTypeLabel(type);
 
   void _openDetail(BuildContext context) {
-    context.push('/home/2/report/${report.id}', extra: report);
+    context.push('/home/2/report/${report.id}');
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+
     return GestureDetector(
       onTap: () => _openDetail(context),
       child: Card(
@@ -91,41 +89,7 @@ class ReportCardWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: Badge barrio + tiempo
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getBarrioColor(report.barrio).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: _getBarrioColor(report.barrio),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      report.barrio,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _getBarrioColor(report.barrio),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    _formatTime(report.timestamp),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppConfig.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+              
               // Ícono + Tipo + Descripción
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,12 +97,12 @@ class ReportCardWidget extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _getColorForType(report.type).withOpacity(0.15),
+                      color: _getColorForType(report.tipo).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      _getIconForType(report.type),
-                      color: _getColorForType(report.type),
+                      _getIconForType(report.tipo),
+                      color: _getColorForType(report.tipo),
                       size: 24,
                     ),
                   ),
@@ -148,14 +112,14 @@ class ReportCardWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _getTitleForType(report.type),
+                          _getTitleForType(report.tipo),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: AppConfig.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          report.description,
+                          report.descripcion,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -163,6 +127,15 @@ class ReportCardWidget extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _formatTime(report.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppConfig.textTertiary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -177,14 +150,14 @@ class ReportCardWidget extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(report.status).withOpacity(0.15),
+                    color: _getStatusColor(report.estado).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    _getStatusLabel(report.status),
+                    _getStatusLabel(report.estado),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: _getStatusColor(report.status),
+                      color: _getStatusColor(report.estado),
                     ),
                   ),
                 ),

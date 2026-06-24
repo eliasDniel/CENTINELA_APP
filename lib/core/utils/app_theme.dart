@@ -166,6 +166,28 @@ class AppTheme {
         backgroundColor: AppConfig.card,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppConfig.textPrimary,
+        ),
+        contentTextStyle: GoogleFonts.outfit(
+          fontSize: 14,
+          color: AppConfig.textSecondary,
+        ),
+      ),
+
+      // SnackBar theme (fallback para usos sin AppAlert)
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppConfig.card,
+        contentTextStyle: GoogleFonts.outfit(
+          color: AppConfig.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: AppConfig.primary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

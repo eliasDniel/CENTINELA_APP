@@ -1,14 +1,16 @@
-// RF-0303, RF-0304: Reports repository interface
-import '../entities/report_entity.dart';
+import 'package:centinela_milagro/features/reports/domain/entities/report_entity.dart';
 
 abstract class ReportsRepository {
-  Future<List<ReportEntity>> getRecentReports();
-  Future<ReportEntity> submitReport(
+  Future<ReportEntity> sosAlert(
     String type,
     String description,
     double latitude,
     double longitude,
-    String userId,
   );
-  Future<List<ReportEntity>> getUserHistory(String userId);
+
+  Future<ReportEntity> submitReport(Map<String, dynamic> data);
+
+  Future<List<ReportEntity>> getHistoryReports();
+
+  Future<ReportEntity> getReportById(String id);
 }

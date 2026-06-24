@@ -2,11 +2,15 @@
 import 'package:flutter/material.dart';
 
 import 'package:centinela_milagro/core/utils/app_colors.dart';
+
 const kIncidentTypes = <Map<String, String>>[
-  {'label': 'Robo', 'value': 'robo'},
-  {'label': 'Sicariato', 'value': 'sicariato'},
-  {'label': 'Sospechoso', 'value': 'sospechoso'},
-  {'label': 'Accidente', 'value': 'accidente'},
+  {'label': 'Pánico',               'value': 'PANICO'},
+  {'label': 'Homicidio / Sicariato','value': 'HOMICIDIO_SICARIATO'},
+  {'label': 'Secuestro',            'value': 'SECUESTRO'},
+  {'label': 'Robo',                 'value': 'ROBO'},
+  {'label': 'Extorsión',            'value': 'EXTORSION'},
+  {'label': 'Persona sospechosa',   'value': 'PERSONA_SOSPECHOSA'},
+  {'label': 'Vehículo sospechoso',  'value': 'VEHICULO_SOSPECHOSO'},
 ];
 
 String incidentTypeLabel(String? value) {
@@ -19,20 +23,26 @@ String incidentTypeLabel(String? value) {
 
 IconData incidentTypeIcon(String type) {
   return switch (type) {
-    'robo' => Icons.no_backpack_rounded,
-    'accidente' => Icons.car_crash_rounded,
-    'sospechoso' => Icons.person_search_rounded,
-    'sicariato' => Icons.dangerous_outlined,
-    _ => Icons.report_rounded,
+    'PANICO'              => Icons.sos_rounded,
+    'HOMICIDIO_SICARIATO' => Icons.dangerous_rounded,
+    'SECUESTRO'           => Icons.lock_person_rounded,
+    'ROBO'                => Icons.no_backpack_rounded,
+    'EXTORSION'           => Icons.money_off_rounded,
+    'PERSONA_SOSPECHOSA'  => Icons.person_search_rounded,
+    'VEHICULO_SOSPECHOSO' => Icons.directions_car_rounded,
+    _                     => Icons.report_rounded,
   };
 }
 
 Color incidentTypeColor(String type) {
   return switch (type) {
-    'robo' => AppConfig.success,
-    'accidente' => AppConfig.warning,
-    'sospechoso' => AppConfig.primary,
-    'sicariato' => AppConfig.sos,
-    _ => AppConfig.textTertiary,
+    'PANICO'              => AppConfig.sos,
+    'HOMICIDIO_SICARIATO' => AppConfig.sos,
+    'SECUESTRO'           => AppConfig.sos,
+    'ROBO'                => AppConfig.warning,
+    'EXTORSION'           => AppConfig.warning,
+    'PERSONA_SOSPECHOSA'  => AppConfig.primary,
+    'VEHICULO_SOSPECHOSO' => AppConfig.primary,
+    _                     => AppConfig.textTertiary,
   };
 }

@@ -1,104 +1,101 @@
-// RF-0101, RF-0102, RF-0105, RF-0204, RF-0303, RF-0304: entidad principal del mapa
-import 'package:latlong2/latlong.dart';
+import 'alert_zona_entity.dart';
 
-enum AlertType {
-  disparo,
-  explosion,
-  grito,
-  vidrio_roto,
-  alarma_vehiculo,
-  nivel_hidrico,
-  reporte_ciudadano,
-  sos,
-}
-
-enum AlertSource {
-  sensor_audio,
-  sensor_video,
-  sensor_hidrico,
-  ciudadano,
-}
-
-enum AlertLevel {
-  vigilancia,
-  alerta,
-  emergencia,
-}
-
-class MapAlertEntity {
+class AlertEntity {
   final String id;
-  final double lat;
-  final double lng;
-  final AlertType type;
-  final AlertSource source;
-  final AlertLevel level;
-  final String zona;
-  final String barrio;
-  final String description;
-  final DateTime timestamp;
-  final bool isActive;
-  final String? nodeId;
-  final String? algorithm;
-  final double? confidence;
-  final double? waterLevelDelta;
-  final String? pseudonym;
+  final String codigo;
+  final String tipo;
+  final String descripcion;
+  final String? zonaId;
+  final int severidad;
+  final String estado;
+  final String? eventoId;
+  final String reporteId;
+  final String? generadaPor;
+  final String? reconocidaPor;
+  final String? reconocidaEn;
+  final String? cerradaPor;
+  final String? cerradaEn;
+  final String notas;
+  final String createdAt;
+  final String? updatedAt;
+  final String? deletedAt;
+  final AlertZonaEntity? zona;
+  final double latitud;
+  final double longitud;
+  final int timestamp;
 
-  const MapAlertEntity({
+  const AlertEntity({
     required this.id,
-    required this.lat,
-    required this.lng,
-    required this.type,
-    required this.source,
-    required this.level,
-    required this.zona,
-    required this.barrio,
-    required this.description,
+    required this.codigo,
+    required this.tipo,
+    required this.descripcion,
+    this.zonaId,
+    required this.severidad,
+    required this.estado,
+    required this.eventoId,
+    required this.reporteId,
+    this.generadaPor,
+    this.reconocidaPor,
+    this.reconocidaEn,
+    this.cerradaPor,
+    this.cerradaEn,
+    this.notas = '',
+    required this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
+     this.zona,
+    required this.latitud,
+    required this.longitud,
     required this.timestamp,
-    required this.isActive,
-    this.nodeId,
-    this.algorithm,
-    this.confidence,
-    this.waterLevelDelta,
-    this.pseudonym,
   });
 
-  LatLng get position => LatLng(lat, lng);
-
-  MapAlertEntity copyWith({
+  AlertEntity copyWith({
     String? id,
-    double? lat,
-    double? lng,
-    AlertType? type,
-    AlertSource? source,
-    AlertLevel? level,
-    String? zona,
-    String? barrio,
-    String? description,
-    DateTime? timestamp,
-    bool? isActive,
-    String? nodeId,
-    String? algorithm,
-    double? confidence,
-    double? waterLevelDelta,
-    String? pseudonym,
+    String? codigo,
+    String? tipo,
+    String? descripcion,
+    String? zonaId,
+    int? severidad,
+    String? estado,
+    String? eventoId,
+    String? reporteId,
+    String? generadaPor,
+    String? reconocidaPor,
+    String? reconocidaEn,
+    String? cerradaPor,
+    String? cerradaEn,
+    String? notas,
+    String? createdAt,
+    String? updatedAt,
+    String? deletedAt,
+    AlertZonaEntity? zona,
+    double? latitud,
+    double? longitud,
+    int? timestamp,
   }) {
-    return MapAlertEntity(
+    return AlertEntity(
       id: id ?? this.id,
-      lat: lat ?? this.lat,
-      lng: lng ?? this.lng,
-      type: type ?? this.type,
-      source: source ?? this.source,
-      level: level ?? this.level,
+      codigo: codigo ?? this.codigo,
+      tipo: tipo ?? this.tipo,
+      descripcion: descripcion ?? this.descripcion,
+      zonaId: zonaId ?? this.zonaId,
+      severidad: severidad ?? this.severidad,
+      estado: estado ?? this.estado,
+      eventoId: eventoId ?? this.eventoId,
+      reporteId: reporteId ?? this.reporteId,
+      generadaPor: generadaPor ?? this.generadaPor,
+      reconocidaPor: reconocidaPor ?? this.reconocidaPor,
+      reconocidaEn: reconocidaEn ?? this.reconocidaEn,
+      cerradaPor: cerradaPor ?? this.cerradaPor,
+      cerradaEn: cerradaEn ?? this.cerradaEn,
+      notas: notas ?? this.notas,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       zona: zona ?? this.zona,
-      barrio: barrio ?? this.barrio,
-      description: description ?? this.description,
+      latitud: latitud ?? this.latitud,
+      longitud: longitud ?? this.longitud,
       timestamp: timestamp ?? this.timestamp,
-      isActive: isActive ?? this.isActive,
-      nodeId: nodeId ?? this.nodeId,
-      algorithm: algorithm ?? this.algorithm,
-      confidence: confidence ?? this.confidence,
-      waterLevelDelta: waterLevelDelta ?? this.waterLevelDelta,
-      pseudonym: pseudonym ?? this.pseudonym,
     );
   }
 }

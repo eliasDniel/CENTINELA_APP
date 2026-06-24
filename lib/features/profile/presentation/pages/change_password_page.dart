@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ChangePasswordPage extends ConsumerStatefulWidget {
@@ -12,8 +13,7 @@ class ChangePasswordPage extends ConsumerStatefulWidget {
   const ChangePasswordPage({super.key});
 
   @override
-  ConsumerState<ChangePasswordPage> createState() =>
-      _ChangePasswordPageState();
+  ConsumerState<ChangePasswordPage> createState() => _ChangePasswordPageState();
 }
 
 class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
@@ -40,7 +40,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
       return;
     }
     if (_newController.text.length < 6) {
-      setState(() => _error = 'La nueva contraseña debe tener al menos 6 caracteres');
+      setState(
+        () => _error = 'La nueva contraseña debe tener al menos 6 caracteres',
+      );
       return;
     }
     if (_newController.text != _confirmController.text) {
@@ -58,13 +60,8 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contraseña cambiada correctamente'),
-        backgroundColor: AppConfig.success,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    AppAlert.success(context, 'Contraseña cambiada correctamente',
+        duration: const Duration(seconds: 2));
     context.pop();
   }
 
@@ -72,7 +69,8 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
 
-    if (user == null || user.isVisitor) {
+    // if (user == null || user.isVisitor) {
+    if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Cambiar contraseña')),
         body: Center(
@@ -107,16 +105,17 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         children: [
           Text(
             'Actualiza tu contraseña',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            'Cuenta: ${user.alias} · Simulación sin backend.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppConfig.textSecondary,
-                ),
+            // 'Cuenta: ${user.nombre} · Simulación sin backend.',
+            'Cuenta: ${user.email.split('@').first} · Simulación sin backend.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppConfig.textSecondary),
           ),
           const SizedBox(height: 28),
           TextField(

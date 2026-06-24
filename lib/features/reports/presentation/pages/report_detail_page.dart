@@ -1,39 +1,109 @@
-// RF-0308: detalle de reporte con mapa y estados
+// RF-0308: detalle de reporte con mapa y estados (datos frescos desde API)
 import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:centinela_milagro/core/utils/app_colors.dart';
+import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:centinela_milagro/features/reports/domain/constants/incident_types.dart';
 import 'package:centinela_milagro/features/reports/domain/entities/report_entity.dart';
+import 'package:centinela_milagro/features/reports/presentation/providers/reports_repository_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-class ReportDetailPage extends ConsumerWidget {
+class ReportDetailPage extends ConsumerStatefulWidget {
   static const routeName = 'report';
 
-  const ReportDetailPage({super.key, required this.report});
+  const ReportDetailPage({super.key, required this.reportId});
 
-  final ReportEntity report;
+  final String reportId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReportDetailPage> createState() => _ReportDetailPageState();
+}
+
+class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
+  ReportEntity? _report;
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadReport());
+  }
+
+  Future<void> _loadReport() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final repository = ref.read(reportsRepositoryProvider);
+      final report = await repository.getReportById(widget.reportId);
+      if (!mounted) return;
+      setState(() {
+        _report = report;
+        _isLoading = false;
+      });
+    } on CustomError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'No se pudo cargar el detalle del reporte';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Detalle del reporte')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage.isNotEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(_errorMessage, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadReport,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : _buildContent(context, _report!),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, ReportEntity report) {
     final userPos = ref.watch(userLocationProvider).position;
-    final reportPos = LatLng(report.latitude, report.longitude);
+    final reportPos = LatLng(report.latitud!, report.longitud!);
     final distance = distanceToUserMeters(userPos, reportPos);
     final mapCenter = LatLng(
       (reportPos.latitude + userPos.latitude) / 2,
       (reportPos.longitude + userPos.longitude) / 2,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalle del reporte'),
-      
-      ),
-      body: ListView(
+    return RefreshIndicator(
+      onRefresh: _loadReport,
+      child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          _BarrioHeader(barrio: report.barrio, type: report.type),
+          _ZonaHeader(zona: report.zonaNombre ?? '', type: report.tipo),
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppConfig.horizontalMargin,
@@ -42,14 +112,13 @@ class ReportDetailPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                _StatusTimeline(status: report.status),
+                _StatusTimeline(status: report.estado),
                 const SizedBox(height: 20),
                 _ReportMapSection(
                   center: mapCenter,
                   reportPos: reportPos,
                   userPos: userPos,
                 ),
-
                 const SizedBox(height: 20),
                 Text(
                   'Descripción',
@@ -59,7 +128,9 @@ class ReportDetailPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  report.description,
+                  report.descripcion.isNotEmpty
+                      ? report.descripcion
+                      : 'Sin descripción',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppConfig.textSecondary,
                     height: 1.45,
@@ -71,14 +142,14 @@ class ReportDetailPage extends ConsumerWidget {
                     _DetailRow(
                       icon: Icons.schedule,
                       label: 'Fecha y hora',
-                      value: _formatDateTime(report.timestamp),
+                      value: report.createdAt,
                     ),
                     _DetailRow(
                       icon: Icons.place_outlined,
                       label: 'Coordenadas',
                       value:
-                          '${report.latitude.toStringAsFixed(5)}, '
-                          '${report.longitude.toStringAsFixed(5)}',
+                          '${report.latitud!.toStringAsFixed(5)}, '
+                          '${report.longitud!.toStringAsFixed(5)}',
                     ),
                     _DetailRow(
                       icon: Icons.near_me_outlined,
@@ -86,16 +157,23 @@ class ReportDetailPage extends ConsumerWidget {
                       value: formatDistanceMeters(distance),
                     ),
                     _DetailRow(
+                      icon: Icons.flag_outlined,
+                      label: 'Prioridad',
+                      value: '${report.prioridad}/4',
+                    ),
+                    _DetailRow(
                       icon: Icons.assignment_turned_in_outlined,
                       label: 'Estado',
-                      value: _statusLabel(report.status),
-                      valueColor: _statusColor(report.status),
+                      value: _statusLabel(report.estado),
+                      valueColor: _statusColor(report.estado),
                     ),
-                    if (report.hasAttachment)
-                      const _DetailRow(
+                    if (report.fotosUrls?.isNotEmpty ?? false)
+                      _DetailRow(
                         icon: Icons.attach_file,
                         label: 'Evidencia',
-                        value: 'Foto o video adjunto',
+                        value: report.fotosUrls?.isEmpty ?? false
+                            ? 'Archivo adjunto'
+                            : '${report.fotosUrls?.length ?? 0} archivo(s)',
                       ),
                   ],
                 ),
@@ -108,10 +186,10 @@ class ReportDetailPage extends ConsumerWidget {
   }
 }
 
-class _BarrioHeader extends StatelessWidget {
-  const _BarrioHeader({required this.barrio, required this.type});
+class _ZonaHeader extends StatelessWidget {
+  const _ZonaHeader({required this.zona, required this.type});
 
-  final String barrio;
+  final String zona;
   final String type;
 
   @override
@@ -129,7 +207,7 @@ class _BarrioHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppConfig.primary.withOpacity(0.15),
+              color: AppConfig.primary.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.location_city, color: AppConfig.primary),
@@ -140,13 +218,13 @@ class _BarrioHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Barrio',
+                  'Zona',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: AppConfig.textTertiary,
                   ),
                 ),
                 Text(
-                  barrio,
+                  zona,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -157,7 +235,7 @@ class _BarrioHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: incidentTypeColor(type).withOpacity(0.15),
+              color: incidentTypeColor(type).withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -241,8 +319,8 @@ class _StatusTimeline extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: done
                         ? (active && status != 'atendido'
-                              ? AppConfig.warning.withOpacity(0.2)
-                              : AppConfig.success.withOpacity(0.2))
+                              ? AppConfig.warning.withValues(alpha: 0.2)
+                              : AppConfig.success.withValues(alpha: 0.2))
                         : AppConfig.card,
                     border: Border.all(
                       color: done ? AppConfig.success : AppConfig.border,
@@ -349,7 +427,7 @@ class _ReportMapSection extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
+                              color: Colors.black.withValues(alpha: 0.25),
                               blurRadius: 4,
                             ),
                           ],

@@ -1,26 +1,55 @@
-// RF-0303, RF-0304, RF-0307, RF-0308: Report entity
 class ReportEntity {
   final String id;
-  final String type; // 'robo', 'sicariato', 'sospechoso', 'accidente'
-  final String description;
-  final double latitude;
-  final double longitude;
-  final String status; // 'recibido', 'en_revision', 'atendido'
-  final DateTime timestamp;
-  final String? userId; // null for reports from others
-  final bool hasAttachment;
-  final String barrio; // 'Norte', 'Sur', 'Centro', 'Este', 'Oeste'
 
-  ReportEntity({
+  final String tipo;
+
+  final String descripcion;
+
+  final String? zonaId;
+
+  final String? zonaNombre;
+
+  final String estado;
+
+  final int prioridad;
+
+  final String? fotosUrls;
+
+  final String createdAt;
+
+  final int timestamp;
+
+  final String? updatedAt;
+
+  final double? latitud;
+
+  final double? longitud;
+
+  const ReportEntity({
     required this.id,
-    required this.type,
-    required this.description,
-    required this.latitude,
-    required this.longitude,
-    required this.status,
+
+    required this.tipo,
+
+    required this.descripcion,
+
+    this.zonaId,
+
+    this.zonaNombre,
+
+    required this.estado,
+
+    required this.prioridad,
+
+    this.fotosUrls,
+
+    required this.createdAt,
+
     required this.timestamp,
-    required this.barrio,
-    this.userId,
-    this.hasAttachment = false,
+
+    this.updatedAt,
+
+    this.latitud,
+
+    this.longitud,
   });
 }

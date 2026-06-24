@@ -30,9 +30,7 @@ class SubscriptionsHubPage extends ConsumerWidget {
     final notifier = ref.read(barriosSubscribedProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis barrios'),
-      ),
+      appBar: AppBar(title: const Text('Mis barrios')),
       body: ListView(
         padding: const EdgeInsets.all(AppConfig.horizontalMargin),
         children: [
@@ -49,17 +47,17 @@ class SubscriptionsHubPage extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               '$slotsUsed de $kMaxBarriosAdicionales barrios adicionales',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppConfig.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppConfig.textSecondary),
             ),
           ] else ...[
             const SizedBox(height: 8),
             Text(
               'Zona: $homeZona — alertas a nivel de toda la zona',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppConfig.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppConfig.textSecondary),
             ),
           ],
           const SizedBox(height: 24),
@@ -168,8 +166,10 @@ class SubscriptionsHubPage extends ConsumerWidget {
               onConfirm();
               Navigator.pop(ctx);
             },
-            child:
-                const Text('Quitar', style: TextStyle(color: AppConfig.error)),
+            child: const Text(
+              'Quitar',
+              style: TextStyle(color: AppConfig.error),
+            ),
           ),
         ],
       ),
@@ -255,7 +255,8 @@ class _StepRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-              child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+          ),
         ],
       ),
     );

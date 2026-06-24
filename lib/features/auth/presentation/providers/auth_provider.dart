@@ -1,132 +1,307 @@
-// RF-0301, RF-0302: Auth state and notifier for Riverpod
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../domain/usecases/login_usecase.dart';
-import '../../domain/usecases/register_usecase.dart';
-import '../../domain/usecases/login_as_visitor_usecase.dart';
-import '../../domain/usecases/update_location_usecase.dart';
-import '../../infrastructure/datasources/auth_local_datasource.dart';
-import '../../infrastructure/repositories/auth_repository_impl.dart';
+import 'package:centinela_milagro/features/auth/infrastructure/utils/access_token.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/auth_repository_provider.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/auth_session_keys.dart';
+import 'package:centinela_milagro/features/auth/presentation/providers/services/key_value_storage_impl.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import '../../domain/domain.dart';
+import '../../infrastructure/infrastructure.dart';
+import 'services/key_value_storage.dart';
 
-class AuthState {
-  final UserEntity? user;
-  final bool isLoading;
-  final String? error;
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  final keyValueStorageService = KeyValueStorageImpl();
+  return AuthNotifier(
+    authRepository: authRepository,
+    keyValueStorageService: keyValueStorageService,
+  );
+});
 
-  AuthState({
-    this.user,
-    this.isLoading = false,
-    this.error,
-  });
+class AuthNotifier extends StateNotifier<AuthState> {
+  final AuthRepository authRepository;
+  final KeyValueStorageService keyValueStorageService;
+  bool _isCheckingAuth = false;
 
-  bool get isAuthenticated => user != null;
+  AuthNotifier({
+    required this.authRepository,
+    required this.keyValueStorageService,
+  }) : super(AuthState()) {
+    checkAuthStatus();
+  }
 
-  AuthState copyWith({
-    UserEntity? user,
-    bool? isLoading,
-    String? error,
-  }) {
-    return AuthState(
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+  /// `null` si el login fue exitoso; mensaje de error del backend en caso contrario.
+  Future<String?> loginUser(String email, String password) async {
+    try {
+      final user = await _enrichWithZona(await authRepository.login(email, password));
+      await _setLoggedUser(user);
+      return null;
+    } on CustomError catch (e) {
+      state = state.copyWith(
+        authStatus: AuthStatus.unauthenticated,
+        user: null,
+        errorMessage: e.message,
+      );
+      return e.message;
+    }
+  }
+
+  /// `null` si el registro fue exitoso; mensaje de error del backend en caso contrario.
+  Future<String?> registerUser({
+    required String email,
+    required String password,
+    required String alias,
+    String? phone,
+    required String zonaId,
+  }) async {
+    try {
+      final ok = await authRepository.register(
+        email: email,
+        password: password,
+        alias: alias,
+        phone: phone,
+        zonaId: zonaId,
+      );
+      if (!ok) {
+        const fallback = 'No se pudo completar el registro';
+        state = state.copyWith(errorMessage: fallback);
+        return fallback;
+      }
+      state = state.copyWith(errorMessage: '');
+      return null;
+    } on CustomError catch (e) {
+      state = state.copyWith(errorMessage: e.message);
+      return e.message;
+    }
+  }
+
+  void checkAuthStatus() async {
+    if (_isCheckingAuth) return;
+    _isCheckingAuth = true;
+
+    try {
+      final refreshToken = await keyValueStorageService.getValue<String>(
+        AuthSessionKeys.refreshToken,
+      );
+      if (refreshToken == null) {
+        return logoutUser();
+      }
+
+      final accessToken = await keyValueStorageService.getValue<String>(
+        AuthSessionKeys.token,
+      );
+
+      // Hot reload / re-apertura: no rotar el refresh si el JWT aún es válido.
+      if (accessToken != null && isAccessTokenValid(accessToken)) {
+        final restored = await _restoreUserFromStorage(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+        if (restored != null) {
+          final enriched = await _enrichWithZona(restored);
+          state = state.copyWith(
+            authStatus: AuthStatus.authenticated,
+            user: enriched,
+            errorMessage: '',
+          );
+          if (enriched.zonaNombre != restored.zonaNombre) {
+            await keyValueStorageService.setKeyValue(
+              AuthSessionKeys.userZonaNombre,
+              enriched.zonaNombre ?? '',
+            );
+          }
+          return;
+        }
+      }
+
+      final user = await _enrichWithZona(await authRepository.checkStatus(refreshToken));
+      await _setLoggedUser(user);
+    } catch (e) {
+      if (e is CustomError && e.message == 'Revisar conexión') {
+        final offline = await _tryRestoreOfflineSession();
+        if (offline != null) {
+          state = state.copyWith(
+            authStatus: AuthStatus.authenticated,
+            user: offline,
+            errorMessage: '',
+          );
+          return;
+        }
+      }
+
+      final recovered = await _tryRecoverSessionAfterRefreshRace();
+      if (recovered == null) {
+        logoutUser();
+      }
+    } finally {
+      _isCheckingAuth = false;
+    }
+  }
+
+  Future<UserEntity?> _tryRestoreOfflineSession() async {
+    final accessToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.token,
+    );
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (accessToken == null || refreshToken == null) return null;
+    if (!isAccessTokenValid(accessToken)) return null;
+
+    return _restoreUserFromStorage(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     );
   }
-}
 
-class AuthNotifier extends Notifier<AuthState> {
-  late AuthRepository repository;
+  Future<UserEntity?> _tryRecoverSessionAfterRefreshRace() async {
+    final accessToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.token,
+    );
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (accessToken == null || refreshToken == null) return null;
+    if (!isAccessTokenValid(accessToken)) return null;
 
-  @override
-  AuthState build() {
-    repository = ref.watch(authRepositoryProvider);
-    return AuthState();
+    final recovered = await _restoreUserFromStorage(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+    if (recovered == null) return null;
+
+    state = state.copyWith(
+      authStatus: AuthStatus.authenticated,
+      user: recovered,
+      errorMessage: '',
+    );
+    return recovered;
   }
 
-  Future<void> login(String alias, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final loginUseCase = LoginUseCase(repository);
-      final user = await loginUseCase(alias, password);
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
-    }
-  }
-
-  Future<void> register(
-    String alias,
-    String password,
-    String zona,
-    String barrio, {
-    String? phone,
+  Future<UserEntity?> _restoreUserFromStorage({
+    required String accessToken,
+    required String refreshToken,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final registerUseCase = RegisterUseCase(repository);
-      final user = await registerUseCase(
-        alias,
-        password,
-        zona,
-        barrio,
-        phone: phone,
-      );
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
-    }
+    final uuid = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userUuid,
+    );
+    final email = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userEmail,
+    );
+    final rol = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userRol,
+    );
+    final zonaId = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userZonaId,
+    );
+    final zonaNombre = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userZonaNombre,
+    );
+
+    if (uuid == null || email == null || rol == null) return null;
+
+    return UserEntity(
+      uuid: uuid,
+      email: email,
+      rol: rol,
+      token: accessToken,
+      refreshToken: refreshToken,
+      zonaId: zonaId ?? '',
+      zonaNombre: zonaNombre,
+    );
   }
 
-  Future<void> loginAsVisitor() async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<UserEntity> _enrichWithZona(UserEntity user) async {
+    if (user.zonaId.isEmpty) return user;
+    if (user.zonaNombre != null && user.zonaNombre!.isNotEmpty) return user;
+
     try {
-      final loginAsVisitorUseCase = LoginAsVisitorUseCase(repository);
-      final user = await loginAsVisitorUseCase();
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
+      final zonas = await authRepository.getZonas();
+      for (final zona in zonas) {
+        if (zona.id == user.zonaId) {
+          return user.copyWith(zonaNombre: zona.nombre);
+        }
+      }
+    } catch (_) {
+      // Si falla la carga de zonas, la sesión sigue válida sin nombre.
     }
+    return user;
   }
 
-  Future<bool> updateLocation(String zona, String barrio) async {
-    final alias = state.user?.alias;
-    if (alias == null) return false;
+  Future<void> _setLoggedUser(UserEntity user) async {
+    await keyValueStorageService.setKeyValue(AuthSessionKeys.token, user.token);
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.refreshToken,
+      user.refreshToken,
+    );
+    await keyValueStorageService.setKeyValue(AuthSessionKeys.userUuid, user.uuid);
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userEmail,
+      user.email,
+    );
+    await keyValueStorageService.setKeyValue(AuthSessionKeys.userRol, user.rol);
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userZonaId,
+      user.zonaId,
+    );
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userZonaNombre,
+      user.zonaNombre ?? '',
+    );
 
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final useCase = UpdateLocationUseCase(repository);
-      final user = await useCase(alias, zona, barrio);
-      state = state.copyWith(user: user, isLoading: false);
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString().replaceFirst('Exception: ', ''),
-        isLoading: false,
-      );
-      return false;
-    }
+    state = state.copyWith(
+      authStatus: AuthStatus.authenticated,
+      user: user,
+      errorMessage: '',
+    );
   }
 
-  void logout() {
-    state = AuthState();
+  Future<void> logoutUser([String? errorMessage]) async {
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (refreshToken != null) {
+      try {
+        await authRepository.logout(refreshToken);
+      } catch (_) {
+        // Si la sesión ya expiró, igual limpiamos el almacenamiento local.
+      }
+    }
+
+    await _clearStoredSession();
+
+    state = state.copyWith(
+      authStatus: AuthStatus.unauthenticated,
+      user: null,
+      errorMessage: errorMessage ?? '',
+    );
+  }
+
+  Future<void> _clearStoredSession() async {
+    for (final key in AuthSessionKeys.all) {
+      await keyValueStorageService.removeKey(key);
+    }
   }
 }
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dataSource = AuthLocalDataSource();
-  return AuthRepositoryImpl(dataSource);
-});
+enum AuthStatus { authenticated, unauthenticated, checking }
 
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
-  return AuthNotifier();
-});
+class AuthState {
+  final AuthStatus authStatus;
+  final UserEntity? user;
+  final String errorMessage;
+
+  AuthState({
+    this.authStatus = AuthStatus.checking,
+    this.user,
+    this.errorMessage = '',
+  });
+
+  AuthState copyWith({
+    AuthStatus? authStatus,
+    UserEntity? user,
+    String? errorMessage,
+  }) => AuthState(
+    authStatus: authStatus ?? this.authStatus,
+    user: user ?? this.user,
+    errorMessage: errorMessage ?? this.errorMessage,
+  );
+}

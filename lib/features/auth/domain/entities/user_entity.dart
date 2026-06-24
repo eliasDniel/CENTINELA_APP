@@ -1,20 +1,51 @@
-// RF-0301: User entity for domain layer
 class UserEntity {
-  final String alias;
   final String uuid;
-  final String zona;
-  final String barrio;
-  final String? phone;
-  final bool isVisitor;
+  final String email;
+  final String rol;
+  final String token;
+  final String refreshToken;
+  final String zonaId;
+  final String? zonaNombre;
 
   UserEntity({
-    required this.alias,
     required this.uuid,
-    required this.zona,
-    required this.barrio,
-    this.phone,
-    required this.isVisitor,
+    required this.email,
+    required this.rol,
+    required this.token,
+    required this.refreshToken,
+    required this.zonaId,
+    this.zonaNombre,
   });
 
-  bool get tieneBarrio => barrio.isNotEmpty;
+  bool get tieneZona => zonaId.isNotEmpty;
+
+  String get nombre => email.split('@').first;
+
+  String? get zona => zonaNombre;
+
+  String? get barrio => null;
+
+  bool get tieneBarrio => false;
+
+  bool get isVisitor => rol == 'visitante' || token.isEmpty;
+
+  UserEntity copyWith({
+    String? uuid,
+    String? email,
+    String? rol,
+    String? token,
+    String? refreshToken,
+    String? zonaId,
+    String? zonaNombre,
+  }) {
+    return UserEntity(
+      uuid: uuid ?? this.uuid,
+      email: email ?? this.email,
+      rol: rol ?? this.rol,
+      token: token ?? this.token,
+      refreshToken: refreshToken ?? this.refreshToken,
+      zonaId: zonaId ?? this.zonaId,
+      zonaNombre: zonaNombre ?? this.zonaNombre,
+    );
+  }
 }

@@ -11,6 +11,7 @@ import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
 import '../../../notifications/presentation/notifications_screens.dart';
 import '../../../notifications/presentation/providers/notification_settings_provider.dart';
 import '../providers/profile_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -27,7 +28,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final barriosSuscribed = ref.watch(barriosSubscribedProvider);
     final authNotifier = ref.read(authProvider.notifier);
 
-    if (authState.user?.isVisitor ?? false) {
+    // Comentado: isVisitor pendiente en UserEntity
+    // if (authState.user?.isVisitor ?? false) {
+    if (authState.user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Perfil')),
         body: Center(
@@ -51,8 +54,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       );
     }
 
-    final userZona = authState.user?.zona ?? 'Milagro';
-    final userBarrio = authState.user?.barrio ?? '';
+    // final userZona = authState.user?.zona ?? 'Milagro';
+    // final userBarrio = authState.user?.barrio ?? '';
+    final userZona = 'Milagro';
+    final userBarrio = '';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Perfil')),
@@ -88,12 +93,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: ListTile(
                   title: const Text('Cambiar contraseña'),
                   subtitle: const Text('Actualiza tu clave de acceso'),
-                  leading: const Icon(Icons.vpn_key_outlined,
-                      color: AppConfig.primary),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(
-                    '/home/3/${ChangePasswordPage.routeName}',
+                  leading: const Icon(
+                    Icons.vpn_key_outlined,
+                    color: AppConfig.primary,
                   ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      context.push('/home/3/${ChangePasswordPage.routeName}'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -121,8 +127,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                             onPressed: () {
                               Navigator.pop(context);
-                              authNotifier.logout();
-                              context.go('/auth');
+                              authNotifier.logoutUser();
+                          
                             },
                             child: const Text('Cerrar sesión'),
                           ),
@@ -154,8 +160,9 @@ class _CardConfig extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationsOn = ref.watch(notificationsEnabledProvider);
-    final notificationsNotifier =
-        ref.read(notificationsEnabledProvider.notifier);
+    final notificationsNotifier = ref.read(
+      notificationsEnabledProvider.notifier,
+    );
 
     return Column(
       children: [
@@ -176,7 +183,6 @@ class _CardConfig extends ConsumerWidget {
                   ],
                 ),
               ),
-
 
               const Divider(color: Colors.white24),
               SwitchListTile(
@@ -201,12 +207,13 @@ class _CardConfig extends ConsumerWidget {
               ListTile(
                 title: const Text('Bandeja de notificaciones'),
                 subtitle: const Text('Alertas recibidas'),
-                leading:
-                    const Icon(Icons.inbox_outlined, color: AppConfig.primary),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '/home/3/${NotificationsScreen.routeName}',
+                leading: const Icon(
+                  Icons.inbox_outlined,
+                  color: AppConfig.primary,
                 ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    context.push('/home/3/${NotificationsScreen.routeName}'),
               ),
             ],
           ),
@@ -233,26 +240,27 @@ class _CardConfig extends ConsumerWidget {
               ListTile(
                 title: const Text('Pendientes offline'),
                 subtitle: const Text('SOS y reportes sin enviar'),
-                leading: const Icon(Icons.cloud_off_outlined,
-                    color: AppConfig.warning),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '/home/3/${OfflineQueuePage.routeName}',
+                leading: const Icon(
+                  Icons.cloud_off_outlined,
+                  color: AppConfig.warning,
                 ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    context.push('/home/3/${OfflineQueuePage.routeName}'),
               ),
               const Divider(color: Colors.white24),
               ListTile(
                 title: const Text('Cambiar zona y barrio'),
                 subtitle: Text(
-                  userBarrio.isNotEmpty
-                      ? '$userZona · $userBarrio'
-                      : userZona,
+                  userBarrio.isNotEmpty ? '$userZona · $userBarrio' : userZona,
                 ),
-                leading: Icon(Icons.edit_location_alt, color: AppConfig.primary),
+                leading: Icon(
+                  Icons.edit_location_alt,
+                  color: AppConfig.primary,
+                ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '/home/3/${ChangeLocationPage.routeName}',
-                ),
+                onTap: () =>
+                    context.push('/home/3/${ChangeLocationPage.routeName}'),
               ),
               const Divider(color: Colors.white24),
               ListTile(
@@ -260,15 +268,14 @@ class _CardConfig extends ConsumerWidget {
                 subtitle: Text(
                   barriosSuscribed.isEmpty
                       ? (userBarrio.isNotEmpty
-                          ? '$userBarrio · hasta 3 barrios más'
-                          : 'Zona completa · sin barrios específicos')
+                            ? '$userBarrio · hasta 3 barrios más'
+                            : 'Zona completa · sin barrios específicos')
                       : '$userBarrio + ${barriosSuscribed.join(', ')}',
                 ),
                 leading: Icon(Icons.location_on, color: AppConfig.primary),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '/home/3/${SubscriptionsHubPage.routeName}',
-                ),
+                onTap: () =>
+                    context.push('/home/3/${SubscriptionsHubPage.routeName}'),
               ),
               const Divider(color: Colors.white24),
               ListTile(
@@ -276,9 +283,7 @@ class _CardConfig extends ConsumerWidget {
                 subtitle: const Text('Datos personales y eliminar cuenta'),
                 leading: Icon(Icons.lock, color: AppConfig.primary),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '/home/3/${PrivacyPage.routeName}',
-                ),
+                onTap: () => context.push('/home/3/${PrivacyPage.routeName}'),
               ),
             ],
           ),
@@ -310,29 +315,30 @@ class CardProfile extends StatelessWidget {
             // Avatar
             CircleAvatar(
               radius: 50,
-              backgroundImage: AssetImage(
-                'assets/images/anonimo.png',
-              ),
+              backgroundImage: AssetImage('assets/images/anonimo.png'),
             ),
             const SizedBox(height: 16),
-            
-            // Alias
+
+            // Nombre
             Text(
-              authState.user?.alias ?? 'Usuario',
+              // authState.user?.nombre ?? 'Usuario',
+            authState.user?.email.split('@').first ?? 'Usuario',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 4),
-            
+
             // Barrio con icono
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.location_on, size: 16, color: AppConfig.primary),
+                const Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: AppConfig.primary,
+                ),
                 const SizedBox(width: 4),
                 Text(
-                  userBarrio.isNotEmpty
-                      ? '$userZona · $userBarrio'
-                      : userZona,
+                  userBarrio.isNotEmpty ? '$userZona · $userBarrio' : userZona,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppConfig.textSecondary,
                   ),
@@ -340,11 +346,11 @@ class CardProfile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Divider
             Divider(color: AppConfig.border),
             const SizedBox(height: 12),
-            
+
             // Estadísticas rápidas (3 columnas)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -366,21 +372,15 @@ class CardProfile extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
             Divider(color: AppConfig.border),
             const SizedBox(height: 12),
-            
+
             // UUID copiable
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'UUID copiado: ${authState.user?.uuid}',
-                    ),
-                  ),
-                );
+                AppAlert.info(context, 'UUID copiado: ${authState.user?.uuid}');
               },
               child: Column(
                 children: [
@@ -402,7 +402,10 @@ class CardProfile extends StatelessWidget {
                   const SizedBox(height: 4),
                   const Text(
                     'Toca para copiar',
-                    style: TextStyle(fontSize: 10, color: AppConfig.textTertiary),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppConfig.textTertiary,
+                    ),
                   ),
                 ],
               ),
@@ -432,15 +435,9 @@ class _StatItem extends StatelessWidget {
       children: [
         Icon(icon, color: AppConfig.primary, size: 24),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(value, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
