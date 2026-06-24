@@ -12,4 +12,17 @@ class MapRepositoryImpl implements MapRepository {
   Future<List<AlertEntity>> getActiveAlerts() {
     return datasources.getActiveAlerts();
   }
+
+  @override
+  Future<Map<String, dynamic>> getAlertById(String alertId) {
+    return datasources.getAlertById(alertId);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getZonasByUser(
+    String userId,
+    String zonaId,
+  ) {
+    return datasources.getZonasByUser(userId, zonaId);
+  }
 }

@@ -9,7 +9,7 @@ class AlertEntity {
   final int severidad;
   final String estado;
   final String? eventoId;
-  final String? reporteId;
+  final String reporteId;
   final String? generadaPor;
   final String? reconocidaPor;
   final String? reconocidaEn;
@@ -17,11 +17,11 @@ class AlertEntity {
   final String? cerradaEn;
   final String notas;
   final String createdAt;
-  final String updatedAt;
+  final String? updatedAt;
   final String? deletedAt;
   final AlertZonaEntity? zona;
-  final double? latitud;
-  final double? longitud;
+  final double latitud;
+  final double longitud;
   final int timestamp;
 
   const AlertEntity({
@@ -29,21 +29,21 @@ class AlertEntity {
     required this.codigo,
     required this.tipo,
     required this.descripcion,
-    required this.zonaId,
+    this.zonaId,
     required this.severidad,
     required this.estado,
     required this.eventoId,
     required this.reporteId,
-    required this.generadaPor,
-    required this.reconocidaPor,
-    required this.reconocidaEn,
-    required this.cerradaPor,
-    required this.cerradaEn,
-    required this.notas,
+    this.generadaPor,
+    this.reconocidaPor,
+    this.reconocidaEn,
+    this.cerradaPor,
+    this.cerradaEn,
+    this.notas = '',
     required this.createdAt,
-    required this.updatedAt,
-    required this.deletedAt,
-    required this.zona,
+    this.updatedAt,
+    this.deletedAt,
+     this.zona,
     required this.latitud,
     required this.longitud,
     required this.timestamp,

@@ -190,14 +190,24 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
     }
 
     if (reports.isEmpty) {
-      return Expanded(child: Center(child: Text('No hay reportes aún')));
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 120),
+          Center(child: Text('No hay reportes aún')),
+        ],
+      );
     }
 
-    return Expanded(child: ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: AppConfig.horizontalMargin  - 10, vertical: AppConfig.horizontalMargin-10),
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppConfig.horizontalMargin - 10,
+        vertical: AppConfig.horizontalMargin - 10,
+      ),
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: reports.length,
-      itemBuilder: (context, index) => ReportCardWidget(report: reports[index]),
-    ));
+      itemBuilder: (context, index) =>
+          ReportCardWidget(report: reports[index]),
+    );
   }
 }

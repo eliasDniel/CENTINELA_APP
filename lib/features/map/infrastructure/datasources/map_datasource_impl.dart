@@ -34,19 +34,39 @@ class MapDatasourceImpl implements MapDatasource {
       await _setAuthorizationHeader();
       final response = await _dio.get('/alertas');
       final raw = response.data;
-      if (raw is! List) return [];
-
-      return raw
-          .whereType<Map>()
-          .map(
-            (item) => AlertsResponse.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .map(MapAlertMapper.fromAlertsResponse)
-          .toList();
+      final alertsResponse = raw.map((item) => AlertsResponse.fromJson(item)).toList();
+      final alerts = alertsResponse.map((alert) => MapAlertMapper.fromAlertsResponse(alert)).toList();
+      return alerts;
     } on DioException catch (e) {
       throw CustomError(reportApiErrorMessage(e.response?.data));
     } catch (_) {
       throw CustomError('Error al obtener las alertas');
+    }
+  }
+  
+  @override
+  Future<Map<String, dynamic>> getAlertById(String alertId) async{
+    try {
+      await _setAuthorizationHeader();
+      final response = await _dio.get('/alertas/$alertId');
+      return response.data;
+    } on DioException catch (e) {
+      throw CustomError(reportApiErrorMessage(e.response?.data));
+    } catch (_) {
+      throw CustomError('Error al obtener la alerta');
+    }
+  }
+  
+  @override
+  Future<List<Map<String, dynamic>>> getZonasByUser(String userId, String zonaId)async {
+    try {
+      await _setAuthorizationHeader();
+      final response = await _dio.get('/zonas/usuario/$userId/$zonaId');
+      return response.data;
+    } on DioException catch (e) {
+      throw CustomError(reportApiErrorMessage(e.response?.data));
+    } catch (_) {
+      throw CustomError('Error al obtener las zonas');
     }
   }
 }

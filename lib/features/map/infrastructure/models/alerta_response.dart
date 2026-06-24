@@ -1,4 +1,4 @@
-import 'package:centinela_milagro/core/utils/api_timestamp.dart';
+import 'package:centinela_milagro/features/map/infrastructure/models/zonas_by_user_response.dart';
 
 class AlertsResponse {
   final String id;
@@ -9,7 +9,7 @@ class AlertsResponse {
   final int severidad;
   final String estado;
   final String? eventoId;
-  final String? reporteId;
+  final String reporteId;
   final String? generadaPor;
   final String? reconocidaPor;
   final String? reconocidaEn;
@@ -17,11 +17,11 @@ class AlertsResponse {
   final String? cerradaEn;
   final String notas;
   final String createdAt;
-  final String updatedAt;
+  final String? updatedAt;
   final String? deletedAt;
-  final ZonaResponse? zona;
-  final double? latitud;
-  final double? longitud;
+  final Zona? zona;
+  final double latitud;
+  final double longitud;
   final int timestamp;
 
   AlertsResponse({
@@ -29,71 +29,75 @@ class AlertsResponse {
     required this.codigo,
     required this.tipo,
     required this.descripcion,
-    required this.zonaId,
+    this.zonaId,
     required this.severidad,
     required this.estado,
-    required this.eventoId,
+    this.eventoId,
     required this.reporteId,
-    required this.generadaPor,
-    required this.reconocidaPor,
-    required this.reconocidaEn,
-    required this.cerradaPor,
-    required this.cerradaEn,
+    this.generadaPor,
+    this.reconocidaPor,
+    this.reconocidaEn,
+    this.cerradaPor,
+    this.cerradaEn,
     required this.notas,
     required this.createdAt,
-    required this.updatedAt,
-    required this.deletedAt,
+    this.updatedAt,
+    this.deletedAt,
     required this.zona,
     required this.latitud,
     required this.longitud,
     required this.timestamp,
   });
 
-  factory AlertsResponse.fromJson(Map<String, dynamic> json) {
-    final createdAt = json['createdAt']?.toString() ?? '';
-    return AlertsResponse(
-      id: json['id']?.toString() ?? '',
-      codigo: json['codigo']?.toString() ?? '',
-      tipo: json['tipo']?.toString() ?? '',
-      descripcion: json['descripcion']?.toString() ?? '',
-      zonaId: json['zonaId']?.toString(),
-      severidad: (json['severidad'] as num?)?.toInt() ?? 1,
-      estado: json['estado']?.toString() ?? 'activa',
-      eventoId: json['eventoId']?.toString(),
-      reporteId: json['reporteId']?.toString(),
-      generadaPor: json['generadaPor']?.toString(),
-      reconocidaPor: json['reconocidaPor']?.toString(),
-      reconocidaEn: json['reconocidaEn']?.toString(),
-      cerradaPor: json['cerradaPor']?.toString(),
-      cerradaEn: json['cerradaEn']?.toString(),
-      notas: json['notas']?.toString() ?? '',
-      createdAt: createdAt,
-      updatedAt: json['updatedAt']?.toString() ?? '',
-      deletedAt: json['deletedAt']?.toString(),
-      zona: json['zona'] == null
-          ? null
-          : ZonaResponse.fromJson(Map<String, dynamic>.from(json['zona'] as Map)),
-      latitud: (json['latitud'] as num?)?.toDouble(),
-      longitud: (json['longitud'] as num?)?.toDouble(),
-      timestamp: parseApiTimestamp(
-        json['timestamp'],
-        fallbackMs: parseApiTimestamp(createdAt),
-      ),
-    );
-  }
-}
-
-class ZonaResponse {
-  final String nombre;
-  final int riesgoNivel;
-
-  ZonaResponse({
-    required this.nombre,
-    required this.riesgoNivel,
-  });
-
-  factory ZonaResponse.fromJson(Map<String, dynamic> json) => ZonaResponse(
-    nombre: json['nombre']?.toString() ?? '',
-    riesgoNivel: (json['riesgoNivel'] as num?)?.toInt() ?? 1,
+  factory AlertsResponse.fromJson(Map<String, dynamic> json) => AlertsResponse(
+    id: json["id"],
+    codigo: json["codigo"],
+    tipo: json["tipo"],
+    descripcion: json["descripcion"],
+    zonaId: json["zonaId"],
+    severidad: json["severidad"],
+    estado: json["estado"],
+    eventoId: json["eventoId"],
+    reporteId: json["reporteId"],
+    generadaPor: json["generadaPor"],
+    reconocidaPor: json["reconocidaPor"],
+    reconocidaEn: json["reconocidaEn"],
+    cerradaPor: json["cerradaPor"],
+    cerradaEn: json["cerradaEn"],
+    notas: json["notas"],
+    createdAt: json["createdAt"],
+    updatedAt: json["updatedAt"],
+    deletedAt: json["deletedAt"],
+    zona: json["zona"] != null ? Zona.fromJson(json["zona"]) : null,
+    latitud: json["latitud"]?.toDouble(),
+    longitud: json["longitud"]?.toDouble(),
+    timestamp: json["timestamp"],
   );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "codigo": codigo,
+    "tipo": tipo,
+    "descripcion": descripcion,
+    "zonaId": zonaId,
+    "severidad": severidad,
+    "estado": estado,
+    "eventoId": eventoId,
+    "reporteId": reporteId,
+    "generadaPor": generadaPor,
+    "reconocidaPor": reconocidaPor,
+    "reconocidaEn": reconocidaEn,
+    "cerradaPor": cerradaPor,
+    "cerradaEn": cerradaEn,
+    "notas": notas,
+    "createdAt": createdAt,
+    "updatedAt": updatedAt,
+    "deletedAt": deletedAt,
+    "zona": zona?.toJson(),
+    "latitud": latitud,
+    "longitud": longitud,
+    "timestamp": timestamp,
+  };
 }
+
+
