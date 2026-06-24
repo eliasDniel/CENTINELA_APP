@@ -1,7 +1,10 @@
 // RF-0308: detalle de reporte con mapa y estados (datos frescos desde API)
 import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:centinela_milagro/core/utils/app_colors.dart';
+import 'package:centinela_milagro/core/utils/view_insets.dart';
+import 'package:centinela_milagro/core/utils/format_report_datetime.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
+import 'package:centinela_milagro/features/map/presentation/widgets/map_floating_controls.dart';
 import 'package:centinela_milagro/features/reports/domain/constants/incident_types.dart';
 import 'package:centinela_milagro/features/reports/domain/entities/report_entity.dart';
 import 'package:centinela_milagro/features/reports/presentation/providers/reports_repository_provider.dart';
@@ -64,7 +67,10 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle del reporte')),
+      appBar: AppBar(
+        title: const Text('Detalle del reporte'),
+        backgroundColor: AppConfig.surface.withValues(alpha: 0.95),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
@@ -92,15 +98,11 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
     final userPos = ref.watch(userLocationProvider).position;
     final reportPos = LatLng(report.latitud!, report.longitud!);
     final distance = distanceToUserMeters(userPos, reportPos);
-    final mapCenter = LatLng(
-      (reportPos.latitude + userPos.latitude) / 2,
-      (reportPos.longitude + userPos.longitude) / 2,
-    );
 
     return RefreshIndicator(
       onRefresh: _loadReport,
       child: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: 24 + bottomViewInset(context)),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           _ZonaHeader(zona: report.zonaNombre ?? '', type: report.tipo),
@@ -115,34 +117,39 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                 _StatusTimeline(status: report.estado),
                 const SizedBox(height: 20),
                 _ReportMapSection(
-                  center: mapCenter,
                   reportPos: reportPos,
                   userPos: userPos,
                 ),
                 const SizedBox(height: 20),
-                Text(
-                  'Descripción',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
+                _SectionTitle(title: 'Descripción'),
                 const SizedBox(height: 8),
-                Text(
-                  report.descripcion.isNotEmpty
-                      ? report.descripcion
-                      : 'Sin descripción',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppConfig.textSecondary,
-                    height: 1.45,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppConfig.card,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppConfig.border),
+                  ),
+                  child: Text(
+                    report.descripcion.isNotEmpty
+                        ? report.descripcion
+                        : 'Sin descripción',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppConfig.textSecondary,
+                      height: 1.45,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
+                _SectionTitle(title: 'Información'),
+                const SizedBox(height: 10),
                 _DetailCard(
                   children: [
                     _DetailRow(
-                      icon: Icons.schedule,
+                      icon: Icons.schedule_rounded,
                       label: 'Fecha y hora',
-                      value: report.createdAt,
+                      value: formatReportDateTime(report.createdAt),
                     ),
                     _DetailRow(
                       icon: Icons.place_outlined,
@@ -166,17 +173,16 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
                       label: 'Estado',
                       value: _statusLabel(report.estado),
                       valueColor: _statusColor(report.estado),
+                      showDivider: report.evidenceUrls.isEmpty,
                     ),
-                    if (report.fotosUrls?.isNotEmpty ?? false)
-                      _DetailRow(
-                        icon: Icons.attach_file,
-                        label: 'Evidencia',
-                        value: report.fotosUrls?.isEmpty ?? false
-                            ? 'Archivo adjunto'
-                            : '${report.fotosUrls?.length ?? 0} archivo(s)',
-                      ),
                   ],
                 ),
+                if (report.evidenceUrls.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _SectionTitle(title: 'Evidencia'),
+                  const SizedBox(height: 10),
+                  _EvidenceSection(urls: report.evidenceUrls),
+                ],
               ],
             ),
           ),
@@ -270,6 +276,22 @@ class _ZonaHeader extends StatelessWidget {
   }
 }
 
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+    );
+  }
+}
+
 class _StatusTimeline extends StatelessWidget {
   const _StatusTimeline({required this.status});
 
@@ -289,12 +311,7 @@ class _StatusTimeline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Estado del reporte',
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-        ),
+        const _SectionTitle(title: 'Estado del reporte'),
         const SizedBox(height: 12),
         Row(
           children: List.generate(steps.length * 2 - 1, (i) {
@@ -356,28 +373,67 @@ class _StatusTimeline extends StatelessWidget {
   }
 }
 
-class _ReportMapSection extends StatelessWidget {
+class _ReportMapSection extends ConsumerStatefulWidget {
   const _ReportMapSection({
-    required this.center,
     required this.reportPos,
     required this.userPos,
   });
 
-  final LatLng center;
   final LatLng reportPos;
   final LatLng userPos;
+
+  @override
+  ConsumerState<_ReportMapSection> createState() => _ReportMapSectionState();
+}
+
+class _ReportMapSectionState extends ConsumerState<_ReportMapSection> {
+  final _mapController = MapController();
+  bool _mapReady = false;
+
+  static const _defaultZoom = 15.0;
+
+  void _onMapReady() {
+    if (!mounted) return;
+    setState(() => _mapReady = true);
+    _safeMove(widget.reportPos, _defaultZoom);
+  }
+
+  void _safeMove(LatLng center, double zoom) {
+    if (!_mapReady) return;
+    try {
+      _mapController.move(center, zoom);
+    } catch (_) {
+      setState(() => _mapReady = false);
+    }
+  }
+
+  void _centerOnUser() {
+    final userPosition = ref.read(userLocationProvider).position;
+    _safeMove(userPosition, _mapController.camera.zoom);
+  }
+
+  void _centerOnReport() {
+    _safeMove(widget.reportPos, _mapController.camera.zoom);
+  }
+
+  void _zoomBy(double delta) {
+    if (!_mapReady) return;
+    try {
+      _mapController.move(
+        _mapController.camera.center,
+        _mapController.camera.zoom + delta,
+      );
+    } catch (_) {
+      setState(() => _mapReady = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Ubicación',
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-        ),
+        const _SectionTitle(title: 'Ubicación'),
         const SizedBox(height: 6),
         Text(
           'Rojo: incidente · Azul: tu ubicación',
@@ -390,54 +446,85 @@ class _ReportMapSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
             height: 220,
-            child: FlutterMap(
-              options: MapOptions(
-                initialCenter: center,
-                initialZoom: 15,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-                ),
-              ),
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.centinela.milagro',
-                  tileProvider: NetworkTileProvider(),
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: reportPos,
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: AppConfig.error,
-                        size: 40,
-                      ),
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: widget.reportPos,
+                    initialZoom: _defaultZoom,
+                    onMapReady: _onMapReady,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                     ),
-                    Marker(
-                      point: userPos,
-                      width: 24,
-                      height: 24,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF42A5F5),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 4,
-                            ),
-                          ],
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.centinela.milagro',
+                      tileProvider: NetworkTileProvider(),
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: widget.reportPos,
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.bottomCenter,
+                          child: const Icon(
+                            Icons.location_pin,
+                            color: AppConfig.error,
+                            size: 40,
+                          ),
                         ),
-                      ),
+                        Marker(
+                          point: widget.userPos,
+                          width: 24,
+                          height: 24,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF42A5F5),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: MapFloatingControls(
+                    showCompass: false,
+                    compassActive: false,
+                    compassAvailable: false,
+                    onCompass: () {},
+                    onMyLocation: _centerOnUser,
+                    onZoomIn: () => _zoomBy(1),
+                    onZoomOut: () => _zoomBy(-1),
+                  ),
+                ),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: _mapReady ? _centerOnReport : null,
+          icon: const Icon(Icons.location_pin, size: 18),
+          label: const Text('Centrar en el incidente'),
+          style: TextButton.styleFrom(
+            foregroundColor: AppConfig.primary,
+            padding: EdgeInsets.zero,
           ),
         ),
       ],
@@ -452,11 +539,14 @@ class _DetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(children: children),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppConfig.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppConfig.border),
       ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
     );
   }
 }
@@ -467,54 +557,161 @@ class _DetailRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueColor,
+    this.showDivider = true,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final Color? valueColor;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppConfig.surface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: AppConfig.textTertiary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppConfig.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: valueColor ?? AppConfig.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          const Divider(height: 1, thickness: 1, color: AppConfig.border),
+      ],
+    );
+  }
+}
+
+class _EvidenceSection extends StatelessWidget {
+  const _EvidenceSection({required this.urls});
+
+  final List<String> urls;
+
+  bool _isImageUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.gif');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppConfig.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppConfig.border),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppConfig.textTertiary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppConfig.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: valueColor ?? AppConfig.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+          Text(
+            urls.length == 1
+                ? '1 archivo adjunto'
+                : '${urls.length} archivos adjuntos',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 10),
+          ...urls.map((url) {
+            if (_isImageUrl(url)) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    url,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _EvidenceChip(url: url),
+                  ),
+                ),
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _EvidenceChip(url: url),
+            );
+          }),
         ],
       ),
     );
   }
 }
 
-String _formatDateTime(DateTime dt) {
-  final d = '${dt.day}/${dt.month}/${dt.year}';
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '$d · $h:$m';
+class _EvidenceChip extends StatelessWidget {
+  const _EvidenceChip({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = Uri.tryParse(url)?.pathSegments.lastOrNull ?? 'Archivo adjunto';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppConfig.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppConfig.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.attach_file, size: 18, color: AppConfig.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 String _statusLabel(String status) => switch (status) {

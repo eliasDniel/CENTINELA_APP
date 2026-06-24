@@ -1,22 +1,24 @@
-
+import 'package:centinela_milagro/core/utils/view_insets.dart';
+import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:centinela_milagro/features/map/presentation/pages/map_page.dart';
 import 'package:centinela_milagro/features/profile/presentation/pages/profile_page.dart';
 import 'package:centinela_milagro/features/reports/presentation/pages/history_page.dart';
 import 'package:centinela_milagro/features/reports/presentation/screens/home_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 
-class ShellPage extends StatefulWidget {
+class ShellPage extends ConsumerStatefulWidget {
   final int pageIndex;
   static const String name = 'home';
   const ShellPage({super.key, required this.pageIndex});
 
   @override
-  State<ShellPage> createState() => _ShellPageState();
+  ConsumerState<ShellPage> createState() => _ShellPageState();
 }
 
-class _ShellPageState extends State<ShellPage>
+class _ShellPageState extends ConsumerState<ShellPage>
     with AutomaticKeepAliveClientMixin {
   late PageController pageController;
 
@@ -42,6 +44,7 @@ class _ShellPageState extends State<ShellPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.watch(userLocationProvider);
     if (pageController.hasClients) {
       pageController.animateToPage(
         widget.pageIndex,
@@ -55,8 +58,9 @@ class _ShellPageState extends State<ShellPage>
         controller: pageController,
         children: viewsPages,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: widget.pageIndex,
+      bottomNavigationBar: SafeBottomBar(
+        child: BottomNavigationBar(
+          currentIndex: widget.pageIndex,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -91,6 +95,7 @@ class _ShellPageState extends State<ShellPage>
             label: 'Perfil',
           ),
         ],
+        ),
       ),
     );
   }

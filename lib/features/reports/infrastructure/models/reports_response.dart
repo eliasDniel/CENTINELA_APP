@@ -69,7 +69,7 @@ class ReportsResponse {
 
         prioridad: json['prioridad'],
 
-        fotosUrls: json['fotosUrls'] ?? '[]',
+        fotosUrls: json['fotosUrls'],
 
         createdAt: json['createdAt'],
 

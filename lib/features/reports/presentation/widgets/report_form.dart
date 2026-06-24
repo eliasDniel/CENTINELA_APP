@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:centinela_milagro/core/utils/app_alert.dart';
 import 'package:centinela_milagro/core/utils/app_colors.dart' as app_colors;
+import 'package:centinela_milagro/core/utils/view_insets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/constants/incident_types.dart';
 import '../providers/report_form_provider.dart';
 import 'incident_type_chips.dart';
+import 'report_form_step_progress.dart';
 import 'report_location_map.dart';
 import 'report_media_picker.dart';
 
@@ -25,6 +27,7 @@ class _ReportFormState extends ConsumerState<ReportForm>
     with SingleTickerProviderStateMixin {
   late TextEditingController _descriptionController;
   late AnimationController _animationController;
+  bool _userAdjustedPosition = false;
 
   @override
   void initState() {
@@ -37,10 +40,15 @@ class _ReportFormState extends ConsumerState<ReportForm>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref
-          .read(reportFormProvider.notifier)
-          .initPosition(ref.read(userLocationProvider).position);
+      _syncGpsToForm();
     });
+  }
+
+  void _syncGpsToForm() {
+    if (_userAdjustedPosition) return;
+    ref
+        .read(reportFormProvider.notifier)
+        .initPosition(ref.read(userLocationProvider).position);
   }
 
   @override
@@ -78,68 +86,17 @@ class _ReportFormState extends ConsumerState<ReportForm>
       }
     });
 
+    ref.listen(userLocationProvider, (previous, next) {
+      if (_userAdjustedPosition || next.isLoading) return;
+      notifier.initPosition(next.position);
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    [
-                      'Selecciona el tipo',
-                      'Agrega detalles',
-                      'Confirma tu reporte',
-                    ][form.currentStep],
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Colors.grey.shade300,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '${form.currentStep + 1}/3',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: app_colors.AppConfig.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 24,
-                child: Row(
-                  children: List.generate(3, (index) {
-                    final isActive = index <= form.currentStep;
-                    return Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 2,
-                            color: isActive
-                                ? app_colors.AppConfig.primary
-                                : Colors.grey.shade700,
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: 2,
-                            height: 10,
-                            color: isActive
-                                ? app_colors.AppConfig.primary
-                                : Colors.grey.shade700,
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ],
-          ),
+          child: ReportFormStepProgress(currentStep: form.currentStep),
         ),
         Expanded(
           child: FadeTransition(
@@ -154,8 +111,8 @@ class _ReportFormState extends ConsumerState<ReportForm>
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(20),
+        SafeBottomBar(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Row(
             children: [
               if (form.currentStep > 0)
@@ -319,7 +276,10 @@ class _ReportFormState extends ConsumerState<ReportForm>
         const SizedBox(height: 20),
         ReportLocationMap(
           position: form.position,
-          onPositionChanged: notifier.onPositionChanged,
+          onPositionChanged: (position) {
+            _userAdjustedPosition = true;
+            notifier.onPositionChanged(position);
+          },
         ),
         const SizedBox(height: 24),
         ReportMediaPicker(

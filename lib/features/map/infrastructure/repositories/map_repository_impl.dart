@@ -1,6 +1,7 @@
 import 'package:centinela_milagro/features/map/domain/datasources/map_datasource.dart';
 
 import '../../domain/entities/map_alert_entity.dart';
+import '../../domain/entities/user_zona_entity.dart';
 import '../../domain/repositories/map_repository.dart';
 
 class MapRepositoryImpl implements MapRepository {
@@ -14,15 +15,12 @@ class MapRepositoryImpl implements MapRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> getAlertById(String alertId) {
+  Future<AlertEntity> getAlertById(String alertId) {
     return datasources.getAlertById(alertId);
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getZonasByUser(
-    String userId,
-    String zonaId,
-  ) {
-    return datasources.getZonasByUser(userId, zonaId);
+  Future<List<UserZonaEntity>> getZonasByUser(String userId) {
+    return datasources.getZonasByUser(userId);
   }
 }

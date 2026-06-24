@@ -12,6 +12,7 @@ import '../../../notifications/presentation/notifications_screens.dart';
 import '../../../notifications/presentation/providers/notification_settings_provider.dart';
 import '../providers/profile_provider.dart';
 import '../../../../core/utils/app_alert.dart';
+import '../../../../core/utils/view_insets.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -63,7 +64,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       appBar: AppBar(title: const Text('Perfil')),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + bottomViewInset(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

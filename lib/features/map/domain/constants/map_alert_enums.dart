@@ -17,7 +17,7 @@ enum AlertSource {
 }
 
 enum AlertLevel {
-  vigilancia,
-  alerta,
-  emergencia,
+  preventivo,
+  urgente,
+  critico,
 }

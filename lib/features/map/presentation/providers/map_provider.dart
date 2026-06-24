@@ -1,71 +1,55 @@
 // RF-0306: estado del mapa con Riverpod
-import 'dart:async';
-
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/location/user_location_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../subscriptions/domain/constants/zonas_administrativas.dart';
-import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
 import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/entities/map_alert_extensions.dart';
+import '../../domain/entities/user_zona_entity.dart';
 import '../../domain/repositories/map_repository.dart';
 import 'map_repository_provider.dart';
 
 class MapState {
   final List<AlertEntity> allAlerts;
   final List<AlertEntity> filteredAlerts;
+  final List<UserZonaEntity> userZonas;
   final Map<String, LatLng> positions;
   final AlertLevel? levelFilter;
   final AlertSource? sourceFilter;
-  final bool onlyMonitoredBarrios;
-  final String? zonaFilter;
-  final String? barrioFilter;
+  final String? zonaIdFilter;
   final int? proximityRadiusMeters;
-  final int secondsSinceUpdate;
   final LatLng center;
-  final AlertEntity? lastIncomingAlert;
   final bool isLoading;
   final String errorMessage;
 
   const MapState({
     required this.allAlerts,
     required this.filteredAlerts,
+    required this.userZonas,
     required this.positions,
     required this.levelFilter,
     required this.sourceFilter,
-    required this.onlyMonitoredBarrios,
-    required this.zonaFilter,
-    required this.barrioFilter,
+    required this.zonaIdFilter,
     required this.proximityRadiusMeters,
-    required this.secondsSinceUpdate,
     required this.center,
-    required this.lastIncomingAlert,
     this.isLoading = false,
     this.errorMessage = '',
   });
 
-  factory MapState.initial({
-    bool onlyMonitoredBarrios = false,
-    int? proximityRadiusMeters = 3000,
-    String? zonaFilter,
-  }) {
+  factory MapState.initial({int? proximityRadiusMeters = 3000}) {
     return MapState(
       allAlerts: const [],
       filteredAlerts: const [],
+      userZonas: const [],
       positions: const {},
       levelFilter: null,
       sourceFilter: null,
-      onlyMonitoredBarrios: onlyMonitoredBarrios,
-      zonaFilter: zonaFilter,
-      barrioFilter: null,
+      zonaIdFilter: null,
       proximityRadiusMeters: proximityRadiusMeters,
-      secondsSinceUpdate: 0,
       center: milagroMapCenter,
-      lastIncomingAlert: null,
       isLoading: true,
     );
   }
@@ -73,39 +57,34 @@ class MapState {
   MapState copyWith({
     List<AlertEntity>? allAlerts,
     List<AlertEntity>? filteredAlerts,
+    List<UserZonaEntity>? userZonas,
     Map<String, LatLng>? positions,
     AlertLevel? levelFilter,
+    bool clearLevelFilter = false,
     AlertSource? sourceFilter,
-    bool? onlyMonitoredBarrios,
-    String? zonaFilter,
-    bool clearZonaFilter = false,
-    String? barrioFilter,
-    bool clearBarrioFilter = false,
+    bool clearSourceFilter = false,
+    String? zonaIdFilter,
+    bool clearZonaIdFilter = false,
     int? proximityRadiusMeters,
     bool clearProximityRadius = false,
-    int? secondsSinceUpdate,
     LatLng? center,
-    AlertEntity? lastIncomingAlert,
     bool? isLoading,
     String? errorMessage,
   }) {
     return MapState(
       allAlerts: allAlerts ?? this.allAlerts,
       filteredAlerts: filteredAlerts ?? this.filteredAlerts,
+      userZonas: userZonas ?? this.userZonas,
       positions: positions ?? this.positions,
-      levelFilter: levelFilter,
-      sourceFilter: sourceFilter,
-      onlyMonitoredBarrios: onlyMonitoredBarrios ?? this.onlyMonitoredBarrios,
-      zonaFilter: clearZonaFilter ? null : (zonaFilter ?? this.zonaFilter),
-      barrioFilter: clearBarrioFilter
+      levelFilter: clearLevelFilter ? null : (levelFilter ?? this.levelFilter),
+      sourceFilter: clearSourceFilter ? null : (sourceFilter ?? this.sourceFilter),
+      zonaIdFilter: clearZonaIdFilter
           ? null
-          : (barrioFilter ?? this.barrioFilter),
+          : (zonaIdFilter ?? this.zonaIdFilter),
       proximityRadiusMeters: clearProximityRadius
           ? null
           : (proximityRadiusMeters ?? this.proximityRadiusMeters),
-      secondsSinceUpdate: secondsSinceUpdate ?? this.secondsSinceUpdate,
       center: center ?? this.center,
-      lastIncomingAlert: lastIncomingAlert,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -113,90 +92,51 @@ class MapState {
 }
 
 class MapNotifier extends Notifier<MapState> {
-  late final MapRepository _repository;
-  Timer? _updateTimer;
+  MapRepository get _repository => ref.read(mapRepositoryProvider);
 
   @override
   MapState build() {
-    _repository = ref.watch(mapRepositoryProvider);
-    ref.onDispose(() {
-      _updateTimer?.cancel();
-    });
-
     final auth = ref.watch(authProvider);
     final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
-    final userZona = auth.user?.zona;
-
-    ref.listen(barriosSubscribedProvider, (prev, next) {
-      if (next.isEmpty && state.barrioFilter != null) {
-        applyFilters(clearBarrioFilter: true);
-      }
-      _refilter();
-    });
-    ref.listen(
-      authProvider.select((s) => '${s.user?.zona}|${s.user?.barrio}'),
-      (prev, next) {
-        if (prev != null && prev != next) {
-          final newZona = ref.read(authProvider).user?.zona;
-          state = state.copyWith(zonaFilter: newZona, clearBarrioFilter: true);
-        }
-        _refilter();
-      },
-    );
 
     Future.microtask(_bootstrap);
     return MapState.initial(
-      onlyMonitoredBarrios: isCitizen,
       proximityRadiusMeters: isCitizen ? null : 3000,
-      zonaFilter: isCitizen ? userZona : null,
     );
   }
-
-  List<String> _monitoredBarrios() => ref.read(monitoredBarriosProvider);
 
   LatLng _proximityCenter() => ref.read(userLocationProvider).position;
-
-  String? _effectiveZonaFilter(String? zonaFilter) {
-    if (zonaFilter != null) return zonaFilter;
-    final auth = ref.read(authProvider);
-    final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
-    if (isCitizen) return auth.user?.zona;
-    return null;
-  }
-
-  void _refilter() {
-    if (state.allAlerts.isEmpty) return;
-    state = state.copyWith(
-      filteredAlerts: _applyCurrentFilters(state.allAlerts),
-    );
-  }
 
   Future<void> _bootstrap() async {
     state = state.copyWith(isLoading: true, errorMessage: '');
     try {
+      final auth = ref.read(authProvider);
+      final user = auth.user;
+      final isCitizen = user != null && !user.isVisitor;
+
+      final userZonas = isCitizen
+          ? await _repository.getZonasByUser(user.uuid)
+          : <UserZonaEntity>[];
+
       final alerts = (await _repository.getActiveAlerts())
           .where((alert) => alert.estado == 'activa')
           .toList();
+
       if (!ref.mounted) return;
 
       final positions = positionsFromAlerts(alerts);
-      final auth = ref.read(authProvider);
-      final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
-      final proximity = isCitizen ? null : (state.proximityRadiusMeters ?? 3000);
-      final userZona = auth.user?.zona;
+      final userPosition = ref.read(userLocationProvider).position;
+      final center = userPosition;
 
       state = state.copyWith(
+        userZonas: userZonas,
         allAlerts: alerts,
         positions: positions,
-        onlyMonitoredBarrios: isCitizen,
-        proximityRadiusMeters: proximity,
-        zonaFilter: isCitizen ? userZona : state.zonaFilter,
-        filteredAlerts: _applyCurrentFilters(alerts),
-        secondsSinceUpdate: 0,
-        lastIncomingAlert: null,
+        proximityRadiusMeters: isCitizen ? null : (state.proximityRadiusMeters ?? 3000),
+        filteredAlerts: _applyCurrentFilters(alerts, userZonas: userZonas),
+        center: center,
         isLoading: false,
       );
-      _startSubtitleTimer();
     } on CustomError catch (e) {
       if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, errorMessage: e.message);
@@ -211,90 +151,77 @@ class MapNotifier extends Notifier<MapState> {
 
   Future<void> refreshAlerts() => _bootstrap();
 
+  Future<AlertEntity> loadAlertDetail(String alertId) {
+    return _repository.getAlertById(alertId);
+  }
+
   static const _distance = Distance();
 
-  List<AlertEntity> _applyCurrentFilters(List<AlertEntity> alerts) {
-    final monitored = _monitoredBarrios();
+  List<AlertEntity> _applyCurrentFilters(
+    List<AlertEntity> alerts, {
+    List<UserZonaEntity>? userZonas,
+  }) {
+    return _filterAlerts(
+      alerts,
+      userZonas: userZonas,
+      levelFilter: state.levelFilter,
+      sourceFilter: state.sourceFilter,
+      zonaIdFilter: state.zonaIdFilter,
+      proximityRadiusMeters: state.proximityRadiusMeters,
+    );
+  }
+
+  List<AlertEntity> _filterAlerts(
+    List<AlertEntity> alerts, {
+    List<UserZonaEntity>? userZonas,
+    AlertLevel? levelFilter,
+    AlertSource? sourceFilter,
+    String? zonaIdFilter,
+    int? proximityRadiusMeters,
+  }) {
+    final zones = userZonas ?? state.userZonas;
     final auth = ref.read(authProvider);
-    final user = auth.user;
-    final isCitizen = user != null && !(user.isVisitor);
-    final userZona = user?.zona;
-    final userBarrio = user?.barrio;
-    final effectiveZona = _effectiveZonaFilter(state.zonaFilter);
+    final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
 
     return alerts.where((alert) {
-      final levelMatches =
-          state.levelFilter == null || alert.level == state.levelFilter;
-      final sourceMatches = _matchesSourceFilter(
-        alert.source,
-        state.sourceFilter,
-      );
+      final levelMatches = levelFilter == null || alert.level == levelFilter;
+      final sourceMatches = _matchesSourceFilter(alert.source, sourceFilter);
       final zonaMatches = _matchesZonaFilter(
-        alert.zonaNombre,
-        effectiveZona: effectiveZona,
-        isCitizen: isCitizen,
-      );
-      final barrioMatches = _matchesBarrioFilter(
         alert,
-        barrioFilter: state.barrioFilter,
-        onlyMonitoredBarrios: state.onlyMonitoredBarrios,
-        monitored: monitored,
-        userBarrio: userBarrio,
-        userZona: userZona,
+        zonaIdFilter: zonaIdFilter,
+        userZonas: zones,
         isCitizen: isCitizen,
       );
       final proximityMatches = _matchesProximity(
         alert.positionAt(state.positions),
         center: _proximityCenter(),
-        radiusMeters: state.proximityRadiusMeters,
+        radiusMeters: proximityRadiusMeters,
       );
-      return levelMatches &&
-          sourceMatches &&
-          zonaMatches &&
-          barrioMatches &&
-          proximityMatches;
+      return levelMatches && sourceMatches && zonaMatches && proximityMatches;
     }).toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   bool _matchesZonaFilter(
-    String alertZona, {
-    required String? effectiveZona,
-    required bool isCitizen,
-  }) {
-    if (effectiveZona == null) return true;
-    return alertZona == effectiveZona;
-  }
-
-  bool _matchesBarrioFilter(
     AlertEntity alert, {
-    required String? barrioFilter,
-    required bool onlyMonitoredBarrios,
-    required List<String> monitored,
-    required String? userBarrio,
-    required String? userZona,
+    required String? zonaIdFilter,
+    required List<UserZonaEntity> userZonas,
     required bool isCitizen,
   }) {
-    if (barrioFilter != null) {
-      if (barrioFilter.isEmpty) return alert.barrio.isEmpty;
-      return alert.barrio == barrioFilter;
+    if (!isCitizen || userZonas.isEmpty) return true;
+
+    if (zonaIdFilter != null) {
+      final selected = userZonas
+          .where((zone) => zone.zonaId == zonaIdFilter)
+          .firstOrNull;
+      if (selected == null) return false;
+      final alertZonaId = alert.zonaId ?? alert.zona?.id;
+      if (alertZonaId != null && alertZonaId.isNotEmpty) {
+        return alertZonaId == selected.zonaId;
+      }
+      return alert.zonaNombre == selected.zona.nombre;
     }
 
-    if (!onlyMonitoredBarrios) return true;
-
-    final effectiveZona = _effectiveZonaFilter(state.zonaFilter);
-    if (effectiveZona != null &&
-        userZona != null &&
-        effectiveZona != userZona) {
-      return true;
-    }
-
-    final zonaSinBarrios = userZona != null && !zonaTieneBarrios(userZona);
-    if (zonaSinBarrios || userBarrio == null || userBarrio.isEmpty) {
-      return true;
-    }
-
-    if (monitored.isEmpty) return true;
-    return monitored.contains(alert.barrio) || alert.barrio.isEmpty;
+    return alert.belongsToUserZone(userZonas);
   }
 
   bool _matchesSourceFilter(AlertSource source, AlertSource? filter) {
@@ -317,70 +244,56 @@ class MapNotifier extends Notifier<MapState> {
     return meters <= radiusMeters;
   }
 
-  bool _isLoggedInCitizen() {
-    final auth = ref.read(authProvider);
-    return auth.user != null && !(auth.user?.isVisitor ?? true);
-  }
-
-  void _startSubtitleTimer() {
-    _updateTimer?.cancel();
-    _updateTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      state = state.copyWith(secondsSinceUpdate: state.secondsSinceUpdate + 30);
-    });
-  }
-
   void applyFilters({
     AlertLevel? level,
+    bool clearLevelFilter = false,
     AlertSource? source,
-    String? zonaFilter,
-    bool clearZonaFilter = false,
-    String? barrioFilter,
-    bool clearBarrioFilter = false,
-    bool? onlyMonitoredBarrios,
+    bool clearSourceFilter = false,
+    String? zonaIdFilter,
+    bool clearZonaIdFilter = false,
     int? proximityRadiusMeters,
     bool clearProximityRadius = false,
   }) {
-    final lvl = level ?? state.levelFilter;
-    final src = source ?? state.sourceFilter;
-    final isCitizen = _isLoggedInCitizen();
-    final onlyMonitored = isCitizen
-        ? true
-        : (onlyMonitoredBarrios ?? state.onlyMonitoredBarrios);
+    final auth = ref.read(authProvider);
+    final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
 
-    String? zona;
-    if (clearZonaFilter) {
-      zona = isCitizen ? ref.read(authProvider).user?.zona : null;
-    } else if (zonaFilter != null) {
-      zona = zonaFilter;
-    } else {
-      zona = state.zonaFilter;
-    }
-
-    final barrio = clearBarrioFilter
-        ? null
-        : (barrioFilter ?? state.barrioFilter);
-    final proximity = isCitizen
+    final newLevelFilter = clearLevelFilter ? null : level;
+    final newSourceFilter = clearSourceFilter ? null : source;
+    final newZonaIdFilter = clearZonaIdFilter ? null : zonaIdFilter;
+    final newProximityRadius = isCitizen
         ? null
         : (clearProximityRadius
               ? null
               : (proximityRadiusMeters ?? state.proximityRadiusMeters));
 
     state = state.copyWith(
-      levelFilter: lvl,
-      sourceFilter: src,
-      onlyMonitoredBarrios: onlyMonitored,
-      zonaFilter: zona,
-      clearZonaFilter: false,
-      barrioFilter: barrio,
-      clearBarrioFilter: clearBarrioFilter,
-      proximityRadiusMeters: proximity,
+      levelFilter: newLevelFilter,
+      clearLevelFilter: clearLevelFilter,
+      sourceFilter: newSourceFilter,
+      clearSourceFilter: clearSourceFilter,
+      zonaIdFilter: newZonaIdFilter,
+      clearZonaIdFilter: clearZonaIdFilter,
+      proximityRadiusMeters: newProximityRadius,
       clearProximityRadius: clearProximityRadius,
-      filteredAlerts: _applyCurrentFilters(state.allAlerts),
+      filteredAlerts: _filterAlerts(
+        state.allAlerts,
+        levelFilter: newLevelFilter,
+        sourceFilter: newSourceFilter,
+        zonaIdFilter: newZonaIdFilter,
+        proximityRadiusMeters: newProximityRadius,
+      ),
     );
   }
 
-  void setBarrioFilter(String? barrio) {
-    applyFilters(barrioFilter: barrio, clearBarrioFilter: barrio == null);
+  void clearFilters() {
+    final usesProximity = ref.read(mapUsesProximityRadiusProvider);
+    applyFilters(
+      clearLevelFilter: true,
+      clearSourceFilter: true,
+      clearZonaIdFilter: true,
+      proximityRadiusMeters: usesProximity ? 3000 : null,
+      clearProximityRadius: !usesProximity,
+    );
   }
 
   void centerOnAlert(AlertEntity alert) {
@@ -388,34 +301,6 @@ class MapNotifier extends Notifier<MapState> {
     if (position != null) {
       state = state.copyWith(center: position);
     }
-  }
-
-  void prependAlert(AlertEntity alert, LatLng position) {
-    final updated = state.allAlerts.isEmpty
-        ? [alert]
-        : [alert, ...state.allAlerts];
-
-    final positions = {...state.positions, alert.id: position};
-
-    var filtered = _applyCurrentFilters(updated);
-
-    if (alert.isSos && !filtered.any((a) => a.id == alert.id)) {
-      state = state.copyWith(
-        levelFilter: null,
-        sourceFilter: null,
-        barrioFilter: null,
-      );
-      filtered = _applyCurrentFilters(updated);
-    }
-
-    state = state.copyWith(
-      allAlerts: updated,
-      positions: positions,
-      filteredAlerts: filtered,
-      lastIncomingAlert: alert.isSos ? null : alert,
-      secondsSinceUpdate: 0,
-      center: position,
-    );
   }
 
   void focusPendingSos(AlertEntity pending) {
@@ -426,22 +311,23 @@ class MapNotifier extends Notifier<MapState> {
       orElse: () => pending,
     );
 
-    var filtered = state.filteredAlerts;
-    if (!filtered.any((a) => a.id == alert.id)) {
+    if (!state.filteredAlerts.any((a) => a.id == alert.id)) {
       state = state.copyWith(
-        levelFilter: null,
-        sourceFilter: null,
-        barrioFilter: null,
-        filteredAlerts: _applyCurrentFilters(state.allAlerts),
+        clearLevelFilter: true,
+        clearSourceFilter: true,
+        clearZonaIdFilter: true,
+        filteredAlerts: _filterAlerts(
+          state.allAlerts,
+          levelFilter: null,
+          sourceFilter: null,
+          zonaIdFilter: null,
+          proximityRadiusMeters: state.proximityRadiusMeters,
+        ),
       );
-      filtered = state.filteredAlerts;
     }
 
     final position = state.positions[alert.id] ?? state.positions[pending.id];
-    state = state.copyWith(
-      center: position ?? state.center,
-      lastIncomingAlert: null,
-    );
+    state = state.copyWith(center: position ?? state.center);
   }
 }
 
@@ -456,86 +342,58 @@ final mapUsesProximityRadiusProvider = Provider<bool>((ref) {
 
 const mapProximityRadiusOptions = <int>[1000, 3000, 5000];
 
-final mapEffectiveZonaProvider = Provider<String?>((ref) {
-  final state = ref.watch(mapProvider);
-  final auth = ref.watch(authProvider);
-  if (state.zonaFilter != null) return state.zonaFilter;
-  final isVisitor = auth.user?.isVisitor ?? true;
-  if (!isVisitor && auth.user != null) return auth.user!.zona;
-  return null;
-});
-
-final showMapZonaFilterProvider = Provider<bool>((ref) => true);
-
-final showMapBarrioFilterProvider = Provider<bool>((ref) {
-  final effectiveZona = ref.watch(mapEffectiveZonaProvider);
-  if (effectiveZona == null) return false;
-  return zonaTieneBarrios(effectiveZona);
-});
-
 final mapZonaFilterChipsProvider =
     Provider<List<({String? value, String label})>>((ref) {
+      final state = ref.watch(mapProvider);
       final auth = ref.watch(authProvider);
-      final isVisitor = auth.user?.isVisitor ?? true;
-      final userZona = auth.user?.zona;
+      final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
 
-      if (isVisitor || auth.user == null) {
-        return [
-          (value: null, label: 'Todas las zonas'),
-          ...kZonasAdministrativas.map((z) => (value: z, label: z)),
-        ];
+      if (!isCitizen || state.userZonas.isEmpty) {
+        return const [(value: null, label: 'Todas las zonas')];
       }
 
-      return [
-        (value: userZona, label: '$userZona (tú)'),
-        ...kZonasAdministrativas
-            .where((z) => z != userZona)
-            .map((z) => (value: z, label: z)),
-      ];
-    });
-
-final mapBarrioFilterChipsProvider =
-    Provider<List<({String? value, String label})>>((ref) {
-      if (!ref.watch(showMapBarrioFilterProvider)) return [];
-
-      final auth = ref.watch(authProvider);
-      final home = auth.user?.barrio;
-      final isVisitor = auth.user?.isVisitor ?? true;
-      final effectiveZona = ref.watch(mapEffectiveZonaProvider) ?? 'Milagro';
-      final zonaBarrios = barriosDeZona(effectiveZona);
-
-      if (isVisitor || home == null || home.isEmpty) {
-        return [
-          (value: null, label: 'Todos'),
-          ...zonaBarrios.map((b) => (value: b, label: b)),
-        ];
-      }
-
-      final subscribed = ref.watch(barriosSubscribedProvider);
       final chips = <({String? value, String label})>[
-        (value: null, label: 'Todos mis barrios'),
-        (value: home, label: '$home (tú)'),
+        (value: null, label: 'Todas mis zonas'),
       ];
-      for (final b in subscribed) {
-        if (b != home && zonaBarrios.contains(b)) {
-          chips.add((value: b, label: b));
-        }
+
+      for (final userZona in state.userZonas) {
+        final suffix = userZona.isPrincipal ? ' (principal)' : '';
+        chips.add((value: userZona.zonaId, label: '${userZona.zona.nombre}$suffix'));
       }
+
       return chips;
     });
 
+final mapHasActiveFiltersProvider = Provider<bool>((ref) {
+  final state = ref.watch(mapProvider);
+  final usesProximity = ref.watch(mapUsesProximityRadiusProvider);
+
+  if (state.levelFilter != null ||
+      state.sourceFilter != null ||
+      state.zonaIdFilter != null) {
+    return true;
+  }
+
+  if (usesProximity &&
+      state.proximityRadiusMeters != null &&
+      state.proximityRadiusMeters != 3000) {
+    return true;
+  }
+
+  return false;
+});
+
 final mapActiveFiltersSummaryProvider = Provider<String?>((ref) {
   final state = ref.watch(mapProvider);
-  final auth = ref.watch(authProvider);
-  final isVisitor = auth.user?.isVisitor ?? true;
-  final home = auth.user?.barrio;
-  final userZona = auth.user?.zona;
   final parts = <String>[];
 
-  if (state.zonaFilter != null && state.zonaFilter != userZona) {
-    parts.add('Zona: ${state.zonaFilter}');
-  } else if (isVisitor && state.zonaFilter != null) {
-    parts.add('Zona: ${state.zonaFilter}');
+  if (state.zonaIdFilter != null) {
+    final zone = state.userZonas
+        .where((item) => item.zonaId == state.zonaIdFilter)
+        .firstOrNull;
+    if (zone != null) {
+      parts.add('Zona: ${zone.zona.nombre}');
+    }
   }
 
   if (state.levelFilter != null) {
@@ -545,15 +403,9 @@ final mapActiveFiltersSummaryProvider = Provider<String?>((ref) {
     parts.add('Fuente: ${_sourceLabel(state.sourceFilter!)}');
   }
 
-  if (state.barrioFilter != null) {
-    if (!isVisitor && state.barrioFilter == home) {
-      parts.add('Barrio: $home (tú)');
-    } else {
-      parts.add('Barrio: ${state.barrioFilter}');
-    }
-  }
-
-  if (isVisitor && state.proximityRadiusMeters != null) {
+  if (ref.watch(mapUsesProximityRadiusProvider) &&
+      state.proximityRadiusMeters != null &&
+      state.proximityRadiusMeters != 3000) {
     parts.add('Cerca de ti: ${state.proximityRadiusMeters! ~/ 1000} km');
   }
 
@@ -563,16 +415,17 @@ final mapActiveFiltersSummaryProvider = Provider<String?>((ref) {
 
 String _levelLabel(AlertLevel level) {
   return switch (level) {
-    AlertLevel.emergencia => 'Emergencia',
-    AlertLevel.alerta => 'Alerta',
-    AlertLevel.vigilancia => 'Vigilancia',
+    AlertLevel.critico => 'Crítico',
+    AlertLevel.urgente => 'Urgente',
+    AlertLevel.preventivo => 'Preventivo',
   };
 }
 
 String _sourceLabel(AlertSource source) {
   return switch (source) {
-    AlertSource.sensor_audio || AlertSource.sensor_video => 'Sensor',
-    AlertSource.sensor_hidrico => 'Hídrico',
-    AlertSource.ciudadano => 'Ciudadano',
+    AlertSource.sensor_audio ||
+    AlertSource.sensor_video ||
+    AlertSource.sensor_hidrico => 'Sensores',
+    AlertSource.ciudadano => 'Ciudadanos',
   };
 }

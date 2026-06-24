@@ -13,7 +13,7 @@ class ReportEntity {
 
   final int prioridad;
 
-  final String? fotosUrls;
+  final List<String> evidenceUrls;
 
   final String createdAt;
 
@@ -40,7 +40,7 @@ class ReportEntity {
 
     required this.prioridad,
 
-    this.fotosUrls,
+    this.evidenceUrls = const [],
 
     required this.createdAt,
 

@@ -68,7 +68,7 @@ final userHeadingProvider =
 /// Si true, el mapa gira contigo (modo navegación) y el haz apunta adelante.
 class CompassFollowModeNotifier extends Notifier<bool> {
   @override
-  bool build() => true;
+  bool build() => false;
 
   void toggle() => state = !state;
 }

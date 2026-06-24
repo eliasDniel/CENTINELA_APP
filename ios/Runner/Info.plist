@@ -46,6 +46,8 @@
 	<true/>
 	<key>NSMotionUsageDescription</key>
 	<string>Centinela usa el sensor de orientación para mostrar hacia dónde miras en el mapa.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Centinela necesita tu ubicación para el mapa, reportes y alertas SOS.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Centinela necesita la cámara para adjuntar fotos o videos a tus reportes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

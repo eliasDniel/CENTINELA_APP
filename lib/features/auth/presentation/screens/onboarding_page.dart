@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/view_insets.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../providers/onboarding_provider.dart';
 
@@ -54,6 +55,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomSafe = bottomViewInset(context);
+    final topSafe = topViewInset(context);
+
     return Scaffold(
       body: Stack(
         children: [
@@ -70,7 +74,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             ],
           ),
           Positioned(
-            top: 40,
+            top: topSafe + 8,
             right: 16,
             child: _currentPage < _slides.length - 1
                 ? TextButton(
@@ -80,7 +84,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 : const SizedBox.shrink(),
           ),
           Positioned(
-            bottom: 100,
+            bottom: 100 + bottomSafe,
             left: 0,
             right: 0,
             child: Row(
@@ -102,7 +106,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             ),
           ),
           Positioned(
-            bottom: 30,
+            bottom: 24 + bottomSafe,
             left: 24,
             right: 24,
             child: ElevatedButton(

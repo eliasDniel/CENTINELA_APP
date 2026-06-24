@@ -130,9 +130,7 @@ class _ChangeLocationPageState extends ConsumerState<ChangeLocationPage> {
     }
 
     if (ref.exists(mapProvider)) {
-      ref
-          .read(mapProvider.notifier)
-          .applyFilters(zonaFilter: _selectedZona, clearBarrioFilter: true);
+      ref.read(mapProvider.notifier).refreshAlerts();
     }
 
     if (mounted) {

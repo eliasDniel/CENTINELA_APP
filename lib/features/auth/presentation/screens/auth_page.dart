@@ -1,6 +1,7 @@
 // RF-0301, RF-0302: Auth page with login and register tabs
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/view_insets.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/login_form.dart';
@@ -77,7 +78,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
+      bottomNavigationBar: SafeBottomBar(
         padding: const EdgeInsets.fromLTRB(
           AppConfig.horizontalMargin,
           8,

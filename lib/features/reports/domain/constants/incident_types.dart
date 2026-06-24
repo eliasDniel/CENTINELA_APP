@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:centinela_milagro/core/utils/app_colors.dart';
 
 const kIncidentTypes = <Map<String, String>>[
-  {'label': 'Pánico',               'value': 'PANICO'},
   {'label': 'Homicidio / Sicariato','value': 'HOMICIDIO_SICARIATO'},
   {'label': 'Secuestro',            'value': 'SECUESTRO'},
   {'label': 'Robo',                 'value': 'ROBO'},
@@ -15,6 +14,7 @@ const kIncidentTypes = <Map<String, String>>[
 
 String incidentTypeLabel(String? value) {
   if (value == null) return 'N/A';
+  if (value == 'PANICO') return 'Pánico';
   for (final t in kIncidentTypes) {
     if (t['value'] == value) return t['label']!;
   }
