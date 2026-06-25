@@ -29,4 +29,6 @@ abstract class AuthRepository {
     required String token,
     required String newPassword,
   });
+
+  Future<String> deleteAccount(String accessToken);
 }

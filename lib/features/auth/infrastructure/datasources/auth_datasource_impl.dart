@@ -140,6 +140,23 @@ class AuthDataSourceImpl extends AuthDatasource {
     }
   }
 
+  @override
+  Future<String> deleteAccount(String accessToken) async {
+    try {
+      final response = await _dio.delete(
+        '/auth/me',
+        options: Options(
+          headers: {'Authorization': 'Bearer $accessToken'},
+        ),
+      );
+      final data = Map<String, dynamic>.from(response.data as Map);
+      return data['message']?.toString() ??
+          'Cuenta y datos personales eliminados correctamente';
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
   Never _handleDioError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.connectionError ||

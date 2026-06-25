@@ -328,12 +328,20 @@ class PrivacyPage extends ConsumerWidget {
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 1200));
+    final errorMessage = await ref.read(authProvider.notifier).deleteAccount();
 
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
-    // ref.read(authProvider.notifier).logout(); // método correcto: logoutUser
-    ref.read(authProvider.notifier).logoutUser();
+
+    if (errorMessage != null) {
+      AppAlert.error(context, errorMessage);
+      return;
+    }
+
+    AppAlert.success(
+      context,
+      'Tu cuenta y datos personales fueron eliminados',
+    );
     context.go('/auth');
   }
 }

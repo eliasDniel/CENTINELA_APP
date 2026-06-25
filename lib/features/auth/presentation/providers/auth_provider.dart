@@ -254,6 +254,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
+  Future<String?> deleteAccount() async {
+    final token = state.user?.token;
+    if (token == null || token.isEmpty) {
+      return 'Inicia sesión para eliminar tu cuenta';
+    }
+
+    try {
+      await authRepository.deleteAccount(token);
+      await logoutUser();
+      return null;
+    } on CustomError catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'No se pudo eliminar la cuenta';
+    }
+  }
+
   Future<void> logoutUser([String? errorMessage]) async {
     final refreshToken = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.refreshToken,
