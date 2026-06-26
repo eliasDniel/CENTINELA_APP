@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/utils/api_timestamp.dart';
@@ -31,22 +32,28 @@ extension AlertEntityUi on AlertEntity {
     return DateTime.now();
   }
 
+  bool get _isCitizenAlert =>
+      reporteId != null || tipo == 'reporte_ciudadano';
+
   /// Título legible para UI (sin enums crudos del backend).
   String get displayTitle {
-    if (source == AlertSource.ciudadano || reporteId != null) {
-      final reportType = _extractCitizenReportType(descripcion);
+    if (_isCitizenAlert) {
+      final reportType = citizenReportType;
       if (reportType != null) return incidentTypeLabel(reportType);
+      return incidentTypeLabel(kPanicIncidentType);
     }
-    if (tipo.isNotEmpty && tipo != 'reporte_ciudadano') {
-      final fromTipo = incidentTypeLabel(tipo);
-      if (fromTipo != tipo.replaceAll('_', ' ')) return fromTipo;
-    }
-    return _alertTypeDisplayLabel(alertType);
+
+    return switch (alertType) {
+      AlertType.disparo => 'Disparo',
+      AlertType.grito => 'Grito',
+      AlertType.sos => 'SOS',
+      AlertType.reporte_ciudadano => 'Alerta de sensor',
+    };
   }
 
   /// Descripción ciudadana sin prefijo técnico del backend.
   String get displayDescription {
-    if (source == AlertSource.ciudadano || reporteId != null) {
+    if (_isCitizenAlert) {
       final note = _extractCitizenReportNote(descripcion);
       if (note != null &&
           note.isNotEmpty &&
@@ -55,10 +62,9 @@ extension AlertEntityUi on AlertEntity {
       }
       return '';
     }
+
     final text = descripcion.trim();
     if (text.isEmpty) return '';
-    final upperTipo = tipo.toUpperCase();
-    if (text.toUpperCase() == upperTipo) return '';
     if (text.startsWith('Reporte de ciudadano:')) {
       return _extractCitizenReportNote(text) ?? '';
     }
@@ -76,43 +82,33 @@ extension AlertEntityUi on AlertEntity {
     return AlertLevel.preventivo;
   }
 
-  AlertSource get source {
-    final normalized = tipo.toLowerCase();
-    if (normalized.contains('hidric') || normalized.contains('hidrol')) {
-      return AlertSource.sensor_hidrico;
-    }
-    if (normalized == 'reporte_ciudadano' || reporteId != null) {
-      return AlertSource.ciudadano;
-    }
-    if (normalized.contains('video')) return AlertSource.sensor_video;
-    if (normalized.contains('audio') || eventoId != null) {
-      return AlertSource.sensor_audio;
-    }
-    return AlertSource.sensor_audio;
-  }
+  AlertSource get source =>
+      _isCitizenAlert ? AlertSource.ciudadano : AlertSource.sensor_audio;
+
+  /// Tipo de incidente ciudadano extraído de la descripción (p. ej. ROBO, PANICO).
+  String? get citizenReportType =>
+      _extractCitizenReportType(descripcion) ?? _citizenTipoFromField(tipo);
 
   AlertType get alertType {
-    final text = '$tipo $descripcion'.toLowerCase();
-    if (text.contains('panico') || text.contains('sos')) {
-      return AlertType.sos;
-    }
-    if (tipo == 'reporte_ciudadano' || reporteId != null) {
+    if (_isCitizenAlert) {
+      final reportType = citizenReportType?.toUpperCase();
+      if (reportType == kPanicIncidentType) return AlertType.sos;
       return AlertType.reporte_ciudadano;
     }
-    if (text.contains('disparo')) return AlertType.disparo;
-    if (text.contains('explosion')) return AlertType.explosion;
-    if (text.contains('grito')) return AlertType.grito;
-    if (text.contains('vidrio')) return AlertType.vidrio_roto;
-    if (text.contains('vehiculo') || text.contains('alarma')) {
-      return AlertType.alarma_vehiculo;
-    }
-    if (text.contains('hidric') || text.contains('hidrol')) {
-      return AlertType.nivel_hidrico;
-    }
-    return AlertType.reporte_ciudadano;
+
+    return _sensorAlertTypeFromDescription(descripcion);
   }
 
   bool get isSos => alertType == AlertType.sos;
+
+  /// Icono del pin según el tipo real (reportes ciudadanos o sensores).
+  IconData get markerIcon {
+    final reportType = citizenReportType;
+    if (_isCitizenAlert && reportType != null) {
+      return incidentTypeIcon(reportType);
+    }
+    return iconForSensorAlertType(alertType);
+  }
 
   bool belongsToUserZone(List<UserZonaEntity> userZonas) {
     if (userZonas.isEmpty) return true;
@@ -125,12 +121,53 @@ extension AlertEntityUi on AlertEntity {
   }
 }
 
+AlertType _sensorAlertTypeFromDescription(String text) {
+  final subtipo = _extractSensorSubtipo(text);
+  return switch (subtipo) {
+    'disparo' => AlertType.disparo,
+    'grito' => AlertType.grito,
+    _ => AlertType.disparo,
+  };
+}
+
+String? _extractSensorSubtipo(String text) {
+  final fromPattern = RegExp(
+    r'(?:Detección IA \(|Confirmación cruzada \(2 nodos\): )\s*(disparo|grito)\b',
+    caseSensitive: false,
+  ).firstMatch(text);
+  if (fromPattern != null) {
+    return fromPattern.group(1)?.toLowerCase();
+  }
+
+  final lower = text.toLowerCase();
+  if (RegExp(r'\bgrito\b').hasMatch(lower)) return 'grito';
+  if (RegExp(r'\bdisparo\b').hasMatch(lower)) return 'disparo';
+  return null;
+}
+
+IconData iconForSensorAlertType(AlertType type) {
+  return switch (type) {
+    AlertType.disparo => Icons.volume_up_outlined,
+    AlertType.grito => Icons.mic_none_rounded,
+    AlertType.reporte_ciudadano => Icons.sensors_rounded,
+    AlertType.sos => Icons.sos_outlined,
+  };
+}
+
+String? _citizenTipoFromField(String tipo) {
+  final normalized = tipo.trim().toUpperCase();
+  if (!isKnownIncidentType(normalized)) return null;
+  return normalized;
+}
+
 String? _extractCitizenReportType(String text) {
   final match = RegExp(
     r'Reporte de ciudadano:\s*([A-Z0-9_]+)',
     caseSensitive: false,
   ).firstMatch(text);
-  return match?.group(1)?.toUpperCase();
+  final value = match?.group(1)?.toUpperCase();
+  if (value == null || !isKnownIncidentType(value)) return null;
+  return value;
 }
 
 String? _extractCitizenReportNote(String text) {
@@ -140,19 +177,6 @@ String? _extractCitizenReportNote(String text) {
     dotAll: true,
   ).firstMatch(text.trim());
   return match?.group(1)?.trim();
-}
-
-String _alertTypeDisplayLabel(AlertType type) {
-  return switch (type) {
-    AlertType.disparo => 'Disparo',
-    AlertType.explosion => 'Explosión',
-    AlertType.grito => 'Grito',
-    AlertType.vidrio_roto => 'Vidrio roto',
-    AlertType.alarma_vehiculo => 'Alarma de vehículo',
-    AlertType.nivel_hidrico => 'Nivel hídrico',
-    AlertType.reporte_ciudadano => 'Reporte ciudadano',
-    AlertType.sos => 'SOS',
-  };
 }
 
 Map<String, LatLng> positionsFromAlerts(List<AlertEntity> alerts) {

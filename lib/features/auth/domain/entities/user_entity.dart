@@ -1,5 +1,6 @@
 class UserEntity {
   final String uuid;
+  final String alias;
   final String email;
   final String rol;
   final String token;
@@ -15,11 +16,12 @@ class UserEntity {
     required this.refreshToken,
     required this.zonaId,
     this.zonaNombre,
+    required this.alias,
   });
 
   bool get tieneZona => zonaId.isNotEmpty;
 
-  String get nombre => email.split('@').first;
+  String get nombre => alias;
 
   String? get zona => zonaNombre;
 
@@ -37,6 +39,7 @@ class UserEntity {
     String? refreshToken,
     String? zonaId,
     String? zonaNombre,
+    String? alias,
   }) {
     return UserEntity(
       uuid: uuid ?? this.uuid,
@@ -46,6 +49,7 @@ class UserEntity {
       refreshToken: refreshToken ?? this.refreshToken,
       zonaId: zonaId ?? this.zonaId,
       zonaNombre: zonaNombre ?? this.zonaNombre,
+      alias: alias ?? this.alias,
     );
   }
 }

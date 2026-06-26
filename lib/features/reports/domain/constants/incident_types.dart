@@ -12,6 +12,15 @@ const kIncidentTypes = <Map<String, String>>[
   {'label': 'Vehículo sospechoso',  'value': 'VEHICULO_SOSPECHOSO'},
 ];
 
+const kPanicIncidentType = 'PANICO';
+
+bool isKnownIncidentType(String? value) {
+  if (value == null || value.isEmpty) return false;
+  final normalized = value.trim().toUpperCase();
+  if (normalized == kPanicIncidentType) return true;
+  return kIncidentTypes.any((t) => t['value'] == normalized);
+}
+
 String incidentTypeLabel(String? value) {
   if (value == null) return 'N/A';
   if (value == 'PANICO') return 'Pánico';

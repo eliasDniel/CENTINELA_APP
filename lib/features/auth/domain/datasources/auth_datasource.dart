@@ -31,6 +31,12 @@ abstract class AuthDatasource {
     required String newPassword,
   });
 
+  Future<String> changePassword({
+    required String accessToken,
+    required String currentPassword,
+    required String newPassword,
+  });
+
   /// Elimina la cuenta autenticada y sus datos (LOPDP Art. 19).
   Future<String> deleteAccount(String accessToken);
 }

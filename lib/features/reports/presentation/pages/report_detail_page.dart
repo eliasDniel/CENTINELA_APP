@@ -32,17 +32,23 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadReport());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadReport();
+    });
   }
 
   Future<void> _loadReport() async {
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context);
+
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
-      final repository = ref.read(reportsRepositoryProvider);
+      final repository = container.read(reportsRepositoryProvider);
       final report = await repository.getReportById(widget.reportId);
       if (!mounted) return;
       setState(() {

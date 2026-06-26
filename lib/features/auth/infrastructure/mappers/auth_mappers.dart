@@ -13,6 +13,7 @@ class UserMappers {
       token: loginResponse.accessToken,
       refreshToken: loginResponse.refreshToken,
       zonaId: loginResponse.zonaPrincipalId,
+      alias: loginResponse.user.alias,
     );
   }
 
@@ -25,6 +26,7 @@ class UserMappers {
       token: checkStatusResponse.accessToken,
       refreshToken: checkStatusResponse.refreshToken,
       zonaId: checkStatusResponse.zonaPrincipalId,
+      alias: checkStatusResponse.user.alias,
     );
   }
 

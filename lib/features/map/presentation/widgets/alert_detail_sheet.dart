@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../core/location/user_location_provider.dart';
 import '../../../../core/utils/format_time_ago.dart';
-import '../../../reports/domain/constants/incident_types.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
 import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
@@ -30,8 +29,7 @@ class AlertDetailSheet extends StatelessWidget {
 
   String _sourceText(AlertSource source) {
     return switch (source) {
-      AlertSource.sensor_audio || AlertSource.sensor_video => 'Sensor IoT',
-      AlertSource.sensor_hidrico => 'Monitoreo hídrico',
+      AlertSource.sensor_audio => 'Sensor IoT',
       AlertSource.ciudadano => 'Reporte ciudadano',
     };
   }
@@ -39,8 +37,6 @@ class AlertDetailSheet extends StatelessWidget {
   IconData _sourceIcon(AlertSource source) {
     return switch (source) {
       AlertSource.sensor_audio => Icons.sensors_rounded,
-      AlertSource.sensor_video => Icons.videocam_rounded,
-      AlertSource.sensor_hidrico => Icons.water_drop_outlined,
       AlertSource.ciudadano => Icons.person_outline_rounded,
     };
   }
@@ -48,10 +44,7 @@ class AlertDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final levelStyle = _levelStyle(alert.level);
-    final reportType = _extractCitizenReportType(alert.descripcion);
-    final headerIcon = reportType != null
-        ? incidentTypeIcon(reportType)
-        : iconForAlertType(alert.alertType);
+    final headerIcon = alert.markerIcon;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.72,
@@ -343,12 +336,4 @@ class _Badge extends StatelessWidget {
       ),
     );
   }
-}
-
-String? _extractCitizenReportType(String text) {
-  final match = RegExp(
-    r'Reporte de ciudadano:\s*([A-Z0-9_]+)',
-    caseSensitive: false,
-  ).firstMatch(text);
-  return match?.group(1)?.toUpperCase();
 }

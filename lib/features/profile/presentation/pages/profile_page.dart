@@ -6,7 +6,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../reports/presentation/pages/offline_queue_page.dart';
 import '../pages/privacy_page.dart';
 import '../pages/change_password_page.dart';
-import '../pages/change_location_page.dart';
+
 import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
 import '../../../notifications/presentation/notifications_screens.dart';
 import '../../../notifications/presentation/providers/notification_settings_provider.dart';
@@ -255,20 +255,8 @@ class _CardConfig extends ConsumerWidget {
                     context.push('/home/3/${OfflineQueuePage.routeName}'),
               ),
               const Divider(color: Colors.white24),
-              ListTile(
-                title: const Text('Cambiar zona y barrio'),
-                subtitle: Text(
-                  userBarrio.isNotEmpty ? '$userZona · $userBarrio' : userZona,
-                ),
-                leading: Icon(
-                  Icons.edit_location_alt,
-                  color: AppConfig.primary,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () =>
-                    context.push('/home/3/${ChangeLocationPage.routeName}'),
-              ),
-              const Divider(color: Colors.white24),
+              
+        
               ListTile(
                 title: const Text('Mis barrios'),
                 subtitle: Text(
@@ -319,16 +307,21 @@ class CardProfile extends StatelessWidget {
         child: Column(
           children: [
             // Avatar
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: AssetImage('assets/images/anonimo.png'),
-            ),
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppConfig.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.person_outline, size: 50, color: AppConfig.surface)),
+
             const SizedBox(height: 16),
 
             // Nombre
             Text(
               // authState.user?.nombre ?? 'Usuario',
-            authState.user?.email.split('@').first ?? 'Usuario',
+            authState.user?.alias ?? 'Usuario',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 4),

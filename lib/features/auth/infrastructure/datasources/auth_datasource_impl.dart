@@ -141,6 +141,31 @@ class AuthDataSourceImpl extends AuthDatasource {
   }
 
   @override
+  Future<String> changePassword({
+    required String accessToken,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/change-password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $accessToken'},
+        ),
+      );
+      final data = Map<String, dynamic>.from(response.data as Map);
+      return data['message']?.toString() ??
+          'Contraseña actualizada correctamente';
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  @override
   Future<String> deleteAccount(String accessToken) async {
     try {
       final response = await _dio.delete(

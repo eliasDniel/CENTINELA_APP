@@ -1,37 +1,33 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/utils/app_colors.dart';
-import '../../domain/constants/zonas_administrativas.dart';
+import '../../domain/constants/zona_suscripcion_limits.dart';
 
-/// Visualiza: [Zona/barrio propio] arriba + 3 slots adicionales abajo.
-class SubscriptionSlotsRow extends StatelessWidget {
-  const SubscriptionSlotsRow({
+/// Visualiza: [Zona principal] arriba + cupos de zonas suscritas abajo.
+class ZonaSubscriptionSlotsRow extends StatelessWidget {
+  const ZonaSubscriptionSlotsRow({
     super.key,
-    required this.homeZona,
-    required this.homeBarrio,
-    required this.subscribedBarrios,
+    required this.principalLabel,
+    required this.subscribedLabels,
   });
 
-  final String homeZona;
-  final String? homeBarrio;
-  final List<String> subscribedBarrios;
+  final String principalLabel;
+  final List<String> subscribedLabels;
 
   @override
   Widget build(BuildContext context) {
-    final slots = List<String?>.filled(kMaxBarriosAdicionales, null);
+    final slots = List<String?>.filled(kMaxZonasSuscritas, null);
     for (var i = 0;
-        i < subscribedBarrios.length && i < kMaxBarriosAdicionales;
+        i < subscribedLabels.length && i < kMaxZonasSuscritas;
         i++) {
-      slots[i] = subscribedBarrios[i];
+      slots[i] = subscribedLabels[i];
     }
-
-    final homeLabel = homeBarrio ?? homeZona;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SlotChip(
-          label: homeLabel,
+          label: principalLabel,
           isHome: true,
           isEmpty: false,
           expanded: true,
@@ -80,7 +76,7 @@ class _SlotChip extends StatelessWidget {
         ? AppConfig.textTertiary
         : AppConfig.primary;
 
-    final badge = isHome ? 'Propio' : (isEmpty ? null : 'Suscrito');
+    final badge = isHome ? 'Principal' : (isEmpty ? null : 'Suscrita');
 
     return Container(
       width: double.infinity,
@@ -133,7 +129,7 @@ class _SlotChip extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  isEmpty ? Icons.add_circle_outline : Icons.location_on,
+                  isEmpty ? Icons.add_circle_outline : Icons.map_outlined,
                   size: 18,
                   color: color,
                 ),

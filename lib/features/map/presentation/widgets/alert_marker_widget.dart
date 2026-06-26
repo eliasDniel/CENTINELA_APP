@@ -37,7 +37,7 @@ class AlertMarkerWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final level = MapAlertLevelStyle.forLevel(alert.level);
     final dimmed = barrioCategory == BarrioMapCategory.other;
-    final title = _titleFor(alert);
+    final title = alert.displayTitle;
     final subtitle = _subtitleFor(alert, barrioCategory);
 
     return GestureDetector(
@@ -56,7 +56,8 @@ class AlertMarkerWidget extends StatelessWidget {
                 bottom: 0,
                 child: _MapPin(
                   accent: level.pinAccent,
-                  icon: iconForAlertType(alert.alertType),
+                  icon: alert.markerIcon,
+                  showSosLabel: alert.isSos,
                   pulse: alert.level == AlertLevel.critico && !dimmed,
                 ),
               ),
@@ -75,11 +76,6 @@ class AlertMarkerWidget extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _titleFor(AlertEntity alert) {
-    if (alert.isSos) return 'SOS';
-    return alertTypeLabel(alert.alertType);
   }
 
   String _subtitleFor(AlertEntity alert, BarrioMapCategory category) {
@@ -155,11 +151,13 @@ class _MapPin extends StatelessWidget {
   const _MapPin({
     required this.accent,
     required this.icon,
+    required this.showSosLabel,
     required this.pulse,
   });
 
   final Color accent;
   final IconData icon;
+  final bool showSosLabel;
   final bool pulse;
 
   static const _iconDiameter = 22.0;
@@ -209,7 +207,7 @@ class _MapPin extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: icon == Icons.sos_outlined
+                child: showSosLabel
                     ? const Text(
                         'SOS',
                         style: TextStyle(

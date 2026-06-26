@@ -226,11 +226,6 @@ class MapNotifier extends Notifier<MapState> {
 
   bool _matchesSourceFilter(AlertSource source, AlertSource? filter) {
     if (filter == null) return true;
-    if (filter == AlertSource.sensor_audio) {
-      return source == AlertSource.sensor_audio ||
-          source == AlertSource.sensor_video ||
-          source == AlertSource.sensor_hidrico;
-    }
     return source == filter;
   }
 
@@ -423,9 +418,7 @@ String _levelLabel(AlertLevel level) {
 
 String _sourceLabel(AlertSource source) {
   return switch (source) {
-    AlertSource.sensor_audio ||
-    AlertSource.sensor_video ||
-    AlertSource.sensor_hidrico => 'Sensores',
+    AlertSource.sensor_audio => 'Sensores',
     AlertSource.ciudadano => 'Ciudadanos',
   };
 }

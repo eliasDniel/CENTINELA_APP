@@ -13,7 +13,6 @@ import 'package:centinela_milagro/features/reports/presentation/pages/offline_qu
 import 'package:centinela_milagro/features/reports/presentation/pages/report_detail_page.dart';
 import 'package:centinela_milagro/features/reports/presentation/pages/report_page.dart';
 import 'package:centinela_milagro/features/subscriptions/presentation/pages/subscriptions_hub_page.dart';
-import 'package:centinela_milagro/features/subscriptions/presentation/pages/subscriptions_manage_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -77,13 +76,6 @@ final appRouterProvider = Provider((ref) {
             path: 'subscriptions',
             name: SubscriptionsHubPage.routeName,
             builder: (context, state) => const SubscriptionsHubPage(),
-            routes: [
-              GoRoute(
-                path: 'manage',
-                name: SubscriptionsManagePage.routeName,
-                builder: (context, state) => const SubscriptionsManagePage(),
-              ),
-            ],
           ),
           GoRoute(
             path: 'change-password',

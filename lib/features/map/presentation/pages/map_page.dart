@@ -51,6 +51,7 @@ class _MapPageState extends ConsumerState<MapPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _showRadiusHintBriefly();
       _showCompassHintOnce();
       _focusPendingSosIfAny();
@@ -98,9 +99,10 @@ class _MapPageState extends ConsumerState<MapPage> {
   }
 
   void _showCompassHintOnce() {
+    final container = ProviderScope.containerOf(context);
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
-      final heading = ref.read(userHeadingProvider);
+      final heading = container.read(userHeadingProvider);
       if (!heading.isAvailable) return;
       AppAlert.info(
         context,
@@ -560,8 +562,13 @@ class _MapPageState extends ConsumerState<MapPage> {
     AlertEntity summary,
     BarrioMapCategory category,
   ) async {
-    final state = ref.read(mapProvider);
-    final position = state.positions[summary.id] ?? summary.position;
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context);
+    final mapState = container.read(mapProvider);
+    final position = mapState.positions[summary.id] ?? summary.position;
+    final userPos = container.read(userLocationProvider).position;
+    final detailFuture =
+        container.read(mapProvider.notifier).loadAlertDetail(summary.id);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -569,7 +576,7 @@ class _MapPageState extends ConsumerState<MapPage> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return FutureBuilder<AlertEntity>(
-          future: ref.read(mapProvider.notifier).loadAlertDetail(summary.id),
+          future: detailFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return Container(
@@ -587,10 +594,7 @@ class _MapPageState extends ConsumerState<MapPage> {
             final alert = snapshot.data ?? summary;
             final dist = position == null
                 ? null
-                : distanceToUserMeters(
-                    ref.read(userLocationProvider).position,
-                    position,
-                  );
+                : distanceToUserMeters(userPos, position);
             return AlertDetailSheet(
               alert: alert,
               barrioCategory: category,

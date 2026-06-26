@@ -48,7 +48,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   Future<void> _finishOnboarding() async {
-    await ref.read(onboardingCompletedProvider.notifier).complete();
+    final container = ProviderScope.containerOf(context);
+    await container.read(onboardingCompletedProvider.notifier).complete();
     if (!mounted) return;
     context.go('/login');
   }

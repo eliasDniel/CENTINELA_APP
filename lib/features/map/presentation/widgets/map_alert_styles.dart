@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/constants/map_alert_enums.dart';
+import '../../domain/entities/map_alert_extensions.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
 
 class MapAlertLevelStyle {
@@ -49,11 +50,7 @@ String levelShortLabel(AlertLevel level) {
 String alertTypeLabel(AlertType type) {
   return switch (type) {
     AlertType.disparo => 'Disparo',
-    AlertType.explosion => 'Explosión',
     AlertType.grito => 'Grito',
-    AlertType.vidrio_roto => 'Vidrio roto',
-    AlertType.alarma_vehiculo => 'Vehículo',
-    AlertType.nivel_hidrico => 'Nivel hídrico',
     AlertType.reporte_ciudadano => 'Reporte',
     AlertType.sos => 'SOS',
   };
@@ -79,15 +76,4 @@ Color barrioBorderForCategory(BarrioMapCategory category, String barrio) {
   };
 }
 
-IconData iconForAlertType(AlertType type) {
-  return switch (type) {
-    AlertType.disparo => Icons.volume_up_outlined,
-    AlertType.explosion => Icons.local_fire_department_outlined,
-    AlertType.grito => Icons.mic_none_rounded,
-    AlertType.vidrio_roto => Icons.broken_image_outlined,
-    AlertType.alarma_vehiculo => Icons.directions_car_outlined,
-    AlertType.nivel_hidrico => Icons.water_drop_outlined,
-    AlertType.reporte_ciudadano => Icons.person_outline,
-    AlertType.sos => Icons.sos_outlined,
-  };
-}
+IconData iconForAlertType(AlertType type) => iconForSensorAlertType(type);

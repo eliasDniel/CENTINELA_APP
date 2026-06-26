@@ -59,6 +59,19 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
+  Future<String> changePassword({
+    required String accessToken,
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return dataSources.changePassword(
+      accessToken: accessToken,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+  }
+
+  @override
   Future<String> deleteAccount(String accessToken) {
     return dataSources.deleteAccount(accessToken);
   }
