@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/location/user_location_provider.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -14,7 +13,10 @@ class HomeLocationCardWidget extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final user = auth.user;
     final isVisitor = user == null;
-    final location = ref.watch(userLocationProvider);
+    final locationLine = _buildLocationLine(
+      isVisitor: isVisitor,
+      zonaNombre: user?.zonaNombre,
+    );
 
     return Card(
       margin: const EdgeInsets.all(AppConfig.horizontalMargin),
@@ -53,7 +55,7 @@ class HomeLocationCardWidget extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      location.shortAddress,
+                      locationLine,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppConfig.textSecondary,
                       ),
@@ -76,5 +78,23 @@ class HomeLocationCardWidget extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _buildLocationLine({
+    required bool isVisitor,
+    String? zonaNombre,
+  }) {
+    const cityCountry = 'Milagro, Ecuador';
+
+    if (isVisitor) {
+      return cityCountry;
+    }
+
+    final zona = zonaNombre?.trim();
+    if (zona == null || zona.isEmpty) {
+      return 'Sin zona principal · $cityCountry';
+    }
+
+    return '$zona · $cityCountry';
   }
 }

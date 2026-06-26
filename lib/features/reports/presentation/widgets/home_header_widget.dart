@@ -15,7 +15,7 @@ class HomeHeaderWidget extends ConsumerWidget {
     final user = auth.user;
     final isVisitor = user == null;
     final greeting = isVisitor ? 'Hola,' : 'Bienvenido de nuevo,';
-    final name = user == null ? 'visitante' : (user.email.split('@').first);
+    final name = user == null ? 'visitante' : (user.alias);
     final subtitle = isVisitor
         ? 'Explora el mapa de alertas en un radio de 3 km sin crear cuenta. '
               'Inicia sesión para reportar incidentes y recibir avisos de tu barrio.'

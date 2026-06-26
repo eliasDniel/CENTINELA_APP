@@ -1,103 +1,84 @@
+import 'package:centinela_milagro/core/utils/api_timestamp.dart';
 import 'package:centinela_milagro/features/map/infrastructure/models/zonas_by_user_response.dart';
 
 class AlertsResponse {
   final String id;
   final String codigo;
   final String tipo;
-  final String descripcion;
+  final String? descripcion;
   final String? zonaId;
+  final String? zonaNombre;
   final int severidad;
   final String estado;
   final String? eventoId;
-  final String reporteId;
+  final String? reporteId;
   final String? generadaPor;
   final String? reconocidaPor;
   final String? reconocidaEn;
   final String? cerradaPor;
   final String? cerradaEn;
-  final String notas;
+  final String? notas;
   final String createdAt;
   final String? updatedAt;
   final String? deletedAt;
   final Zona? zona;
-  final double latitud;
-  final double longitud;
+  final double? latitud;
+  final double? longitud;
   final int timestamp;
 
   AlertsResponse({
     required this.id,
     required this.codigo,
     required this.tipo,
-    required this.descripcion,
+    this.descripcion,
     this.zonaId,
+    this.zonaNombre,
     required this.severidad,
     required this.estado,
     this.eventoId,
-    required this.reporteId,
+    this.reporteId,
     this.generadaPor,
     this.reconocidaPor,
     this.reconocidaEn,
     this.cerradaPor,
     this.cerradaEn,
-    required this.notas,
+    this.notas,
     required this.createdAt,
     this.updatedAt,
     this.deletedAt,
-    required this.zona,
-    required this.latitud,
-    required this.longitud,
+    this.zona,
+    this.latitud,
+    this.longitud,
     required this.timestamp,
   });
 
   factory AlertsResponse.fromJson(Map<String, dynamic> json) => AlertsResponse(
-    id: json["id"],
-    codigo: json["codigo"],
-    tipo: json["tipo"],
-    descripcion: json["descripcion"],
-    zonaId: json["zonaId"],
-    severidad: json["severidad"],
-    estado: json["estado"],
-    eventoId: json["eventoId"],
-    reporteId: json["reporteId"],
-    generadaPor: json["generadaPor"],
-    reconocidaPor: json["reconocidaPor"],
-    reconocidaEn: json["reconocidaEn"],
-    cerradaPor: json["cerradaPor"],
-    cerradaEn: json["cerradaEn"],
-    notas: json["notas"],
-    createdAt: json["createdAt"],
-    updatedAt: json["updatedAt"],
-    deletedAt: json["deletedAt"],
+    id: json["id"]?.toString() ?? '',
+    codigo: json["codigo"]?.toString() ?? '',
+    tipo: json["tipo"]?.toString() ?? '',
+    descripcion: json["descripcion"]?.toString(),
+    zonaId: json["zonaId"]?.toString(),
+    zonaNombre: json["zonaNombre"]?.toString(),
+    severidad: (json["severidad"] as num?)?.toInt() ?? 1,
+    estado: json["estado"]?.toString() ?? 'activa',
+    eventoId: json["eventoId"]?.toString(),
+    reporteId: json["reporteId"]?.toString(),
+    generadaPor: json["generadaPor"]?.toString(),
+    reconocidaPor: json["reconocidaPor"]?.toString(),
+    reconocidaEn: json["reconocidaEn"]?.toString(),
+    cerradaPor: json["cerradaPor"]?.toString(),
+    cerradaEn: json["cerradaEn"]?.toString(),
+    notas: json["notas"]?.toString(),
+    createdAt: json["createdAt"]?.toString() ?? '',
+    updatedAt: json["updatedAt"]?.toString(),
+    deletedAt: json["deletedAt"]?.toString(),
     zona: json["zona"] != null ? Zona.fromJson(json["zona"]) : null,
-    latitud: json["latitud"]?.toDouble(),
-    longitud: json["longitud"]?.toDouble(),
-    timestamp: json["timestamp"],
+    latitud: (json["latitud"] as num?)?.toDouble(),
+    longitud: (json["longitud"] as num?)?.toDouble(),
+    timestamp: parseApiTimestamp(
+      json['timestamp'],
+      fallbackMs: DateTime.tryParse(json['createdAt']?.toString() ?? '')
+          ?.millisecondsSinceEpoch,
+    ),
   );
-
-  Map<String, dynamic> toJson() => {
-    "id": id,
-    "codigo": codigo,
-    "tipo": tipo,
-    "descripcion": descripcion,
-    "zonaId": zonaId,
-    "severidad": severidad,
-    "estado": estado,
-    "eventoId": eventoId,
-    "reporteId": reporteId,
-    "generadaPor": generadaPor,
-    "reconocidaPor": reconocidaPor,
-    "reconocidaEn": reconocidaEn,
-    "cerradaPor": cerradaPor,
-    "cerradaEn": cerradaEn,
-    "notas": notas,
-    "createdAt": createdAt,
-    "updatedAt": updatedAt,
-    "deletedAt": deletedAt,
-    "zona": zona?.toJson(),
-    "latitud": latitud,
-    "longitud": longitud,
-    "timestamp": timestamp,
-  };
 }
-
-

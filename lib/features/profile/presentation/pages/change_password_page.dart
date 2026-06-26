@@ -1,9 +1,10 @@
-// RF-0705: cambiar contraseña (simulación, usuario logueado)
+// RF-0705: cambiar contraseña (usuario logueado)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/inputs/password.dart';
 import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
@@ -35,18 +36,30 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   }
 
   Future<void> _submit() async {
-    if (_currentController.text.isEmpty) {
+    final current = _currentController.text;
+    final nueva = _newController.text;
+    final confirm = _confirmController.text;
+
+    if (current.isEmpty) {
       setState(() => _error = 'Ingresa tu contraseña actual');
       return;
     }
-    if (_newController.text.length < 6) {
-      setState(
-        () => _error = 'La nueva contraseña debe tener al menos 6 caracteres',
-      );
+
+    final passwordError = Password.validateStrongPassword(nueva);
+    if (passwordError != null) {
+      setState(() => _error = passwordError);
       return;
     }
-    if (_newController.text != _confirmController.text) {
+
+    if (nueva != confirm) {
       setState(() => _error = 'Las contraseñas nuevas no coinciden');
+      return;
+    }
+
+    if (current == nueva) {
+      setState(
+        () => _error = 'La nueva contraseña debe ser distinta a la actual',
+      );
       return;
     }
 
@@ -55,21 +68,31 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
       _loading = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final message = await ref.read(authProvider.notifier).changePassword(
+      currentPassword: current,
+      newPassword: nueva,
+    );
 
     if (!mounted) return;
     setState(() => _loading = false);
 
-    AppAlert.success(context, 'Contraseña cambiada correctamente',
-        duration: const Duration(seconds: 2));
-    context.pop();
+    if (message == null) {
+      AppAlert.success(
+        context,
+        'Contraseña cambiada correctamente',
+        duration: const Duration(seconds: 2),
+      );
+      context.pop();
+      return;
+    }
+
+    setState(() => _error = message);
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
 
-    // if (user == null || user.isVisitor) {
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Cambiar contraseña')),
@@ -88,7 +111,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () => context.go('/auth'),
+                  onPressed: () => context.go('/login'),
                   child: const Text('Iniciar sesión'),
                 ),
               ],
@@ -111,8 +134,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            // 'Cuenta: ${user.nombre} · Simulación sin backend.',
-            'Cuenta: ${user.email.split('@').first} · Simulación sin backend.',
+            'Cuenta: ${user.email}',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: AppConfig.textSecondary),
@@ -142,6 +164,7 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
             enabled: !_loading,
             decoration: InputDecoration(
               labelText: 'Nueva contraseña',
+              helperText: 'Mínimo 8 caracteres, mayúscula, minúscula y número',
               prefixIcon: const Icon(Icons.vpn_key_outlined),
               suffixIcon: IconButton(
                 icon: Icon(

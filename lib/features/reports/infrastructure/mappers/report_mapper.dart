@@ -1,5 +1,6 @@
 
 import 'package:centinela_milagro/features/reports/infrastructure/models/reports_response.dart';
+import 'package:centinela_milagro/features/reports/infrastructure/utils/report_evidence_parser.dart';
 
 import '../../domain/entities/report_entity.dart';
 
@@ -13,7 +14,7 @@ class ReportMapper {
       zonaNombre: response.zonaNombre,
       estado: response.estado,
       prioridad: response.prioridad,
-      fotosUrls: response.fotosUrls,
+      evidenceUrls: parseReportEvidenceUrls(response.fotosUrls),
       createdAt: response.createdAt,
       timestamp: response.timestamp,
       updatedAt: response.updatedAt,

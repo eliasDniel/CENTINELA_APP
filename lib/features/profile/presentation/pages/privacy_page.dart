@@ -218,7 +218,7 @@ class PrivacyPage extends ConsumerWidget {
               side: const BorderSide(color: AppConfig.error),
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
-            onPressed: () => _confirmDeleteAccount(context, ref),
+            onPressed: () => _confirmDeleteAccount(context),
             icon: const Icon(Icons.delete_forever_outlined),
             label: const Text('Eliminar mi cuenta'),
           ),
@@ -282,10 +282,10 @@ class PrivacyPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDeleteAccount(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final container = ProviderScope.containerOf(context);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -313,6 +313,7 @@ class PrivacyPage extends ConsumerWidget {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (_) => const PopScope(
         canPop: false,
         child: AlertDialog(
@@ -328,12 +329,24 @@ class PrivacyPage extends ConsumerWidget {
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 1200));
+    final errorMessage =
+        await container.read(authProvider.notifier).deleteAccount();
+
+    if (rootNavigator.mounted && rootNavigator.canPop()) {
+      rootNavigator.pop();
+    }
 
     if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop();
-    // ref.read(authProvider.notifier).logout(); // método correcto: logoutUser
-    ref.read(authProvider.notifier).logoutUser();
+
+    if (errorMessage != null) {
+      AppAlert.error(context, errorMessage);
+      return;
+    }
+
+    AppAlert.success(
+      context,
+      'Tu cuenta y datos personales fueron eliminados',
+    );
     context.go('/auth');
   }
 }

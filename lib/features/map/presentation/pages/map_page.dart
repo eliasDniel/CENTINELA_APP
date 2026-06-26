@@ -7,14 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
-import '../../../subscriptions/domain/constants/zonas_administrativas.dart';
-import '../../../subscriptions/presentation/providers/subscriptions_provider.dart';
+import '../widgets/map_floating_controls.dart';
 import '../widgets/map_active_filters_banner.dart';
 import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/entities/map_alert_extensions.dart';
+import '../../domain/entities/user_zona_entity.dart';
+import '../../domain/utils/wkt_polygon_parser.dart';
 import '../providers/last_sos_alert_provider.dart';
 import '../providers/map_provider.dart';
 import '../widgets/alert_detail_sheet.dart';
@@ -34,11 +34,24 @@ class MapPage extends ConsumerStatefulWidget {
 class _MapPageState extends ConsumerState<MapPage> {
   final MapController _mapController = MapController();
   bool _showRadiusHint = false;
+  bool _mapReady = false;
+  bool _shouldCenterOnUser = true;
+  LatLng? _pendingCenter;
+  double? _pendingZoom;
+
+  static const _defaultMapZoom = 14.2;
+
+  @override
+  void dispose() {
+    _mapReady = false;
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _showRadiusHintBriefly();
       _showCompassHintOnce();
       _focusPendingSosIfAny();
@@ -65,13 +78,19 @@ class _MapPageState extends ConsumerState<MapPage> {
       (a) => a.id == pending.id,
       orElse: () => pending,
     );
-    final category = ref.read(barrioCategoryFnProvider)(alert.barrio);
+    final category = _zonaCategory(alert, mapState.userZonas);
     _openAlertSheet(alert, category);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_isMapTabActive()) {
+      _shouldCenterOnUser = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _tryCenterOnUserOnce();
+      });
+    }
     if (_isMapTabActive() && ref.read(lastSosAlertProvider) != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusPendingSosIfAny();
@@ -80,9 +99,10 @@ class _MapPageState extends ConsumerState<MapPage> {
   }
 
   void _showCompassHintOnce() {
+    final container = ProviderScope.containerOf(context);
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
-      final heading = ref.read(userHeadingProvider);
+      final heading = container.read(userHeadingProvider);
       if (!heading.isAvailable) return;
       AppAlert.info(
         context,
@@ -93,11 +113,46 @@ class _MapPageState extends ConsumerState<MapPage> {
     });
   }
 
+  void _onMapReady() {
+    if (!mounted) return;
+    _mapReady = true;
+    if (_pendingCenter != null) {
+      _safeMoveMap(_pendingCenter!, _pendingZoom ?? _defaultMapZoom);
+    } else {
+      _tryCenterOnUserOnce();
+    }
+  }
+
+  void _tryCenterOnUserOnce() {
+    if (!_shouldCenterOnUser || !_isMapTabActive() || !_mapReady) return;
+    _shouldCenterOnUser = false;
+    final userPos = ref.read(userLocationProvider).position;
+    _safeMoveMap(userPos, _defaultMapZoom);
+  }
+
+  void _safeMoveMap(LatLng center, double zoom) {
+    if (!_mapReady) {
+      _pendingCenter = center;
+      _pendingZoom = zoom;
+      return;
+    }
+    try {
+      _mapController.move(center, zoom);
+      _pendingCenter = null;
+      _pendingZoom = null;
+    } catch (_) {
+      _mapReady = false;
+      _pendingCenter = center;
+      _pendingZoom = zoom;
+    }
+  }
+
   void _applyMapRotation(double headingDegrees, bool compassFollow) {
+    if (!_mapReady) return;
     try {
       _mapController.rotate(compassFollow ? -headingDegrees : 0);
     } catch (_) {
-      // Mapa aún no montado
+      _mapReady = false;
     }
   }
 
@@ -109,18 +164,37 @@ class _MapPageState extends ConsumerState<MapPage> {
     });
   }
 
+  BarrioMapCategory _zonaCategory(
+    AlertEntity alert,
+    List<UserZonaEntity> userZonas,
+  ) {
+    if (userZonas.isEmpty) return BarrioMapCategory.other;
+
+    final alertZonaId = alert.zonaId ?? alert.zona?.id;
+    UserZonaEntity? match;
+    if (alertZonaId != null && alertZonaId.isNotEmpty) {
+      for (final zone in userZonas) {
+        if (zone.zonaId == alertZonaId) {
+          match = zone;
+          break;
+        }
+      }
+    }
+    match ??= userZonas
+        .where((zone) => zone.zona.nombre == alert.zonaNombre)
+        .firstOrNull;
+
+    if (match == null) return BarrioMapCategory.other;
+    if (match.isPrincipal) return BarrioMapCategory.home;
+    return BarrioMapCategory.subscribed;
+  }
+
   Future<void> _openFiltersSheet(MapState state) async {
     AlertLevel? selectedLevel = state.levelFilter;
     AlertSource? selectedSource = state.sourceFilter;
-    String? selectedZona = state.zonaFilter;
-    String? selectedBarrio = state.barrioFilter;
+    String? selectedZonaId = state.zonaIdFilter;
     var selectedRadius = state.proximityRadiusMeters ?? 3000;
-    final auth = ref.read(authProvider);
     final zonaChips = ref.read(mapZonaFilterChipsProvider);
-    final homeBarrio = auth.user?.barrio;
-    final isVisitor = auth.user?.isVisitor ?? true;
-    final isLoggedIn = auth.user != null && !isVisitor;
-    final subscribed = ref.read(barriosSubscribedProvider);
     final usesProximity = ref.read(mapUsesProximityRadiusProvider);
 
     await showModalBottomSheet<void>(
@@ -189,11 +263,9 @@ class _MapPageState extends ConsumerState<MapPage> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      isLoggedIn
-                          ? 'Tu zona y otras zonas administrativas'
-                          : 'Explorar por zona administrativa',
-                      style: const TextStyle(
+                    const Text(
+                      'Tu zona principal y zonas suscritas',
+                      style: TextStyle(
                         color: Colors.white38,
                         fontSize: 12,
                       ),
@@ -204,15 +276,14 @@ class _MapPageState extends ConsumerState<MapPage> {
                       runSpacing: 8,
                       children: zonaChips.map((chip) {
                         final isSelected =
-                            selectedZona == chip.value ||
-                            (chip.value == null && selectedZona == null);
+                            selectedZonaId == chip.value ||
+                            (chip.value == null && selectedZonaId == null);
                         return FilterChip(
                           label: Text(chip.label),
                           selected: isSelected,
                           onSelected: (_) {
                             setStateSheet(() {
-                              selectedZona = chip.value;
-                              selectedBarrio = null;
+                              selectedZonaId = chip.value;
                             });
                           },
                         );
@@ -249,74 +320,6 @@ class _MapPageState extends ConsumerState<MapPage> {
                       ),
                       const SizedBox(height: 14),
                     ],
-                    if (selectedZona != null &&
-                        zonaTieneBarrios(selectedZona!)) ...[
-                      const Text(
-                        'Barrio',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        isLoggedIn
-                            ? 'Tu barrio y los que hayas suscrito'
-                            : 'Barrios de la zona seleccionada',
-                        style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Builder(
-                        builder: (context) {
-                          final zonaBarrios = barriosDeZona(selectedZona!);
-                          final chips = <({String? value, String label})>[
-                            (
-                              value: null,
-                              label: isLoggedIn && !isVisitor
-                                  ? 'Todos mis barrios'
-                                  : 'Todos',
-                            ),
-                          ];
-                          if (!isVisitor &&
-                              homeBarrio != null &&
-                              homeBarrio.isNotEmpty &&
-                              zonaBarrios.contains(homeBarrio)) {
-                            chips.add((
-                              value: homeBarrio,
-                              label: '$homeBarrio (tú)',
-                            ));
-                          }
-                          for (final b in zonaBarrios) {
-                            if (b == homeBarrio) continue;
-                            if (!isVisitor && subscribed.contains(b)) {
-                              chips.add((value: b, label: b));
-                            } else if (isVisitor || auth.user == null) {
-                              chips.add((value: b, label: b));
-                            }
-                          }
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: chips.map((chip) {
-                              final isSelected = selectedBarrio == chip.value;
-                              return FilterChip(
-                                label: Text(chip.label),
-                                selected: isSelected,
-                                onSelected: (_) {
-                                  setStateSheet(
-                                    () => selectedBarrio = chip.value,
-                                  );
-                                },
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                    ],
                     const Text(
                       'Nivel',
                       style: TextStyle(
@@ -336,20 +339,20 @@ class _MapPageState extends ConsumerState<MapPage> {
                           onChanged: (value) => selectedLevel = value,
                         ),
                         filterChip<AlertLevel>(
-                          label: 'Vigilancia',
-                          value: AlertLevel.vigilancia,
+                          label: 'Crítico',
+                          value: AlertLevel.critico,
                           selectedValue: selectedLevel,
                           onChanged: (value) => selectedLevel = value,
                         ),
                         filterChip<AlertLevel>(
-                          label: 'Alerta',
-                          value: AlertLevel.alerta,
+                          label: 'Urgente',
+                          value: AlertLevel.urgente,
                           selectedValue: selectedLevel,
                           onChanged: (value) => selectedLevel = value,
                         ),
                         filterChip<AlertLevel>(
-                          label: 'Emergencia',
-                          value: AlertLevel.emergencia,
+                          label: 'Preventivo',
+                          value: AlertLevel.preventivo,
                           selectedValue: selectedLevel,
                           onChanged: (value) => selectedLevel = value,
                         ),
@@ -391,51 +394,64 @@ class _MapPageState extends ConsumerState<MapPage> {
                     const SizedBox(height: 12),
                     Text(
                       usesProximity
-                          ? 'Visitante: filtras por distancia. Ciudadanos: por barrio sin límite km.'
-                          : 'Pin: letra = nivel (E/A/V). Borde = tu barrio o suscrito.',
+                          ? 'Visitante: filtras por distancia. Ciudadanos: por sus zonas.'
+                          : 'Las zonas se muestran en el mapa según tu perfil.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white38,
                         fontSize: 11,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppConfig.primaryDark,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white70,
+                              side: const BorderSide(color: Colors.white24),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () {
+                              ref.read(mapProvider.notifier).clearFilters();
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Limpiar'),
                           ),
                         ),
-                        onPressed: () {
-                          ref
-                              .read(mapProvider.notifier)
-                              .applyFilters(
-                                level: selectedLevel,
-                                source: selectedSource,
-                                zonaFilter: selectedZona,
-                                clearZonaFilter: selectedZona == null,
-                                barrioFilter:
-                                    selectedZona != null &&
-                                        zonaTieneBarrios(selectedZona!)
-                                    ? selectedBarrio
-                                    : null,
-                                clearBarrioFilter:
-                                    selectedZona == null ||
-                                    !zonaTieneBarrios(selectedZona!) ||
-                                    selectedBarrio == null,
-                                proximityRadiusMeters: usesProximity
-                                    ? selectedRadius
-                                    : null,
-                                clearProximityRadius: !usesProximity,
-                              );
-                          Navigator.pop(context);
-                        },
-                        child: const Text('Aplicar'),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppConfig.primaryDark,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () {
+                              ref.read(mapProvider.notifier).applyFilters(
+                                    level: selectedLevel,
+                                    clearLevelFilter: selectedLevel == null,
+                                    source: selectedSource,
+                                    clearSourceFilter: selectedSource == null,
+                                    zonaIdFilter: selectedZonaId,
+                                    clearZonaIdFilter: selectedZonaId == null,
+                                    proximityRadiusMeters: usesProximity
+                                        ? selectedRadius
+                                        : null,
+                                    clearProximityRadius: !usesProximity,
+                                  );
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Aplicar'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -448,13 +464,16 @@ class _MapPageState extends ConsumerState<MapPage> {
   }
 
   void _centerOnUser() {
-    final userPos = ref.read(userLocationProvider).position;
-    _mapController.move(userPos, _mapController.camera.zoom);
+    if (!_mapReady) return;
+    try {
+      final userPos = ref.read(userLocationProvider).position;
+      _safeMoveMap(userPos, _mapController.camera.zoom);
+    } catch (_) {
+      _mapReady = false;
+    }
   }
 
   void _toggleCompassFollow() {
-    ref.read(compassFollowModeProvider.notifier).toggle();
-    final follow = ref.read(compassFollowModeProvider);
     final heading = ref.read(userHeadingProvider);
     if (!heading.isAvailable) {
       AppAlert.warning(
@@ -463,31 +482,125 @@ class _MapPageState extends ConsumerState<MapPage> {
       );
       return;
     }
+    ref.read(compassFollowModeProvider.notifier).toggle();
+    final follow = ref.read(compassFollowModeProvider);
     _applyMapRotation(heading.headingDegrees, follow);
   }
 
-  void _openAlertSheet(AlertEntity alert, BarrioMapCategory category) {
-    final state = ref.read(mapProvider);
-    final position = state.positions[alert.id] ?? alert.position;
-    showModalBottomSheet<void>(
+  void _zoomBy(double delta) {
+    if (!_mapReady) return;
+    try {
+      _mapController.move(
+        _mapController.camera.center,
+        _mapController.camera.zoom + delta,
+      );
+    } catch (_) {
+      _mapReady = false;
+    }
+  }
+
+  PreferredSizeWidget _buildMapAppBar({
+    required MapState state,
+    required VoidCallback onRefresh,
+    required VoidCallback onOpenFilters,
+  }) {
+    final hasActiveFilters = ref.watch(mapHasActiveFiltersProvider);
+    final alertCount = state.filteredAlerts.length;
+
+    return AppBar(
+      backgroundColor: AppConfig.surface.withValues(alpha: 0.92),
+      elevation: 0,
+      scrolledUnderElevation: 2,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Mapa de alertas',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
+          Text(
+            '$alertCount alerta${alertCount == 1 ? '' : 's'} activa${alertCount == 1 ? '' : 's'}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppConfig.textSecondary,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          onPressed: state.isLoading ? null : onRefresh,
+          icon: state.isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.refresh_rounded),
+          tooltip: 'Actualizar alertas',
+        ),
+        IconButton(
+          onPressed: onOpenFilters,
+          tooltip: 'Filtrar alertas',
+          icon: Badge(
+            isLabelVisible: hasActiveFilters,
+            smallSize: 8,
+            backgroundColor: AppConfig.sos,
+            child: const Icon(Icons.tune_rounded),
+          ),
+        ),
+        const SizedBox(width: 4),
+      ],
+    );
+  }
+
+  Future<void> _openAlertSheet(
+    AlertEntity summary,
+    BarrioMapCategory category,
+  ) async {
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context);
+    final mapState = container.read(mapProvider);
+    final position = mapState.positions[summary.id] ?? summary.position;
+    final userPos = container.read(userLocationProvider).position;
+    final detailFuture =
+        container.read(mapProvider.notifier).loadAlertDetail(summary.id);
+
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
-        final dist = position == null
-            ? null
-            : distanceToUserMeters(
-                ref.read(userLocationProvider).position,
-                position,
+      builder: (sheetContext) {
+        return FutureBuilder<AlertEntity>(
+          future: detailFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Container(
+                height: 220,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10131A),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               );
-        return AlertDetailSheet(
-          alert: alert,
-          barrioCategory: category,
-          distanceFromUser: dist,
-          position: position,
-          onCenterMap: () {
-            Navigator.pop(context);
-            ref.read(mapProvider.notifier).centerOnAlert(alert);
+            }
+
+            final alert = snapshot.data ?? summary;
+            final dist = position == null
+                ? null
+                : distanceToUserMeters(userPos, position);
+            return AlertDetailSheet(
+              alert: alert,
+              barrioCategory: category,
+              distanceFromUser: dist,
+              position: position,
+            );
           },
         );
       },
@@ -498,45 +611,19 @@ class _MapPageState extends ConsumerState<MapPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(mapProvider);
 
-    ref.listen<AlertEntity?>(
-      mapProvider.select((state) => state.lastIncomingAlert),
-      (previous, next) {
-        if (next == null || next.id == previous?.id) return;
-        // La SOS del propio usuario ya tiene confirmación en Inicio.
-        if (next.isSos) return;
-        final auth = ref.read(authProvider);
-        final userZona = auth.user?.zona;
-        final effectiveZona = ref.read(
-          mapProvider.select((s) => s.zonaFilter ?? userZona),
-        );
-        if (effectiveZona != null && next.zonaNombre != effectiveZona) return;
-
-        final monitored = ref.read(monitoredBarriosProvider);
-        final barrioFilter = ref.read(
-          mapProvider.select((s) => s.barrioFilter),
-        );
-        if (barrioFilter != null && next.barrio != barrioFilter) return;
-        if (barrioFilter == null &&
-            monitored.isNotEmpty &&
-            next.barrio.isNotEmpty &&
-            !monitored.contains(next.barrio)) {
-          return;
-        }
-        final location = next.barrio.isNotEmpty ? next.barrio : next.zonaNombre;
-        AppAlert.show(
-          context,
-          message: '🔔 Nueva alerta en $location',
-          type: AppAlertType.warning,
-          duration: const Duration(seconds: 2),
-        );
-      },
-    );
-
     ref.listen<LatLng>(mapProvider.select((state) => state.center), (
       previous,
       next,
     ) {
-      _mapController.move(next, 14.2);
+      if (previous == next) return;
+      if (_shouldCenterOnUser) return;
+      _safeMoveMap(next, _defaultMapZoom);
+    });
+
+    ref.listen(userLocationProvider, (previous, next) {
+      if (_shouldCenterOnUser && !next.isLoading) {
+        _tryCenterOnUserOnce();
+      }
     });
 
     ref.listen(userHeadingProvider, (previous, next) {
@@ -566,14 +653,16 @@ class _MapPageState extends ConsumerState<MapPage> {
       _focusPendingSosIfAny();
     });
 
-    if (state.isLoading && state.allAlerts.isEmpty) {
+    if (state.isLoading && state.allAlerts.isEmpty && state.userZonas.isEmpty) {
       return const Scaffold(
         backgroundColor: Color(0xFF10131A),
         body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
-    if (state.errorMessage.isNotEmpty && state.allAlerts.isEmpty) {
+    if (state.errorMessage.isNotEmpty &&
+        state.allAlerts.isEmpty &&
+        state.userZonas.isEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFF10131A),
         body: Center(
@@ -589,15 +678,16 @@ class _MapPageState extends ConsumerState<MapPage> {
       );
     }
 
-    if (state.allAlerts.isEmpty) {
+    final hasMapContent =
+        state.filteredAlerts.isNotEmpty || state.userZonas.isNotEmpty;
+
+    if (!hasMapContent) {
       return Scaffold(
         backgroundColor: const Color(0xFF10131A),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: const Text(
-            'Alertas Activas',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
+        appBar: _buildMapAppBar(
+          state: state,
+          onRefresh: () => ref.read(mapProvider.notifier).refreshAlerts(),
+          onOpenFilters: () => _openFiltersSheet(state),
         ),
         body: Center(
           child: Padding(
@@ -605,7 +695,7 @@ class _MapPageState extends ConsumerState<MapPage> {
             child: Text(
               state.errorMessage.isNotEmpty
                   ? state.errorMessage
-                  : 'No hay alertas activas en este momento.',
+                  : 'No hay alertas activas en tus zonas.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white70),
             ),
@@ -617,19 +707,43 @@ class _MapPageState extends ConsumerState<MapPage> {
     final userLocation = ref.watch(userLocationProvider);
     final heading = ref.watch(userHeadingProvider);
     final compassFollow = ref.watch(compassFollowModeProvider);
+    final mapControlsBottom = 20.0;
     final proximityCenter = state.proximityRadiusMeters != null
         ? userLocation.position
         : state.center;
-    final categorize = ref.watch(barrioCategoryFnProvider);
+    final categorize = (AlertEntity alert) =>
+        _zonaCategory(alert, state.userZonas);
+    final zonePolygons = <Polygon>[];
+    for (final userZona in state.userZonas) {
+      final points = parseWktPolygon(userZona.zona.geomWkt);
+      if (points.isEmpty) continue;
+      final isSelected =
+          state.zonaIdFilter == null || state.zonaIdFilter == userZona.zonaId;
+      final baseColor = userZona.isPrincipal
+          ? const Color(0xFF42A5F5)
+          : const Color(0xFF66BB6A);
+      zonePolygons.add(
+        Polygon(
+          points: points,
+          color: baseColor.withOpacity(isSelected ? 0.18 : 0.08),
+          borderColor: baseColor.withOpacity(isSelected ? 0.9 : 0.35),
+          borderStrokeWidth: isSelected ? 2.5 : 1.2,
+        ),
+      );
+    }
     final markers = state.filteredAlerts.map((alert) {
       final position = state.positions[alert.id];
       if (position == null) return null;
-      final category = categorize(alert.barrio);
-      final hasCaption = category != BarrioMapCategory.other;
+      final category = categorize(alert);
       return Marker(
-        width: 60,
-        height: hasCaption ? 100 : 70,
-        alignment: Alignment.topCenter,
+        width: kAlertMarkerWidth,
+        height: kAlertMarkerHeight,
+        alignment: Marker.computePixelAlignment(
+          width: kAlertMarkerWidth,
+          height: kAlertMarkerHeight,
+          left: kAlertPinTipLeft,
+          top: kAlertPinTipTop,
+        ),
         point: position,
         child: AlertMarkerWidget(
           alert: alert,
@@ -640,20 +754,10 @@ class _MapPageState extends ConsumerState<MapPage> {
     }).whereType<Marker>().toList();
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: const Text(
-          'Alertas Activas',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => _openFiltersSheet(state),
-            icon: const Icon(Icons.filter_list_rounded),
-            tooltip: 'Filtrar alertas',
-          ),
-          const SizedBox(width: 8),
-        ],
+      appBar: _buildMapAppBar(
+        state: state,
+        onRefresh: () => ref.read(mapProvider.notifier).refreshAlerts(),
+        onOpenFilters: () => _openFiltersSheet(state),
       ),
       body: Stack(
         children: [
@@ -661,7 +765,8 @@ class _MapPageState extends ConsumerState<MapPage> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: userLocation.position,
-              initialZoom: 14.2,
+              initialZoom: _defaultMapZoom,
+              onMapReady: _onMapReady,
               interactionOptions: InteractionOptions(
                 flags: compassFollow && heading.isAvailable
                     ? InteractiveFlag.all & ~InteractiveFlag.rotate
@@ -674,8 +779,10 @@ class _MapPageState extends ConsumerState<MapPage> {
                     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.barrioseguro.app',
+                retinaMode: RetinaMode.isHighDensity(context),
                 tileProvider: NetworkTileProvider(),
               ),
+              if (zonePolygons.isNotEmpty) PolygonLayer(polygons: zonePolygons),
               if (state.proximityRadiusMeters != null)
                 CircleLayer(
                   circles: [
@@ -709,17 +816,21 @@ class _MapPageState extends ConsumerState<MapPage> {
             ],
           ),
           Positioned(
-            top: 8,
+            top: 4,
             left: 12,
             right: 12,
-            child: MapActiveFiltersBanner(
-              onTap: () => _openFiltersSheet(state),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MapActiveFiltersBanner(
+                onTap: () => _openFiltersSheet(state),
+                onClear: () => ref.read(mapProvider.notifier).clearFilters(),
+              ),
             ),
           ),
           if (state.proximityRadiusMeters != null)
             Positioned(
               left: 12,
-              bottom: 24,
+              bottom: mapControlsBottom + 56,
               child: AnimatedOpacity(
                 opacity: _showRadiusHint ? 1 : 0,
                 duration: const Duration(milliseconds: 400),
@@ -732,58 +843,15 @@ class _MapPageState extends ConsumerState<MapPage> {
               ),
             ),
           Positioned(
-            bottom: 16,
+            bottom: mapControlsBottom,
             right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 5,
-              children: [
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'compass_follow',
-                  backgroundColor: compassFollow && heading.isAvailable
-                      ? const Color(0xFF5C6BC0)
-                      : AppConfig.surface,
-                  onPressed: _toggleCompassFollow,
-                  tooltip: 'Modo brújula',
-                  child: Icon(
-                    Icons.explore,
-                    color: heading.isAvailable ? Colors.white : Colors.white38,
-                  ),
-                ),
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'my_location',
-                  backgroundColor: const Color(0xFF42A5F5),
-                  onPressed: _centerOnUser,
-                  tooltip: 'Centrar en mí',
-                  child: const Icon(Icons.my_location, color: Colors.white),
-                ),
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'zoom_in',
-                  backgroundColor: AppConfig.primaryDark,
-                  onPressed: () {
-                    _mapController.move(
-                      _mapController.camera.center,
-                      _mapController.camera.zoom + 1,
-                    );
-                  },
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'zoom_out',
-                  backgroundColor: AppConfig.primary,
-                  onPressed: () {
-                    _mapController.move(
-                      _mapController.camera.center,
-                      _mapController.camera.zoom - 1,
-                    );
-                  },
-                  child: const Icon(Icons.remove, color: Colors.white),
-                ),
-              ],
+            child: MapFloatingControls(
+              compassActive: compassFollow && heading.isAvailable,
+              compassAvailable: heading.isAvailable,
+              onCompass: _toggleCompassFollow,
+              onMyLocation: _centerOnUser,
+              onZoomIn: () => _zoomBy(1),
+              onZoomOut: () => _zoomBy(-1),
             ),
           ),
         ],

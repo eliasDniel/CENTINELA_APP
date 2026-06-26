@@ -195,7 +195,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final zonaNombre = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.userZonaNombre,
     );
-
+    final alias = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.userAlias,
+    );
     if (uuid == null || email == null || rol == null) return null;
 
     return UserEntity(
@@ -206,6 +208,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       refreshToken: refreshToken,
       zonaId: zonaId ?? '',
       zonaNombre: zonaNombre,
+      alias: alias ?? '',
     );
   }
 
@@ -246,12 +249,87 @@ class AuthNotifier extends StateNotifier<AuthState> {
       AuthSessionKeys.userZonaNombre,
       user.zonaNombre ?? '',
     );
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userAlias,
+      user.alias,
+    );
 
     state = state.copyWith(
       authStatus: AuthStatus.authenticated,
       user: user,
       errorMessage: '',
     );
+  }
+
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final token = state.user?.token;
+    if (token == null || token.isEmpty) {
+      return 'Inicia sesión para cambiar tu contraseña';
+    }
+
+    try {
+      await authRepository.changePassword(
+        accessToken: token,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      state = state.copyWith(errorMessage: '');
+      return null;
+    } on CustomError catch (e) {
+      state = state.copyWith(errorMessage: e.message);
+      return e.message;
+    } catch (_) {
+      const fallback = 'No se pudo cambiar la contraseña';
+      state = state.copyWith(errorMessage: fallback);
+      return fallback;
+    }
+  }
+
+  Future<String?> updatePrincipalZona({
+    required String zonaId,
+    required String zonaNombre,
+  }) async {
+    final current = state.user;
+    if (current == null) {
+      return 'Inicia sesión para cambiar tu zona';
+    }
+
+    final updated = current.copyWith(
+      zonaId: zonaId,
+      zonaNombre: zonaNombre,
+    );
+
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userZonaId,
+      zonaId,
+    );
+    await keyValueStorageService.setKeyValue(
+      AuthSessionKeys.userZonaNombre,
+      zonaNombre,
+    );
+
+    state = state.copyWith(user: updated, errorMessage: '');
+    return null;
+  }
+
+  Future<String?> deleteAccount() async {
+    final token = state.user?.token;
+    if (token == null || token.isEmpty) {
+      return 'Inicia sesión para eliminar tu cuenta';
+    }
+
+    try {
+      await authRepository.deleteAccount(token);
+      await logoutUser();
+      return null;
+    } on CustomError catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'No se pudo eliminar la cuenta';
+    }
   }
 
   Future<void> logoutUser([String? errorMessage]) async {

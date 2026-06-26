@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/constants/map_alert_enums.dart';
+import '../../domain/entities/map_alert_extensions.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
 
 class MapAlertLevelStyle {
@@ -9,31 +10,50 @@ class MapAlertLevelStyle {
     required this.accent,
     required this.surface,
     required this.label,
+    required this.pinAccent,
   });
 
   final Color accent;
   final Color surface;
   final String label;
+  /// Color del pin y texto del marcador (estilo Google Maps).
+  final Color pinAccent;
 
   static MapAlertLevelStyle forLevel(AlertLevel level) {
     return switch (level) {
-      AlertLevel.emergencia => const MapAlertLevelStyle(
-          accent: Color(0xFFCE8A8A),
+      AlertLevel.critico => const MapAlertLevelStyle(
+          accent: Color(0xFFE57373),
           surface: Color(0xFF3D2C2C),
-          label: 'Emergencia',
+          label: 'Crítico',
+          pinAccent: Color(0xFFD93025),
         ),
-      AlertLevel.alerta => const MapAlertLevelStyle(
-          accent: Color(0xFFD4A574),
+      AlertLevel.urgente => const MapAlertLevelStyle(
+          accent: Color(0xFFFFB74D),
           surface: Color(0xFF3A3428),
-          label: 'Alerta',
+          label: 'Urgente',
+          pinAccent: Color(0xFFE37400),
         ),
-      AlertLevel.vigilancia => const MapAlertLevelStyle(
-          accent: Color(0xFF8BA4C7),
-          surface: Color(0xFF2A3140),
-          label: 'Vigilancia',
+      AlertLevel.preventivo => const MapAlertLevelStyle(
+          accent: Color(0xFF81C784),
+          surface: Color(0xFF243028),
+          label: 'Preventivo',
+          pinAccent: Color(0xFF1A73E8),
         ),
     };
   }
+}
+
+String levelShortLabel(AlertLevel level) {
+  return MapAlertLevelStyle.forLevel(level).label;
+}
+
+String alertTypeLabel(AlertType type) {
+  return switch (type) {
+    AlertType.disparo => 'Disparo',
+    AlertType.grito => 'Grito',
+    AlertType.reporte_ciudadano => 'Reporte',
+    AlertType.sos => 'SOS',
+  };
 }
 
 Color barrioAccentSoft(String barrio) {
@@ -56,15 +76,4 @@ Color barrioBorderForCategory(BarrioMapCategory category, String barrio) {
   };
 }
 
-IconData iconForAlertType(AlertType type) {
-  return switch (type) {
-    AlertType.disparo => Icons.volume_up_outlined,
-    AlertType.explosion => Icons.local_fire_department_outlined,
-    AlertType.grito => Icons.mic_none_rounded,
-    AlertType.vidrio_roto => Icons.broken_image_outlined,
-    AlertType.alarma_vehiculo => Icons.directions_car_outlined,
-    AlertType.nivel_hidrico => Icons.water_drop_outlined,
-    AlertType.reporte_ciudadano => Icons.person_outline,
-    AlertType.sos => Icons.sos_outlined,
-  };
-}
+IconData iconForAlertType(AlertType type) => iconForSensorAlertType(type);

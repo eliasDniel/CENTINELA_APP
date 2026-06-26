@@ -1,275 +1,264 @@
 // RF-0306: detalle expandible de la alerta seleccionada
 import 'package:flutter/material.dart';
-
 import 'package:latlong2/latlong.dart';
 
-import '../../../subscriptions/domain/barrio_membership.dart';
 import '../../../../core/location/user_location_provider.dart';
-import 'map_alert_styles.dart';
+import '../../../../core/utils/format_time_ago.dart';
+import '../../../subscriptions/domain/barrio_membership.dart';
 import '../../domain/constants/map_alert_enums.dart';
 import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/entities/map_alert_extensions.dart';
+import 'map_alert_styles.dart';
 
 class AlertDetailSheet extends StatelessWidget {
-  final AlertEntity alert;
-  final BarrioMapCategory barrioCategory;
-  final double? distanceFromUser;
-  final LatLng? position;
-  final VoidCallback onCenterMap;
-
   const AlertDetailSheet({
     super.key,
     required this.alert,
     required this.barrioCategory,
     this.distanceFromUser,
     this.position,
-    required this.onCenterMap,
   });
+
+  final AlertEntity alert;
+  final BarrioMapCategory barrioCategory;
+  final double? distanceFromUser;
+  final LatLng? position;
 
   MapAlertLevelStyle _levelStyle(AlertLevel level) =>
       MapAlertLevelStyle.forLevel(level);
 
   String _sourceText(AlertSource source) {
-    switch (source) {
-      case AlertSource.sensor_audio:
-        return 'Sensor IoT';
-      case AlertSource.sensor_video:
-        return 'Sensor IoT';
-      case AlertSource.sensor_hidrico:
-        return 'Hidrológico';
-      case AlertSource.ciudadano:
-        return 'Ciudadano';
-    }
+    return switch (source) {
+      AlertSource.sensor_audio => 'Sensor IoT',
+      AlertSource.ciudadano => 'Reporte ciudadano',
+    };
   }
 
-  String _typeText(AlertType type) {
-    switch (type) {
-      case AlertType.disparo:
-        return 'Disparo';
-      case AlertType.explosion:
-        return 'Explosión';
-      case AlertType.grito:
-        return 'Grito';
-      case AlertType.vidrio_roto:
-        return 'Vidrio roto';
-      case AlertType.alarma_vehiculo:
-        return 'Alarma de vehículo';
-      case AlertType.nivel_hidrico:
-        return 'Nivel hídrico';
-      case AlertType.reporte_ciudadano:
-        return 'Reporte ciudadano';
-      case AlertType.sos:
-        return 'SOS';
-    }
-  }
-
-  String _timeAgo(DateTime timestamp) {
-    final minutes = DateTime.now().difference(timestamp).inMinutes;
-    if (minutes < 1) return 'hace unos segundos';
-    return 'hace $minutes min';
+  IconData _sourceIcon(AlertSource source) {
+    return switch (source) {
+      AlertSource.sensor_audio => Icons.sensors_rounded,
+      AlertSource.ciudadano => Icons.person_outline_rounded,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final levelStyle = _levelStyle(alert.level);
+    final headerIcon = alert.markerIcon;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.82,
-      minChildSize: 0.55,
-      maxChildSize: 0.96,
+      initialChildSize: 0.72,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
       expand: false,
       builder: (context, controller) {
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF10131A),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            color: Color(0xFF12151C),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: SingleChildScrollView(
+          child: ListView(
             controller: controller,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-              child: Column(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 46,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      _BarrioCategoryBadge(
-                        category: barrioCategory,
-                        barrio: alert.barrio,
-                      ),
-                      const Spacer(),
-                      _Badge(
-                        label: levelStyle.label,
-                        color: levelStyle.accent,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      _Badge(
-                        label: _sourceText(alert.source),
-                        color: const Color(0xFF5A5A6E),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    _typeText(alert.alertType),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    alert.description,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 15,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF171C26),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white12),
+                      color: levelStyle.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: levelStyle.accent.withValues(alpha: 0.4),
+                      ),
                     ),
+                    child: Icon(headerIcon, color: levelStyle.accent, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '📍 ${locationLabel(zona: alert.zonaNombre, barrio: alert.barrio, category: barrioCategory)}',
+                          alert.displayTitle,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
                           ),
                         ),
-                        if (distanceFromUser != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            '📏 A ${formatDistanceMeters(distanceFromUser!)} de ti',
-                            style: const TextStyle(color: Color(0xFF90CAF9)),
+                        const SizedBox(height: 4),
+                        Text(
+                          alert.codigo,
+                          style: const TextStyle(
+                            color: Color(0xFF9AA5B1),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                        const SizedBox(height: 8),
-                        Text('🕐 ${_timeAgo(alert.timestampDate)}', style: const TextStyle(color: Colors.white70)),
-                        const SizedBox(height: 8),
-                        Text('📡 Fuente del dato: ${_sourceText(alert.source)}', style: const TextStyle(color: Colors.white70)),
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  if (alert.source == AlertSource.sensor_audio ||
-                      alert.source == AlertSource.sensor_video)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF121A22),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF223041)),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('🤖 Alerta operativa del sistema', style: TextStyle(color: Colors.white)),
-                          SizedBox(height: 6),
-                          Text(
-                            'Generada por sensores o IA del backend',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (alert.source == AlertSource.sensor_hidrico)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0B2138),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF154A75)),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('🌊 Alerta hídrica', style: TextStyle(color: Colors.white)),
-                          SizedBox(height: 6),
-                          Text(
-                            'Monitoreo hídrico del sistema CENTINELA',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (alert.source == AlertSource.ciudadano)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF23172F),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF4B2D66)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('👤 Reporte ciudadano anónimo', style: TextStyle(color: Colors.white)),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Código: ${alert.codigo}',
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 14),
-                  if (position != null)
-                    Text(
-                      '📍 GPS: ${position!.latitude.toStringAsFixed(4)}, ${position!.longitude.toStringAsFixed(4)}',
-                      style: const TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: levelStyle.accent.withOpacity(0.85),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: onCenterMap,
-                      icon: const Icon(Icons.center_focus_strong_rounded),
-                      label: const Text('Ver en contexto'),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _Badge(label: levelStyle.label, color: levelStyle.accent),
+                  if (alert.displayEstado.isNotEmpty)
+                    _Badge(
+                      label: alert.displayEstado,
+                      color: const Color(0xFF78909C),
+                    ),
+                  _Badge(
+                    label: _sourceText(alert.source),
+                    color: const Color(0xFF5C6BC0),
+                  ),
+                  _BarrioCategoryBadge(
+                    category: barrioCategory,
+                    barrio: alert.barrio,
+                  ),
+                ],
+              ),
+              if (alert.displayDescription.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Text(
+                  alert.displayDescription,
+                  style: const TextStyle(
+                    color: Color(0xFFCFD8DC),
+                    fontSize: 15,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1F28),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      icon: Icons.place_outlined,
+                      label: 'Ubicación',
+                      value: locationLabel(
+                        zona: alert.zonaNombre,
+                        barrio: alert.barrio,
+                        category: barrioCategory,
+                      ),
+                    ),
+                    if (distanceFromUser != null)
+                      _InfoRow(
+                        icon: Icons.straighten_rounded,
+                        label: 'Distancia',
+                        value: 'A ${formatDistanceMeters(distanceFromUser!)} de ti',
+                        valueColor: const Color(0xFF90CAF9),
+                      ),
+                    _InfoRow(
+                      icon: Icons.schedule_rounded,
+                      label: 'Registrada',
+                      value: formatTimeAgo(alert.timestampDate),
+                    ),
+                    _InfoRow(
+                      icon: _sourceIcon(alert.source),
+                      label: 'Fuente',
+                      value: _sourceText(alert.source),
+                    ),
+                    if (position != null)
+                      _InfoRow(
+                        icon: Icons.gps_fixed_rounded,
+                        label: 'Coordenadas',
+                        value:
+                            '${position!.latitude.toStringAsFixed(4)}, ${position!.longitude.toStringAsFixed(4)}',
+                        valueColor: const Color(0xFF78909C),
+                        showDivider: false,
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor = Colors.white,
+    this.showDivider = true,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 20, color: const Color(0xFF90A4AE)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Color(0xFF78909C),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        color: valueColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          const Divider(height: 1, thickness: 1, color: Colors.white10),
+      ],
     );
   }
 }
@@ -300,54 +289,50 @@ class _BarrioCategoryBadge extends StatelessWidget {
         ),
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color, width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            barrioCategoryLabel(category, barrio),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+    return _Badge(
+      label: barrioCategoryLabel(category, barrio),
+      color: color,
+      icon: icon,
     );
   }
 }
 
 class _Badge extends StatelessWidget {
+  const _Badge({
+    required this.label,
+    required this.color,
+    this.icon,
+  });
+
   final String label;
   final Color color;
-
-  const _Badge({required this.label, required this.color});
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }

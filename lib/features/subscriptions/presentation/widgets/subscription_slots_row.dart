@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../domain/constants/zonas_administrativas.dart';
 
-/// Visualiza: [Zona/Barrio propio] + 3 slots adicionales.
+/// Visualiza: [Zona/barrio propio] arriba + 3 slots adicionales abajo.
 class SubscriptionSlotsRow extends StatelessWidget {
   const SubscriptionSlotsRow({
     super.key,
@@ -27,21 +27,31 @@ class SubscriptionSlotsRow extends StatelessWidget {
 
     final homeLabel = homeBarrio ?? homeZona;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-            child: _SlotChip(label: homeLabel, isHome: true, isEmpty: false)),
-        const SizedBox(width: 8),
-        ...slots.map(
-          (barrio) => Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _SlotChip(
-                label: barrio ?? 'Vacío',
-                isHome: false,
-                isEmpty: barrio == null,
-              ),
-            ),
+        _SlotChip(
+          label: homeLabel,
+          isHome: true,
+          isEmpty: false,
+          expanded: true,
+        ),
+        const SizedBox(height: 8),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < slots.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: _SlotChip(
+                    label: slots[i] ?? 'Vacío',
+                    isHome: false,
+                    isEmpty: slots[i] == null,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],
@@ -54,22 +64,30 @@ class _SlotChip extends StatelessWidget {
     required this.label,
     required this.isHome,
     required this.isEmpty,
+    this.expanded = false,
   });
 
   final String label;
   final bool isHome;
   final bool isEmpty;
+  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final color = isHome
         ? AppConfig.success
         : isEmpty
-            ? AppConfig.textTertiary
-            : AppConfig.primary;
+        ? AppConfig.textTertiary
+        : AppConfig.primary;
+
+    final badge = isHome ? 'Propio' : (isEmpty ? null : 'Suscrito');
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: expanded ? 14 : 8,
+        vertical: expanded ? 12 : 10,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(isEmpty ? 0.08 : 0.15),
         borderRadius: BorderRadius.circular(12),
@@ -78,37 +96,72 @@ class _SlotChip extends StatelessWidget {
           width: isEmpty ? 1 : 1.5,
         ),
       ),
-      child: Column(
-        children: [
-          Icon(
-            isHome
-                ? Icons.home_rounded
-                : isEmpty
-                    ? Icons.add_circle_outline
-                    : Icons.location_on,
-            size: 18,
-            color: color,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isEmpty ? 'Libre' : label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: isEmpty ? AppConfig.textTertiary : Colors.white,
+      child: expanded
+          ? Row(
+              children: [
+                Icon(Icons.home_rounded, size: 22, color: color),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          badge,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: color.withOpacity(0.95),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isEmpty ? Icons.add_circle_outline : Icons.location_on,
+                  size: 18,
+                  color: color,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isEmpty ? 'Libre' : label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                    color: isEmpty ? AppConfig.textTertiary : Colors.white,
+                  ),
+                ),
+                if (badge != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    badge,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 9,
+                      height: 1.1,
+                      color: color.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
-          if (isHome)
-            Text(
-              'Propio',
-              style: TextStyle(
-                  fontSize: 9, color: AppConfig.success.withOpacity(0.9)),
-            ),
-        ],
-      ),
     );
   }
 }

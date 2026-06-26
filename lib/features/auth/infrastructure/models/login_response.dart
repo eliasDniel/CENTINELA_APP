@@ -32,13 +32,14 @@ class LoginResponse {
 
 class User {
   final String id;
+  final String alias;
   final String email;
   final String rol;
 
-  User({required this.id, required this.email, required this.rol});
+  User({required this.id, required this.alias, required this.email, required this.rol});
 
   factory User.fromJson(Map<String, dynamic> json) =>
-      User(id: json["id"], email: json["email"], rol: json["rol"]);
+      User(id: json["id"], alias: json["nombre"]?.toString() ?? '', email: json["email"], rol: json["rol"]);
 
-  Map<String, dynamic> toJson() => {"id": id, "email": email, "rol": rol};
+  Map<String, dynamic> toJson() => {"id": id, "alias": alias, "email": email, "rol": rol};
 }

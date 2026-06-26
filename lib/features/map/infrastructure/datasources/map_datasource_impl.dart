@@ -1,14 +1,16 @@
-import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
-import 'package:centinela_milagro/features/auth/presentation/providers/auth_session_keys.dart';
-import 'package:centinela_milagro/features/auth/presentation/providers/services/key_value_storage.dart';
+import 'package:centinela_milagro/features/map/domain/entities/user_zona_entity.dart';
 import 'package:centinela_milagro/features/map/infrastructure/mappers/map_alert_mapper.dart';
 import 'package:centinela_milagro/features/map/infrastructure/models/alerta_response.dart';
 import 'package:centinela_milagro/features/reports/infrastructure/utils/report_api_error_message.dart';
 import 'package:dio/dio.dart';
 
+import '../../../auth/infrastructure/errors/auth_errors.dart';
+import '../../../auth/presentation/providers/auth_session_keys.dart';
+import '../../../auth/presentation/providers/services/key_value_storage.dart';
 import '../../../config/enviroment.dart';
 import '../../domain/datasources/map_datasource.dart';
 import '../../domain/entities/map_alert_entity.dart';
+import '../models/zonas_by_user_response.dart';
 
 class MapDatasourceImpl implements MapDatasource {
   final KeyValueStorageService keyValueStorageService;
@@ -33,36 +35,51 @@ class MapDatasourceImpl implements MapDatasource {
     try {
       await _setAuthorizationHeader();
       final response = await _dio.get('/alertas');
-      final raw = response.data;
-      final alertsResponse = raw.map((item) => AlertsResponse.fromJson(item)).toList();
-      final alerts = alertsResponse.map((alert) => MapAlertMapper.fromAlertsResponse(alert)).toList();
-      return alerts;
+      final raw = response.data as List;
+      final alertsResponse = raw
+          .map((item) => AlertsResponse.fromJson(item as Map<String, dynamic>))
+          .toList();
+      return alertsResponse
+          .map((alert) => MapAlertMapper.fromAlertsResponse(alert))
+          .toList();
     } on DioException catch (e) {
       throw CustomError(reportApiErrorMessage(e.response?.data));
     } catch (_) {
       throw CustomError('Error al obtener las alertas');
     }
   }
-  
+
   @override
-  Future<Map<String, dynamic>> getAlertById(String alertId) async{
+  Future<AlertEntity> getAlertById(String alertId) async {
     try {
       await _setAuthorizationHeader();
       final response = await _dio.get('/alertas/$alertId');
-      return response.data;
+      final alertResponse = AlertsResponse.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+      return MapAlertMapper.fromAlertsResponse(alertResponse);
     } on DioException catch (e) {
       throw CustomError(reportApiErrorMessage(e.response?.data));
     } catch (_) {
       throw CustomError('Error al obtener la alerta');
     }
   }
-  
+
   @override
-  Future<List<Map<String, dynamic>>> getZonasByUser(String userId, String zonaId)async {
+  Future<List<UserZonaEntity>> getZonasByUser(String userId) async {
     try {
       await _setAuthorizationHeader();
-      final response = await _dio.get('/zonas/usuario/$userId/$zonaId');
-      return response.data;
+      final response = await _dio.get('/zonas/usuarios/$userId');
+      final raw = response.data as List;
+      final zonasResponse = raw
+          .map(
+            (item) =>
+                ZonasByUserResponse.fromJson(item as Map<String, dynamic>),
+          )
+          .toList();
+      return zonasResponse
+          .map((zona) => MapAlertMapper.fromUserZonaResponse(zona))
+          .toList();
     } on DioException catch (e) {
       throw CustomError(reportApiErrorMessage(e.response?.data));
     } catch (_) {

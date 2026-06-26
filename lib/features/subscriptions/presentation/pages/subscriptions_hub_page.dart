@@ -1,160 +1,247 @@
-// RF-0309: Centro de suscripciones a barrios
+// RF-0309: Centro de suscripciones a zonas
+import 'dart:async';
+
+import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../domain/constants/zonas_administrativas.dart';
-import '../providers/subscriptions_provider.dart';
+import '../../../map/presentation/providers/map_provider.dart';
 import '../../../profile/presentation/pages/change_location_page.dart';
-import '../widgets/barrio_subscription_tile.dart';
-import '../widgets/subscription_slots_row.dart';
+import '../../domain/constants/zona_suscripcion_limits.dart';
+import '../providers/zonas_suscripciones_provider.dart';
+import '../widgets/zona_subscription_slots_row.dart';
+import '../widgets/zona_subscription_tile.dart';
 
 class SubscriptionsHubPage extends ConsumerWidget {
   static const routeName = 'subscriptions';
 
   const SubscriptionsHubPage({super.key});
 
+  List<ZonaEntity> _zonesForList(ZonasSuscripcionesState state) {
+    final principalId = state.principalZona?.zonaId;
+    final zones = state.catalog.where((z) => z.id != principalId).toList();
+    zones.sort((a, b) {
+      final aSub = state.subscribedIds.contains(a.id);
+      final bSub = state.subscribedIds.contains(b.id);
+      if (aSub != bSub) return aSub ? -1 : 1;
+      return a.nombre.compareTo(b.nombre);
+    });
+    return zones;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authProvider);
-    final user = auth.user;
-    final homeZona = user?.zona ?? 'Milagro';
-    final homeBarrio = user?.barrio ?? '';
-    final tieneBarrio = user?.tieneBarrio ?? false;
-    final zonaConBarrios = zonaTieneBarrios(homeZona);
-    final subscribed = ref.watch(barriosSubscribedProvider);
-    final slotsUsed = ref.watch(subscriptionSlotsUsedProvider);
-    final canAddMore = ref.watch(canSubscribeMoreProvider);
-    final notifier = ref.read(barriosSubscribedProvider.notifier);
+    final state = ref.watch(zonasSuscripcionesProvider);
+    final notifier = ref.read(zonasSuscripcionesProvider.notifier);
+    final principal = state.principalZona;
+    final subscribed = state.subscribedZonas;
+    final zonesForList = _zonesForList(state);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis barrios')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppConfig.horizontalMargin),
-        children: [
-          _InfoCard(zonaConBarrios: zonaConBarrios),
-          const SizedBox(height: 20),
-          Text('Tu cobertura', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 10),
-          SubscriptionSlotsRow(
-            homeZona: homeZona,
-            homeBarrio: tieneBarrio ? homeBarrio : null,
-            subscribedBarrios: subscribed,
+      appBar: AppBar(
+        title: const Text('Mis zonas'),
+        actions: [
+          IconButton(
+            onPressed: state.isLoading || state.isMutating
+                ? null
+                : () => unawaited(notifier.load()),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Actualizar',
           ),
-          if (zonaConBarrios) ...[
-            const SizedBox(height: 8),
-            Text(
-              '$slotsUsed de $kMaxBarriosAdicionales barrios adicionales',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppConfig.textSecondary),
-            ),
-          ] else ...[
-            const SizedBox(height: 8),
-            Text(
-              'Zona: $homeZona — alertas a nivel de toda la zona',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppConfig.textSecondary),
-            ),
-          ],
-          const SizedBox(height: 24),
-          if (subscribed.isNotEmpty) ...[
-            Text(
-              'Barrios adicionales',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            ...subscribed.map(
-              (barrio) => Card(
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: notifier.load,
+        child: ListView(
+          padding: const EdgeInsets.all(AppConfig.horizontalMargin),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const _InfoCard(),
+            const SizedBox(height: 20),
+            if (state.isLoading && state.catalog.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (state.errorMessage != null && state.catalog.isEmpty)
+              Card(
                 child: ListTile(
-                  leading: Icon(
-                    Icons.notifications_active,
-                    color: barrioAccentColor(barrio),
+                  leading: const Icon(Icons.error_outline, color: AppConfig.error),
+                  title: const Text('No se pudieron cargar las zonas'),
+                  subtitle: Text(state.errorMessage!),
+                  trailing: TextButton(
+                    onPressed: () => unawaited(notifier.load()),
+                    child: const Text('Reintentar'),
                   ),
-                  title: Text(barrio),
-                  subtitle: Text('Alertas en $homeZona'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close, color: AppConfig.error),
-                    onPressed: () => _confirmUnsubscribe(
+                ),
+              )
+            else ...[
+              Text('Tu cobertura', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 10),
+              ZonaSubscriptionSlotsRow(
+                principalLabel: principal?.zona.nombre ?? 'Sin zona principal',
+                subscribedLabels: subscribed.map((z) => z.zona.nombre).toList(),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${subscribed.length} de $kMaxZonasSuscritas zonas adicionales',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: state.canSubscribeMore
+                      ? AppConfig.textSecondary
+                      : AppConfig.warning,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (principal != null) ...[
+                Text('Zona principal', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                ZonaSubscriptionTile(
+                  nombre: principal.zona.nombre,
+                  isSubscribed: true,
+                  enabled: false,
+                  isPrincipal: true,
+                  onChanged: (_) {},
+                ),
+                const SizedBox(height: 20),
+              ],
+              Text('Todas las zonas', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              if (zonesForList.isEmpty)
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.info_outline,
+                      color: AppConfig.textTertiary,
+                    ),
+                    title: const Text('Sin otras zonas'),
+                    subtitle: const Text(
+                      'Solo tienes configurada tu zona principal.',
+                    ),
+                  ),
+                )
+              else
+                ...zonesForList.map((zona) {
+                  final isSubscribed = state.subscribedIds.contains(zona.id);
+                  return ZonaSubscriptionTile(
+                    nombre: zona.nombre,
+                    isSubscribed: isSubscribed,
+                    enabled:
+                        (isSubscribed || state.canSubscribeMore) &&
+                        !state.isMutating,
+                    subtitle: zona.descripcion.isNotEmpty
+                        ? zona.descripcion
+                        : 'Riesgo nivel ${zona.riesgoNivel}',
+                    onChanged: (value) => _onToggle(
                       context,
-                      barrio,
-                      () => notifier.unsubscribe(barrio),
+                      ref,
+                      zona: zona,
+                      subscribe: value,
+                    ),
+                  );
+                }),
+              if (!state.canSubscribeMore) ...[
+                const SizedBox(height: 8),
+                Card(
+                  color: AppConfig.warning.withOpacity(0.12),
+                  child: const ListTile(
+                    leading: Icon(Icons.info_outline, color: AppConfig.warning),
+                    title: Text('Límite alcanzado'),
+                    subtitle: Text(
+                      'Quita una zona suscrita para poder agregar otra.',
                     ),
                   ),
                 ),
+              ],
+            ],
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.push(
+                '/home/${GoRouterState.of(context).pathParameters['page'] ?? '3'}/${ChangeLocationPage.routeName}',
               ),
+              icon: const Icon(Icons.edit_location_alt_outlined),
+              label: const Text('Cambiar zona principal'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/home/1'),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Ver alertas en el mapa'),
+            ),
           ],
-          if (zonaConBarrios) ...[
-            if (canAddMore)
-              FilledButton.icon(
-                onPressed: () => context.push(
-                  '/home/${GoRouterState.of(context).pathParameters['page'] ?? '3'}/subscriptions/manage',
-                ),
-                icon: const Icon(Icons.add_location_alt),
-                label: Text(
-                  subscribed.isEmpty
-                      ? 'Suscribir primer barrio'
-                      : 'Agregar otro barrio',
-                ),
-              )
-            else
-              Card(
-                color: AppConfig.warning.withOpacity(0.12),
-                child: const ListTile(
-                  leading: Icon(Icons.info_outline, color: AppConfig.warning),
-                  title: Text('Límite alcanzado'),
-                  subtitle: Text(
-                    'Quita un barrio para poder agregar otro distinto.',
-                  ),
-                ),
-              ),
-          ] else
-            Card(
-              color: AppConfig.primary.withOpacity(0.1),
-              child: ListTile(
-                leading: Icon(Icons.map_outlined, color: AppConfig.primary),
-                title: Text('Zona $homeZona'),
-                subtitle: const Text(
-                  'Esta zona no tiene barrios específicos. '
-                  'Recibirás alertas de toda la zona.',
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => context.push(
-              '/home/${GoRouterState.of(context).pathParameters['page'] ?? '3'}/${ChangeLocationPage.routeName}',
-            ),
-            icon: const Icon(Icons.edit_location_alt_outlined),
-            label: const Text('Cambiar zona o barrio'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => context.go('/home/1'),
-            icon: const Icon(Icons.map_outlined),
-            label: const Text('Ver alertas en el mapa'),
-          ),
-        ],
+        ),
       ),
     );
   }
 
+  Future<void> _onToggle(
+    BuildContext context,
+    WidgetRef ref, {
+    required ZonaEntity zona,
+    required bool subscribe,
+  }) async {
+    if (!subscribe) {
+      _confirmUnsubscribe(
+        context,
+        zona.nombre,
+        () => unawaited(_applyToggle(context, ref, zona: zona, subscribe: false)),
+      );
+      return;
+    }
+
+    await _applyToggle(context, ref, zona: zona, subscribe: true);
+  }
+
+  Future<void> _applyToggle(
+    BuildContext context,
+    WidgetRef ref, {
+    required ZonaEntity zona,
+    required bool subscribe,
+  }) async {
+    final notifier = ref.read(zonasSuscripcionesProvider.notifier);
+    final ok = subscribe
+        ? await notifier.subscribe(zona.id)
+        : await notifier.unsubscribe(zona.id);
+
+    if (!context.mounted) return;
+
+    if (ok) {
+      if (ref.exists(mapProvider)) {
+        unawaited(ref.read(mapProvider.notifier).refreshAlerts());
+      }
+      if (!subscribe) {
+        AppAlert.success(context, 'Zona desuscrita');
+      }
+      return;
+    }
+
+    final error = ref.read(zonasSuscripcionesProvider).errorMessage;
+    if (error != null && error.isNotEmpty) {
+      AppAlert.warning(context, error);
+      return;
+    }
+
+    if (subscribe) {
+      AppAlert.warning(
+        context,
+        'Máximo $kMaxZonasSuscritas zonas adicionales. Quita una primero.',
+      );
+    }
+  }
+
   void _confirmUnsubscribe(
     BuildContext context,
-    String barrio,
+    String nombre,
     VoidCallback onConfirm,
   ) {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('¿Dejar de seguir $barrio?'),
+        title: Text('¿Dejar de seguir $nombre?'),
         content: const Text(
-          'Ya no recibirás alertas ni verás incidentes de ese barrio en tu feed.',
+          'Ya no recibirás alertas de esa zona en tu mapa ni en tus filtros.',
         ),
         actions: [
           TextButton(
@@ -178,9 +265,7 @@ class SubscriptionsHubPage extends ConsumerWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.zonaConBarrios});
-
-  final bool zonaConBarrios;
+  const _InfoCard();
 
   @override
   Widget build(BuildContext context) {
@@ -203,23 +288,16 @@ class _InfoCard extends StatelessWidget {
             const SizedBox(height: 12),
             const _StepRow(
               number: '1',
-              text: 'Tu zona y barrio de registro siempre reciben alertas.',
+              text: 'Tu zona principal siempre recibe alertas.',
             ),
-            if (zonaConBarrios)
-              _StepRow(
-                number: '2',
-                text:
-                    'Elige hasta $kMaxBarriosAdicionales barrios más de tu zona (familia, trabajo, etc.).',
-              )
-            else
-              const _StepRow(
-                number: '2',
-                text:
-                    'Tu zona no tiene barrios: las alertas se muestran a nivel de toda la zona.',
-              ),
+            _StepRow(
+              number: '2',
+              text:
+                  'Activa hasta $kMaxZonasSuscritas zonas adicionales desde la lista.',
+            ),
             const _StepRow(
               number: '3',
-              text: 'En el mapa filtra por zona, barrio, nivel y fuente.',
+              text: 'En el mapa filtra alertas por tus zonas suscritas.',
             ),
           ],
         ),

@@ -28,7 +28,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
       vsync: this,
     );
     _tabController.addListener(_onTabChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadReports());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadReports();
+    });
   }
 
   void _onTabChanged() {
@@ -142,8 +145,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
                       Expanded(
                         child: RefreshIndicator(
                           onRefresh: () async {
-                            if (ref.read(authProvider).user != null) {
-                              await ref
+                            if (!mounted) return;
+                            final container = ProviderScope.containerOf(context);
+                            if (container.read(authProvider).user != null) {
+                              await container
                                   .read(reportsProvider.notifier)
                                   .loadHistory();
                             }
