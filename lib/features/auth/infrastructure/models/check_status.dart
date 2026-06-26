@@ -44,7 +44,7 @@ class User {
 
     factory User.fromJson(Map<String, dynamic> json) => User(
         id: json["id"],
-        alias: json["nombre"]?.toString() ?? '',
+        alias: json["nombre"] ?? 'Ciudadano',
         email: json["email"],
         rol: json["rol"],
     );
