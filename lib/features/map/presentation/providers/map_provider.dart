@@ -94,10 +94,21 @@ class MapState {
 class MapNotifier extends Notifier<MapState> {
   MapRepository get _repository => ref.read(mapRepositoryProvider);
 
+  bool _isCitizen(AuthState auth) =>
+      auth.user != null && !(auth.user?.isVisitor ?? true);
+
   @override
   MapState build() {
-    final auth = ref.watch(authProvider);
-    final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
+    final auth = ref.read(authProvider);
+    final isCitizen = _isCitizen(auth);
+
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (previous == null) return;
+      final sameUser = previous.user?.uuid == next.user?.uuid;
+      final sameRole = _isCitizen(previous) == _isCitizen(next);
+      if (sameUser && sameRole) return;
+      Future.microtask(_bootstrap);
+    });
 
     Future.microtask(_bootstrap);
     return MapState.initial(
