@@ -39,4 +39,9 @@ abstract class AuthDatasource {
 
   /// Elimina la cuenta autenticada y sus datos (LOPDP Art. 19).
   Future<String> deleteAccount(String accessToken);
+
+  Future<void> disablePushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  });
 }

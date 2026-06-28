@@ -75,4 +75,15 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<String> deleteAccount(String accessToken) {
     return dataSources.deleteAccount(accessToken);
   }
+
+  @override
+  Future<void> disablePushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  }) {
+    return dataSources.disablePushNotifications(
+      accessToken: accessToken,
+      fcmToken: fcmToken,
+    );
+  }
 }

@@ -28,6 +28,11 @@ dependencies:
   formz: ^0.8.0
   shared_preferences: ^2.5.5
   geolocator: ^14.0.3
+  equatable: ^2.0.7
+  firebase_core: ^3.15.0
+  firebase_messaging: ^15.2.8
+  flutter_local_notifications: ^18.0.1
+  flutter_bloc: ^9.1.1
 
 dev_dependencies:
   flutter_test:

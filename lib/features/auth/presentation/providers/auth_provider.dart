@@ -1,3 +1,5 @@
+import 'package:centinela_milagro/core/notifications/fcm_token_registry.dart';
+import 'package:centinela_milagro/core/notifications/notification_preferences.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/utils/access_token.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_repository_provider.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_session_keys.dart';
@@ -108,6 +110,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
               enriched.zonaNombre ?? '',
             );
           }
+          _applyPushPreference();
           return;
         }
       }
@@ -259,6 +262,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       user: user,
       errorMessage: '',
     );
+
+    _applyPushPreference();
+  }
+
+  Future<void> _applyPushPreference() async {
+    if (!NotificationPreferences.enabled) {
+      await disablePushNotifications();
+      return;
+    }
+    await syncFcmWithBackend();
   }
 
   Future<String?> changePassword({
@@ -332,6 +345,50 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> syncFcmWithBackend() async {
+    if (state.authStatus != AuthStatus.authenticated) return;
+    if (!NotificationPreferences.enabled) return;
+
+    final fcm = FcmTokenRegistry.token;
+    if (fcm == null || fcm.isEmpty) return;
+
+    final refreshToken = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.refreshToken,
+    );
+    if (refreshToken == null || refreshToken.isEmpty) return;
+
+    try {
+      final user = await _enrichWithZona(
+        await authRepository.checkStatus(refreshToken),
+      );
+      await _setLoggedUser(user);
+    } catch (_) {
+      // El token se sincronizará en el próximo refresh de sesión.
+    }
+  }
+
+  Future<void> disablePushNotifications() async {
+    if (state.authStatus != AuthStatus.authenticated) return;
+
+    final accessToken = state.user?.token;
+    final fcm = FcmTokenRegistry.token;
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        fcm == null ||
+        fcm.isEmpty) {
+      return;
+    }
+
+    try {
+      await authRepository.disablePushNotifications(
+        accessToken: accessToken,
+        fcmToken: fcm,
+      );
+    } catch (_) {
+      // Si falla el backend, igual dejamos desactivado en la app.
+    }
+  }
+
   Future<void> logoutUser([String? errorMessage]) async {
     final refreshToken = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.refreshToken,
@@ -345,6 +402,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     await _clearStoredSession();
+    FcmTokenRegistry.clear();
 
     state = state.copyWith(
       authStatus: AuthStatus.unauthenticated,

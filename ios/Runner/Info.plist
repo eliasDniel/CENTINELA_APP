@@ -54,5 +54,9 @@
 	<string>Centinela necesita acceder a tu galería para adjuntar fotos o videos a tus reportes.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Centinela usa el micrófono al grabar videos para tus reportes.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
