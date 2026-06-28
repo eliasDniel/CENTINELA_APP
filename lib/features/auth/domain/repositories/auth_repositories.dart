@@ -37,4 +37,9 @@ abstract class AuthRepository {
   });
 
   Future<String> deleteAccount(String accessToken);
+
+  Future<void> disablePushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  });
 }

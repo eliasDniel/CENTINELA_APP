@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:centinela_milagro/core/notifications/fcm_token_registry.dart';
+import 'package:centinela_milagro/core/notifications/notification_preferences.dart';
 import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/models/check_status.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/utils/auth_refresh_lock.dart';
@@ -15,12 +19,23 @@ class AuthDataSourceImpl extends AuthDatasource {
   AuthDataSourceImpl()
     : _dio = Dio(BaseOptions(baseUrl: Enviroment.apiUrl));
 
+  Map<String, dynamic> _authPayload(Map<String, dynamic> base) {
+    if (!NotificationPreferences.enabled) return base;
+
+    final fcmToken = FcmTokenRegistry.token;
+    if (fcmToken != null && fcmToken.isNotEmpty) {
+      base['fcmToken'] = fcmToken;
+      base['plataforma'] = Platform.isIOS ? 'ios' : 'android';
+    }
+    return base;
+  }
+
   @override
   Future<UserEntity> login(String email, String password) async {
     try {
       final response = await _dio.post(
         '/auth/login',
-        data: {'email': email, 'password': password},
+        data: _authPayload({'email': email, 'password': password}),
       );
       final loginResponse = LoginResponse.fromJson(response.data);
       final user = UserMappers.fromLoginAndZona(loginResponse: loginResponse);
@@ -64,7 +79,7 @@ class AuthDataSourceImpl extends AuthDatasource {
     try {
       final response = await _dio.post(
         '/auth/refresh',
-        data: {'refreshToken': token},
+        data: _authPayload({'refreshToken': token}),
       );
       return UserMappers.fromCheckStatus(
         CheckStatusResponse.fromJson(
@@ -81,7 +96,7 @@ class AuthDataSourceImpl extends AuthDatasource {
     try {
       final response = await _dio.post(
         '/auth/logout',
-        data: {'refreshToken': refreshToken},
+        data: _authPayload({'refreshToken': refreshToken}),
       );
       if (response.statusCode == 200) {
         return true;
@@ -177,6 +192,24 @@ class AuthDataSourceImpl extends AuthDatasource {
       final data = Map<String, dynamic>.from(response.data as Map);
       return data['message']?.toString() ??
           'Cuenta y datos personales eliminados correctamente';
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  @override
+  Future<void> disablePushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  }) async {
+    try {
+      await _dio.post(
+        '/auth/push-notifications/disable',
+        data: {'fcmToken': fcmToken},
+        options: Options(
+          headers: {'Authorization': 'Bearer $accessToken'},
+        ),
+      );
     } on DioException catch (e) {
       _handleDioError(e);
     }

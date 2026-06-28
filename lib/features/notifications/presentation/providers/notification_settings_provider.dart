@@ -1,11 +1,19 @@
-// RF-0307: recibir o no notificaciones push (prototipo)
+import 'package:centinela_milagro/core/notifications/notification_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class NotificationsEnabledNotifier extends Notifier<bool> {
   @override
-  bool build() => true;
+  bool build() => NotificationPreferences.enabled;
 
-  void setEnabled(bool value) => state = value;
+  Future<void> setEnabled(bool value) async {
+    await NotificationPreferences.setEnabled(value);
+    state = value;
+  }
+
+  Future<void> reload() async {
+    await NotificationPreferences.load();
+    state = NotificationPreferences.enabled;
+  }
 }
 
 final notificationsEnabledProvider =

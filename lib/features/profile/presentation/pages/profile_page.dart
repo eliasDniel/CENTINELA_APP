@@ -1,5 +1,6 @@
 // RF-0309: Profile page
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -10,6 +11,7 @@ import '../pages/change_password_page.dart';
 import '../../../subscriptions/presentation/pages/subscriptions_hub_page.dart';
 import '../../../notifications/presentation/notifications_screens.dart';
 import '../../../notifications/presentation/providers/notification_settings_provider.dart';
+import '../../../notifications/blocs/notifications/notifications_bloc.dart';
 import '../providers/profile_provider.dart';
 import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/view_insets.dart';
@@ -199,7 +201,23 @@ class _CardConfig extends ConsumerWidget {
                       : 'No recibirás alertas push',
                 ),
                 value: notificationsOn,
-                onChanged: notificationsNotifier.setEnabled,
+                onChanged: (value) async {
+                  if (value) {
+                    await notificationsNotifier.setEnabled(true);
+                    if (!context.mounted) return;
+                    await context
+                        .read<NotificationsBloc>()
+                        .requestPermissions();
+                    if (!context.mounted) return;
+                    await ref.read(authProvider.notifier).syncFcmWithBackend();
+                    return;
+                  }
+
+                  await ref
+                      .read(authProvider.notifier)
+                      .disablePushNotifications();
+                  await notificationsNotifier.setEnabled(false);
+                },
                 secondary: Icon(
                   notificationsOn
                       ? Icons.notifications_active
@@ -242,18 +260,7 @@ class _CardConfig extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Divider(color: Colors.white24),
-              ListTile(
-                title: const Text('Pendientes offline'),
-                subtitle: const Text('SOS y reportes sin enviar'),
-                leading: const Icon(
-                  Icons.cloud_off_outlined,
-                  color: AppConfig.warning,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () =>
-                    context.push('/home/3/${OfflineQueuePage.routeName}'),
-              ),
+             
               const Divider(color: Colors.white24),
               
         

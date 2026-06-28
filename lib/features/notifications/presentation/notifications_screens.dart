@@ -1,83 +1,108 @@
-// RF-0307: centro de notificaciones (prototipo)
+// RF-0307: centro de notificaciones
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/app_colors.dart';
-import '../mock_notifications.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
+import '../blocs/notifications/notifications_bloc.dart';
 import '../notification_model.dart';
 
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   static const routeName = 'notifications';
 
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
-  late List<NotificationModel> _items;
-
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    _items = List.of(mockNotifications)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHistory());
   }
 
-  int get _unreadCount => _items.where((n) => !n.isRead).length;
-
-  void _markAllRead() {
-    setState(() {
-      _items = _items.map((n) => n.copyWith(isRead: true)).toList();
-    });
-  }
-
-  void _markRead(String id) {
-    setState(() {
-      _items = _items
-          .map((n) => n.id == id ? n.copyWith(isRead: true) : n)
-          .toList();
-    });
+  void _loadHistory() {
+    final token = ref.read(authProvider).user?.token ?? '';
+    context.read<NotificationsBloc>().add(NotificationsLoadHistory(token));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notificaciones'),
-        actions: [
-          if (_unreadCount > 0)
-            TextButton(
-              onPressed: _markAllRead,
-              child: const Text('Marcar leídas'),
-            ),
-        ],
-      ),
-      body: _items.isEmpty
-          ? const _EmptyNotifications()
-          : ListView(
-              padding: const EdgeInsets.symmetric(
-                vertical: 8,
-                horizontal: AppConfig.horizontalMargin,
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        final items = state.notifications;
+        final unreadCount = state.unreadCount;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Notificaciones'),
+            actions: [
+              IconButton(
+                onPressed: _loadHistory,
+                icon: const Icon(Icons.refresh),
               ),
-              children: [
-                if (_unreadCount > 0) ...[
-                  _UnreadBanner(count: _unreadCount),
-                  const SizedBox(height: 8),
-                ],
-                ..._items.map(
-                  (n) => _NotificationTile(
-                    notification: n,
-                    onTap: () {
-                      _markRead(n.id);
-                      _showDetail(context, n);
-                    },
-                  ),
-                ),
-              ],
-            ),
+            ],
+          ),
+          body: state.isLoadingHistory && items.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : items.isEmpty
+                  ? const _EmptyNotifications()
+                  : RefreshIndicator(
+                      onRefresh: () async => _loadHistory(),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: AppConfig.horizontalMargin,
+                        ),
+                        children: [
+                          if (state.historyError != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                state.historyError!,
+                                style: TextStyle(color: AppConfig.warning),
+                              ),
+                            ),
+                          if (unreadCount > 0) ...[
+                            _UnreadBanner(count: unreadCount),
+                            const SizedBox(height: 8),
+                          ],
+                          ...items.map(
+                            (n) => _NotificationTile(
+                              notification: n,
+                              onTap: () => _onTapNotification(context, n),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+        );
+      },
     );
+  }
+
+  Future<void> _onTapNotification(
+    BuildContext context,
+    NotificationModel n,
+  ) async {
+    final accessToken = ref.read(authProvider).user?.token ?? '';
+    if (!n.isRead && accessToken.isNotEmpty) {
+      context.read<NotificationsBloc>().add(
+            NotificationsMarkAsRead(
+              accessToken: accessToken,
+              notificationId: n.id,
+            ),
+          );
+    }
+
+    if (!context.mounted) return;
+    _showDetail(context, n);
   }
 
   void _showDetail(BuildContext context, NotificationModel n) {
@@ -269,16 +294,18 @@ class _NotificationTile extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           n.barrio,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: AppConfig.textTertiary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: AppConfig.textTertiary,
+                                  ),
                         ),
                         const SizedBox(width: 12),
                         Text(
                           _formatRelative(n.timestamp),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: AppConfig.textTertiary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: AppConfig.textTertiary,
+                                  ),
                         ),
                       ],
                     ),
