@@ -22,7 +22,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   bool _loading = false;
   bool _sent = false;
   String _successMessage = '';
-  String? _resetToken;
+  String _submittedEmail = '';
 
   @override
   void dispose() {
@@ -52,7 +52,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         _loading = false;
         _sent = true;
         _successMessage = result.message;
-        _resetToken = result.resetToken;
+        _submittedEmail = email.value;
       });
     } on CustomError catch (e) {
       if (!mounted) return;
@@ -63,18 +63,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     }
   }
 
-  void _goToReset() {
-    final token = _resetToken;
-    if (token == null || token.isEmpty) return;
-    context.push(
-      '/reset-password?token=${Uri.encodeComponent(token)}',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final email = _emailController.text.trim();
-
     return Scaffold(
       appBar: AppBar(title: const Text('Recuperar contraseña')),
       body: ListView(
@@ -96,7 +86,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           const SizedBox(height: 8),
           Text(
             _sent
-                ? _successMessage
+                ? 'Si $_submittedEmail está registrado, recibirás un correo con '
+                    'un enlace para abrir la app y crear una nueva contraseña. '
+                    'El enlace expira en 1 hora.'
                 : 'Ingresa tu correo. Si está registrado, recibirás '
                     'instrucciones para crear una nueva contraseña.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -145,31 +137,38 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      email.isNotEmpty
-                          ? 'Solicitud enviada para $email'
-                          : 'Solicitud enviada',
+                      _successMessage,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
                 ],
               ),
             ),
-            if (_resetToken != null && _resetToken!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Modo desarrollo: el correo aún no se envía. Usa el botón '
-                'para continuar con el token generado por el servidor.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppConfig.textSecondary,
-                ),
+            const SizedBox(height: 12),
+            Text(
+              'Revisa también la carpeta de spam. Si usas Gmail en el '
+              'teléfono, toca el botón del correo para abrir Centinela.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppConfig.textSecondary,
               ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _goToReset,
-                icon: const Icon(Icons.vpn_key_outlined),
-                label: const Text('Restablecer contraseña'),
-              ),
-            ],
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => context.push('/reset-password'),
+              icon: const Icon(Icons.vpn_key_outlined),
+              label: const Text('Ingresar token manualmente'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _loading ? null : _submit,
+              child: _loading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Reenviar correo'),
+            ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => context.go('/login'),

@@ -130,7 +130,6 @@ class AuthDataSourceImpl extends AuthDatasource {
         message:
             data['message']?.toString() ??
             'Si el correo existe, se ha enviado un token de recuperación.',
-        resetToken: data['tokenResetPwd']?.toString(),
       );
     } on DioException catch (e) {
       _handleDioError(e);
