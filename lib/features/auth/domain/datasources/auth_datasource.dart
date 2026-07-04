@@ -44,4 +44,8 @@ abstract class AuthDatasource {
     required String accessToken,
     required String fcmToken,
   });
+  Future<void> registerPushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  });
 }

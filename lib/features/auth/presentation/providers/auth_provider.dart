@@ -22,6 +22,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository authRepository;
   final KeyValueStorageService keyValueStorageService;
   bool _isCheckingAuth = false;
+  int _sessionGeneration = 0;
+  String? _registeredFcmToken;
 
   AuthNotifier({
     required this.authRepository,
@@ -32,6 +34,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// `null` si el login fue exitoso; mensaje de error del backend en caso contrario.
   Future<String?> loginUser(String email, String password) async {
+    _sessionGeneration++;
     try {
       final user = await _enrichWithZona(await authRepository.login(email, password));
       await _setLoggedUser(user);
@@ -77,14 +80,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   void checkAuthStatus() async {
     if (_isCheckingAuth) return;
+
+    final currentToken = state.user?.token;
+    if (state.authStatus == AuthStatus.authenticated &&
+        currentToken != null &&
+        currentToken.isNotEmpty &&
+        isAccessTokenValid(currentToken)) {
+      return;
+    }
+
     _isCheckingAuth = true;
+    final generationAtStart = _sessionGeneration;
 
     try {
       final refreshToken = await keyValueStorageService.getValue<String>(
         AuthSessionKeys.refreshToken,
       );
       if (refreshToken == null) {
-        return logoutUser();
+        if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
+        if (state.authStatus == AuthStatus.authenticated) return;
+        await logoutUser(onlyIfGeneration: generationAtStart);
+        return;
       }
 
       final accessToken = await keyValueStorageService.getValue<String>(
@@ -98,7 +114,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
           refreshToken: refreshToken,
         );
         if (restored != null) {
+          if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
           final enriched = await _enrichWithZona(restored);
+          if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
           state = state.copyWith(
             authStatus: AuthStatus.authenticated,
             user: enriched,
@@ -115,12 +133,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         }
       }
 
+      if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
+
       final user = await _enrichWithZona(await authRepository.checkStatus(refreshToken));
+      if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
       await _setLoggedUser(user);
     } catch (e) {
+      if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
+      if (state.authStatus == AuthStatus.authenticated) return;
+
       if (e is CustomError && e.message == 'Revisar conexión') {
         final offline = await _tryRestoreOfflineSession();
         if (offline != null) {
+          if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
           state = state.copyWith(
             authStatus: AuthStatus.authenticated,
             user: offline,
@@ -132,11 +157,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final recovered = await _tryRecoverSessionAfterRefreshRace();
       if (recovered == null) {
-        logoutUser();
+        if (_shouldIgnoreStaleAuthCheck(generationAtStart)) return;
+        if (state.authStatus == AuthStatus.authenticated) return;
+        await logoutUser(onlyIfGeneration: generationAtStart);
       }
     } finally {
       _isCheckingAuth = false;
     }
+  }
+
+  bool _shouldIgnoreStaleAuthCheck(int generationAtStart) {
+    return generationAtStart != _sessionGeneration ||
+        state.authStatus == AuthStatus.authenticated;
   }
 
   Future<UserEntity?> _tryRestoreOfflineSession() async {
@@ -232,7 +264,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return user;
   }
 
-  Future<void> _setLoggedUser(UserEntity user) async {
+  Future<void> _setLoggedUser(UserEntity user, {bool syncFcm = true}) async {
     await keyValueStorageService.setKeyValue(AuthSessionKeys.token, user.token);
     await keyValueStorageService.setKeyValue(
       AuthSessionKeys.refreshToken,
@@ -263,15 +295,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
       errorMessage: '',
     );
 
-    _applyPushPreference();
+    if (NotificationPreferences.enabled) {
+      final fcm = FcmTokenRegistry.token;
+      if (fcm != null && fcm.isNotEmpty) {
+        _registeredFcmToken = fcm;
+      }
+    }
+
+    if (syncFcm) {
+      _applyPushPreference();
+    }
   }
 
   Future<void> _applyPushPreference() async {
     if (!NotificationPreferences.enabled) {
       await disablePushNotifications();
-      return;
     }
-    await syncFcmWithBackend();
+    // El FCM se envía en login/refresh (_authPayload) o cuando FcmAuthSync
+    // obtiene el token tras conceder permisos. Evita un refresh extra al entrar.
   }
 
   Future<String?> changePassword({
@@ -351,17 +392,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     final fcm = FcmTokenRegistry.token;
     if (fcm == null || fcm.isEmpty) return;
+    if (fcm == _registeredFcmToken) return;
+
+    final generationAtStart = _sessionGeneration;
+    final accessToken = await resolveAccessToken();
+
+    if (accessToken != null) {
+      try {
+        await authRepository.registerPushNotifications(
+          accessToken: accessToken,
+          fcmToken: fcm,
+        );
+        if (generationAtStart != _sessionGeneration) return;
+        _registeredFcmToken = fcm;
+        return;
+      } catch (_) {
+        // Si falla el registro ligero, se intenta refresh más abajo.
+      }
+    }
 
     final refreshToken = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.refreshToken,
     );
     if (refreshToken == null || refreshToken.isEmpty) return;
+    if (generationAtStart != _sessionGeneration) return;
 
     try {
       final user = await _enrichWithZona(
         await authRepository.checkStatus(refreshToken),
       );
-      await _setLoggedUser(user);
+      if (generationAtStart != _sessionGeneration) return;
+      await _setLoggedUser(user, syncFcm: false);
+      _registeredFcmToken = fcm;
     } catch (_) {
       // El token se sincronizará en el próximo refresh de sesión.
     }
@@ -389,7 +451,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> logoutUser([String? errorMessage]) async {
+  /// Token JWT vigente para APIs protegidas (memoria o almacenamiento).
+  Future<String?> resolveAccessToken() async {
+    final inMemory = state.user?.token;
+    if (inMemory != null &&
+        inMemory.isNotEmpty &&
+        isAccessTokenValid(inMemory)) {
+      return inMemory;
+    }
+
+    final stored = await keyValueStorageService.getValue<String>(
+      AuthSessionKeys.token,
+    );
+    if (stored != null && stored.isNotEmpty && isAccessTokenValid(stored)) {
+      return stored;
+    }
+    return null;
+  }
+
+  Future<void> logoutUser({
+    String? errorMessage,
+    int? onlyIfGeneration,
+  }) async {
+    if (onlyIfGeneration != null && _sessionGeneration != onlyIfGeneration) {
+      return;
+    }
+    _sessionGeneration++;
     final refreshToken = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.refreshToken,
     );
@@ -403,6 +490,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     await _clearStoredSession();
     FcmTokenRegistry.clear();
+    _registeredFcmToken = null;
 
     state = state.copyWith(
       authStatus: AuthStatus.unauthenticated,

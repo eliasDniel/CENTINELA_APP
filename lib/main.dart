@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/deep_links/deep_link_listener.dart';
+import 'core/permissions/post_auth_permissions.dart';
 import 'core/notifications/notification_preferences.dart';
 import 'core/utils/app_theme.dart';
 import 'core/utils/app_router.dart';
@@ -43,12 +44,14 @@ class MainApp extends ConsumerWidget {
       routerConfig: appRouter,
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => DeepLinkListener(
-        appRouter: appRouter,
-        child: FcmAuthSync(
-          child: HandleNotificationInteraction(
-            appRouter: appRouter,
-            child: child!,
+      builder: (context, child) => PostAuthPermissionsListener(
+        child: DeepLinkListener(
+          appRouter: appRouter,
+          child: FcmAuthSync(
+            child: HandleNotificationInteraction(
+              appRouter: appRouter,
+              child: child!,
+            ),
           ),
         ),
       ),
@@ -138,10 +141,10 @@ class _FcmAuthSyncState extends ConsumerState<FcmAuthSync>
     final auth = ref.read(authProvider);
     if (auth.authStatus != AuthStatus.authenticated) return;
 
-    final token = auth.user?.token ?? '';
-    if (token.isEmpty) return;
-
-    context.read<NotificationsBloc>().add(NotificationsLoadHistory(token));
+    ref.read(authProvider.notifier).resolveAccessToken().then((token) {
+      if (!mounted || token == null || token.isEmpty) return;
+      context.read<NotificationsBloc>().add(NotificationsLoadHistory(token));
+    });
   }
 
   @override

@@ -24,6 +24,17 @@ class ReportsRepositoryImpl implements ReportsRepository {
   }
 
   @override
+  Future<String> uploadReportMedia({
+    required String filePath,
+    String? filename,
+  }) {
+    return datasources.uploadReportMedia(
+      filePath: filePath,
+      filename: filename,
+    );
+  }
+
+  @override
   Future<ReportEntity> getReportById(String id) {
     return datasources.getReportById(id);
   }

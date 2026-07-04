@@ -10,6 +10,12 @@ abstract class ReportsDatasources {
 
   Future<ReportEntity> submitReport(Map<String, dynamic> data);
 
+  /// Sube una imagen a Cloudinary vía `POST /media/upload?tipo=reporte`.
+  Future<String> uploadReportMedia({
+    required String filePath,
+    String? filename,
+  });
+
   Future<List<ReportEntity>> getHistoryReports();
 
   Future<ReportEntity> getReportById(String id);

@@ -10,6 +10,11 @@ abstract class ReportsRepository {
 
   Future<ReportEntity> submitReport(Map<String, dynamic> data);
 
+  Future<String> uploadReportMedia({
+    required String filePath,
+    String? filename,
+  });
+
   Future<List<ReportEntity>> getHistoryReports();
 
   Future<ReportEntity> getReportById(String id);

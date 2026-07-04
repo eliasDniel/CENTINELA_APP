@@ -48,6 +48,16 @@ class UserLocationNotifier extends Notifier<UserLocation> {
     state = UserLocation.fallback(isLoading: true);
 
     try {
+      if (!await UserLocationService.hasPermission()) {
+        state = UserLocation.fallback();
+        return;
+      }
+
+      if (!await UserLocationService.isServiceEnabled()) {
+        state = UserLocation.fallback();
+        return;
+      }
+
       final current = await UserLocationService.getCurrentLatLng();
       if (!ref.mounted) return;
 
