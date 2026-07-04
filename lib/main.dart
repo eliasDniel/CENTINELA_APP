@@ -16,7 +16,7 @@ import 'features/notifications/blocs/notifications/notifications_bloc.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('es');
+  await initializeDateFormatting('es5');
   await dotenv.load(fileName: ".env");
   await NotificationPreferences.load();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
