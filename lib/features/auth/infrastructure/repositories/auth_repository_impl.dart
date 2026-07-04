@@ -86,4 +86,15 @@ class AuthRepositoryImpl extends AuthRepository {
       fcmToken: fcmToken,
     );
   }
+
+  @override
+  Future<void> registerPushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  }) {
+    return dataSources.registerPushNotifications(
+      accessToken: accessToken,
+      fcmToken: fcmToken,
+    );
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:centinela_milagro/core/location/user_location_provider.dart';
+import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:formz/formz.dart';
 import 'package:latlong2/latlong.dart';
@@ -6,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../widgets/inputs/inputs.dart';
 import '../widgets/report_media_picker.dart';
 import 'reports_provider.dart';
+import 'reports_repository_provider.dart';
 
 class ReportFormState {
   final int currentStep;
@@ -62,9 +64,16 @@ class ReportFormState {
 
 class ReportFormNotifier extends StateNotifier<ReportFormState> {
   final Future<String?> Function(Map<String, dynamic> data) submitCallback;
+  final Future<String> Function({
+    required String filePath,
+    String? filename,
+  })
+  uploadMedia;
 
-  ReportFormNotifier({required this.submitCallback})
-    : super(const ReportFormState());
+  ReportFormNotifier({
+    required this.submitCallback,
+    required this.uploadMedia,
+  }) : super(const ReportFormState());
 
   void initPosition(LatLng position) {
     state = state.copyWith(position: position);
@@ -150,20 +159,45 @@ class ReportFormNotifier extends StateNotifier<ReportFormState> {
 
     state = state.copyWith(isPosting: true, errorMessage: '');
 
-    final errorMessage = await submitCallback({
-      'tipo': state.incidentType.value,
-      'descripcion': state.description.value.trim(),
-      'latitud': state.position.latitude,
-      'longitud': state.position.longitude,
-      'fotosUrls': const <String>[],
-    });
+    try {
+      final fotosUrls = <String>[];
+      final attachment = state.attachment;
 
-    final isSuccess = errorMessage == null;
-    state = state.copyWith(
-      isPosting: false,
-      isSubmitted: isSuccess,
-      errorMessage: errorMessage ?? '',
-    );
+      if (attachment != null) {
+        final url = await uploadMedia(
+          filePath: attachment.file.path,
+          filename: attachment.file.name,
+        );
+        fotosUrls.add(url);
+      }
+
+      final errorMessage = await submitCallback({
+        'tipo': state.incidentType.value,
+        'descripcion': state.description.value.trim(),
+        'latitud': state.position.latitude,
+        'longitud': state.position.longitude,
+        'fotosUrls': fotosUrls,
+      });
+
+      final isSuccess = errorMessage == null;
+      state = state.copyWith(
+        isPosting: false,
+        isSubmitted: isSuccess,
+        errorMessage: errorMessage ?? '',
+      );
+    } on CustomError catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isPosting: false,
+        errorMessage: e.message,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isPosting: false,
+        errorMessage: 'No se pudo enviar el reporte',
+      );
+    }
   }
 
   void _touchEveryField() {
@@ -183,7 +217,9 @@ final reportFormProvider =
     StateNotifierProvider.autoDispose<ReportFormNotifier, ReportFormState>((
       ref,
     ) {
+      final repository = ref.read(reportsRepositoryProvider);
       return ReportFormNotifier(
         submitCallback: ref.read(reportsProvider.notifier).submitReport,
+        uploadMedia: repository.uploadReportMedia,
       );
     });

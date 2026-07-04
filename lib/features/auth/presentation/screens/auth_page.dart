@@ -1,11 +1,8 @@
 // RF-0301, RF-0302: Auth page with login and register tabs
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/view_insets.dart';
 import '../../../../core/utils/app_colors.dart';
-import '../../../notifications/presentation/providers/notification_settings_provider.dart';
-import '../../../notifications/blocs/notifications/notifications_bloc.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/login_form.dart';
 import '../widgets/register_form.dart';
@@ -37,16 +34,6 @@ class _AuthPageState extends ConsumerState<AuthPage>
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-
-    ref.listen(authProvider, (previous, next) {
-      if (previous?.authStatus != AuthStatus.authenticated &&
-          next.authStatus == AuthStatus.authenticated &&
-          ref.read(notificationsEnabledProvider)) {
-        context.read<NotificationsBloc>().requestPermissions().then((_) {
-          ref.read(authProvider.notifier).syncFcmWithBackend();
-        });
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(

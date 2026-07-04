@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:centinela_milagro/features/auth/infrastructure/utils/access_token.dart';
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_session_keys.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/services/key_value_storage.dart';
@@ -20,7 +23,9 @@ class ReportDatasourceImpl implements ReportsDatasources {
     final token = await keyValueStorageService.getValue<String>(
       AuthSessionKeys.token,
     );
-    if (token == null || token.isEmpty) return {};
+    if (token == null || token.isEmpty || !isAccessTokenValid(token)) {
+      return {};
+    }
     return {'Authorization': 'Bearer $token'};
   }
 
@@ -83,6 +88,43 @@ class ReportDatasourceImpl implements ReportsDatasources {
       );
       final parsed = ReportsResponse.fromJson(response.data);
       return ReportMapper.fromReportsResponse(parsed);
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
+  @override
+  Future<String> uploadReportMedia({
+    required String filePath,
+    String? filename,
+  }) async {
+    try {
+      final name =
+          filename ??
+          (filePath.contains(Platform.pathSeparator)
+              ? filePath.split(Platform.pathSeparator).last
+              : filePath);
+
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: name),
+      });
+
+      final response = await _dio.post(
+        '/media/upload',
+        queryParameters: {'tipo': 'reporte'},
+        data: formData,
+        options: Options(
+          headers: await _authHeaders(),
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final url = data['url']?.toString();
+      if (url == null || url.isEmpty) {
+        throw CustomError('No se recibió la URL de la imagen');
+      }
+      return url;
     } on DioException catch (e) {
       _handleDioError(e);
     }

@@ -214,6 +214,24 @@ class AuthDataSourceImpl extends AuthDatasource {
     }
   }
 
+  @override
+  Future<void> registerPushNotifications({
+    required String accessToken,
+    required String fcmToken,
+  }) async {
+    try {
+      await _dio.post(
+        '/auth/push-notifications/register',
+        data: _authPayload({'fcmToken': fcmToken}),
+        options: Options(
+          headers: {'Authorization': 'Bearer $accessToken'},
+        ),
+      );
+    } on DioException catch (e) {
+      _handleDioError(e);
+    }
+  }
+
   Never _handleDioError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.connectionError ||

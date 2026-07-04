@@ -104,7 +104,8 @@ class ReportMediaPicker extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Adjunta una foto o un video como evidencia adicional.',
+          'Adjunta una foto (JPEG, PNG o WebP, máx. 5 MB). '
+          'Los videos no son aceptados por el servidor.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppConfig.textSecondary,
               ),

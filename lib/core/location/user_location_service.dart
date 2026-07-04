@@ -6,7 +6,15 @@ import 'package:latlong2/latlong.dart';
 class UserLocationService {
   const UserLocationService._();
 
+  static Future<bool> hasPermission() async {
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
   static Future<bool> ensurePermission() async {
+    if (await hasPermission()) return true;
+
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -18,7 +26,7 @@ class UserLocationService {
   static Future<bool> isServiceEnabled() => Geolocator.isLocationServiceEnabled();
 
   static Future<LatLng?> getCurrentLatLng() async {
-    if (!await ensurePermission()) return null;
+    if (!await hasPermission()) return null;
     if (!await isServiceEnabled()) return null;
 
     final position = await Geolocator.getCurrentPosition(
@@ -30,7 +38,7 @@ class UserLocationService {
   }
 
   static Stream<LatLng> watchLatLng({int distanceFilterMeters = 8}) async* {
-    if (!await ensurePermission()) return;
+    if (!await hasPermission()) return;
     if (!await isServiceEnabled()) return;
 
     yield* Geolocator.getPositionStream(

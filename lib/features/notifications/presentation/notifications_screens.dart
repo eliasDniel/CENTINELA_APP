@@ -26,8 +26,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadHistory());
   }
 
-  void _loadHistory() {
-    final token = ref.read(authProvider).user?.token ?? '';
+  Future<void> _loadHistory() async {
+    final token =
+        await ref.read(authProvider.notifier).resolveAccessToken() ?? '';
+    if (!mounted) return;
     context.read<NotificationsBloc>().add(NotificationsLoadHistory(token));
   }
 
@@ -91,7 +93,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     BuildContext context,
     NotificationModel n,
   ) async {
-    final accessToken = ref.read(authProvider).user?.token ?? '';
+    final accessToken =
+        await ref.read(authProvider.notifier).resolveAccessToken() ?? '';
     if (!n.isRead && accessToken.isNotEmpty) {
       context.read<NotificationsBloc>().add(
             NotificationsMarkAsRead(

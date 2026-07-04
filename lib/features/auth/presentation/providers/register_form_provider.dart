@@ -1,4 +1,4 @@
-import 'dart:isolate';
+
 
 import 'package:centinela_milagro/features/auth/domain/entities/zona_entity.dart';
 import 'package:centinela_milagro/features/auth/domain/repositories/auth_repositories.dart';

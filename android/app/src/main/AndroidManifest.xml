@@ -10,7 +10,8 @@
     <application
         android:label="centinela_milagro"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -38,7 +39,9 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="centinela" />
+                <data
+                    android:scheme="centinela"
+                    android:host="reset-password" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
