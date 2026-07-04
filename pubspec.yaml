@@ -29,6 +29,7 @@ dependencies:
   shared_preferences: ^2.5.5
   geolocator: ^14.0.3
   equatable: ^2.0.7
+  app_links: ^6.4.0
   firebase_core: ^3.15.0
   firebase_messaging: ^15.2.8
   flutter_local_notifications: ^18.0.1

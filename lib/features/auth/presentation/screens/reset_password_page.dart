@@ -111,8 +111,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           const SizedBox(height: 8),
           Text(
             hasPrefilledToken
-                ? 'El token del enlace ya fue cargado. Define tu nueva contraseña.'
-                : 'Pega el token que recibiste por correo (válido por 1 hora).',
+                ? 'Enlace del correo detectado. Define tu nueva contraseña.'
+                : 'Pega el token que recibiste por correo o abre el enlace '
+                    'del mensaje en este dispositivo (válido 1 hora).',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppConfig.textSecondary,
               height: 1.4,
@@ -137,7 +138,8 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
             enabled: !_loading,
             decoration: InputDecoration(
               labelText: 'Nueva contraseña',
-              helperText: 'Mínimo 8 caracteres, mayúscula, minúscula y número',
+              helperText:
+                  'Mín. 8 caracteres, mayúscula, minúscula, número y símbolo',
               errorText: _error,
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(

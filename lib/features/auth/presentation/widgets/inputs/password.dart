@@ -41,7 +41,7 @@ class Password extends FormzInput<String, PasswordError> {
     if (value.isEmpty || value.trim().isEmpty) return 'El campo es requerido';
     if (value.length < 8) return 'Mínimo 8 caracteres';
     if (!passwordRegExp.hasMatch(value)) {
-      return 'Debe tener mayúscula, minúscula y un número';
+      return 'Debe tener mayúscula, minúscula, número y símbolo';
     }
     return null;
   }

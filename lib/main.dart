@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'core/deep_links/deep_link_listener.dart';
 import 'core/notifications/notification_preferences.dart';
 import 'core/utils/app_theme.dart';
 import 'core/utils/app_router.dart';
@@ -42,10 +43,13 @@ class MainApp extends ConsumerWidget {
       routerConfig: appRouter,
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => FcmAuthSync(
-        child: HandleNotificationInteraction(
-          appRouter: appRouter,
-          child: child!,
+      builder: (context, child) => DeepLinkListener(
+        appRouter: appRouter,
+        child: FcmAuthSync(
+          child: HandleNotificationInteraction(
+            appRouter: appRouter,
+            child: child!,
+          ),
         ),
       ),
     );

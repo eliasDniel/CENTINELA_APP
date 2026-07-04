@@ -108,18 +108,21 @@ final appRouterProvider = Provider((ref) {
 
       if (authStatus == AuthStatus.checking || onboardingCompleted == null) {
         if (isGoingTo == '/splash') return null;
+        if (isGoingTo.startsWith('/reset-password') ||
+            isGoingTo == '/forgot-password') {
+          return null;
+        }
         return '/splash';
       }
 
       if (authStatus == AuthStatus.unauthenticated) {
-        const allowedRoutes = [
-          '/login',
-          '/register',
-          '/forgot-password',
-          '/reset-password',
-          '/onboarding',
-        ];
-        if (allowedRoutes.contains(isGoingTo)) return null;
+        if (isGoingTo.startsWith('/reset-password') ||
+            isGoingTo == '/forgot-password' ||
+            isGoingTo == '/login' ||
+            isGoingTo == '/register' ||
+            isGoingTo == '/onboarding') {
+          return null;
+        }
         if (isGoingTo == '/splash') {
           return onboardingCompleted ? '/login' : '/onboarding';
         }
@@ -134,6 +137,10 @@ final appRouterProvider = Provider((ref) {
           '/onboarding',
         ];
         if (authRoutes.contains(isGoingTo)) return '/home/0';
+        if (isGoingTo.startsWith('/reset-password') ||
+            isGoingTo == '/forgot-password') {
+          return null;
+        }
       }
 
       return null;
