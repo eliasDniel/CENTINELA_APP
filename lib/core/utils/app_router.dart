@@ -136,7 +136,14 @@ final appRouterProvider = Provider((ref) {
           '/splash',
           '/onboarding',
         ];
-        if (authRoutes.contains(isGoingTo)) return '/home/0';
+        if (goRouterNotifier.isVisitor) {
+          if (authRoutes.contains(isGoingTo)) return '/home/1';
+          if (isGoingTo.startsWith('/home/') && isGoingTo != '/home/1') {
+            return '/home/1';
+          }
+        } else {
+          if (authRoutes.contains(isGoingTo)) return '/home/0';
+        }
         if (isGoingTo.startsWith('/reset-password') ||
             isGoingTo == '/forgot-password') {
           return null;

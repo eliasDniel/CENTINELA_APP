@@ -29,7 +29,7 @@ class UserEntity {
 
   bool get tieneBarrio => false;
 
-  bool get isVisitor => rol == 'visitante' || token.isEmpty;
+  bool get isVisitor => rol == 'visitante';
 
   UserEntity copyWith({
     String? uuid,

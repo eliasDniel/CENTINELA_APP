@@ -60,7 +60,7 @@ class AlertsResponse {
     zonaId: json["zonaId"]?.toString(),
     zonaNombre: json["zonaNombre"]?.toString(),
     severidad: (json["severidad"] as num?)?.toInt() ?? 1,
-    estado: json["estado"]?.toString() ?? 'activa',
+    estado: json["estado"]?.toString() ?? '',
     eventoId: json["eventoId"]?.toString(),
     reporteId: json["reporteId"]?.toString(),
     generadaPor: json["generadaPor"]?.toString(),

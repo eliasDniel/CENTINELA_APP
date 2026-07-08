@@ -20,25 +20,13 @@ class SubscriptionsHubPage extends ConsumerWidget {
 
   const SubscriptionsHubPage({super.key});
 
-  List<ZonaEntity> _zonesForList(ZonasSuscripcionesState state) {
-    final principalId = state.principalZona?.zonaId;
-    final zones = state.catalog.where((z) => z.id != principalId).toList();
-    zones.sort((a, b) {
-      final aSub = state.subscribedIds.contains(a.id);
-      final bSub = state.subscribedIds.contains(b.id);
-      if (aSub != bSub) return aSub ? -1 : 1;
-      return a.nombre.compareTo(b.nombre);
-    });
-    return zones;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(zonasSuscripcionesProvider);
     final notifier = ref.read(zonasSuscripcionesProvider.notifier);
     final principal = state.principalZona;
     final subscribed = state.subscribedZonas;
-    final zonesForList = _zonesForList(state);
+    final zonesForList = ref.watch(subscriptionCatalogZonesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -55,121 +43,185 @@ class SubscriptionsHubPage extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: notifier.load,
-        child: ListView(
-          padding: const EdgeInsets.all(AppConfig.horizontalMargin),
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            const _InfoCard(),
-            const SizedBox(height: 20),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(AppConfig.horizontalMargin),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const _InfoCard(),
+                  const SizedBox(height: 20),
+                ]),
+              ),
+            ),
             if (state.isLoading && state.catalog.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 48),
+              const SliverFillRemaining(
+                hasScrollBody: false,
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (state.errorMessage != null && state.catalog.isEmpty)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.error_outline, color: AppConfig.error),
-                  title: const Text('No se pudieron cargar las zonas'),
-                  subtitle: Text(state.errorMessage!),
-                  trailing: TextButton(
-                    onPressed: () => unawaited(notifier.load()),
-                    child: const Text('Reintentar'),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConfig.horizontalMargin,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Card(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.error_outline,
+                        color: AppConfig.error,
+                      ),
+                      title: const Text('No se pudieron cargar las zonas'),
+                      subtitle: Text(state.errorMessage!),
+                      trailing: TextButton(
+                        onPressed: () => unawaited(notifier.load()),
+                        child: const Text('Reintentar'),
+                      ),
+                    ),
                   ),
                 ),
               )
             else ...[
-              Text('Tu cobertura', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 10),
-              ZonaSubscriptionSlotsRow(
-                principalLabel: principal?.zona.nombre ?? 'Sin zona principal',
-                subscribedLabels: subscribed.map((z) => z.zona.nombre).toList(),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${subscribed.length} de $kMaxZonasSuscritas zonas adicionales',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: state.canSubscribeMore
-                      ? AppConfig.textSecondary
-                      : AppConfig.warning,
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConfig.horizontalMargin,
                 ),
-              ),
-              const SizedBox(height: 24),
-              if (principal != null) ...[
-                Text('Zona principal', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                ZonaSubscriptionTile(
-                  nombre: principal.zona.nombre,
-                  isSubscribed: true,
-                  enabled: false,
-                  isPrincipal: true,
-                  onChanged: (_) {},
-                ),
-                const SizedBox(height: 20),
-              ],
-              Text('Todas las zonas', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              if (zonesForList.isEmpty)
-                Card(
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.info_outline,
-                      color: AppConfig.textTertiary,
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Text(
+                      'Tu cobertura',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    title: const Text('Sin otras zonas'),
-                    subtitle: const Text(
-                      'Solo tienes configurada tu zona principal.',
+                    const SizedBox(height: 10),
+                    ZonaSubscriptionSlotsRow(
+                      principalLabel:
+                          principal?.zona.nombre ?? 'Sin zona principal',
+                      subscribedLabels:
+                          subscribed.map((z) => z.zona.nombre).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${subscribed.length} de $kMaxZonasSuscritas zonas adicionales',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: state.canSubscribeMore
+                            ? AppConfig.textSecondary
+                            : AppConfig.warning,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (principal != null) ...[
+                      Text(
+                        'Zona principal',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      ZonaSubscriptionTile(
+                        nombre: principal.zona.nombre,
+                        isSubscribed: true,
+                        enabled: false,
+                        isPrincipal: true,
+                        onChanged: (_) {},
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    Text(
+                      'Todas las zonas',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                  ]),
+                ),
+              ),
+              if (zonesForList.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConfig.horizontalMargin,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Card(
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.info_outline,
+                          color: AppConfig.textTertiary,
+                        ),
+                        title: const Text('Sin otras zonas'),
+                        subtitle: const Text(
+                          'Solo tienes configurada tu zona principal.',
+                        ),
+                      ),
                     ),
                   ),
                 )
               else
-                ...zonesForList.map((zona) {
-                  final isSubscribed = state.subscribedIds.contains(zona.id);
-                  return ZonaSubscriptionTile(
-                    nombre: zona.nombre,
-                    isSubscribed: isSubscribed,
-                    enabled:
-                        (isSubscribed || state.canSubscribeMore) &&
-                        !state.isMutating,
-                    subtitle: zona.descripcion.isNotEmpty
-                        ? zona.descripcion
-                        : 'Riesgo nivel ${zona.riesgoNivel}',
-                    onChanged: (value) => _onToggle(
-                      context,
-                      ref,
-                      zona: zona,
-                      subscribe: value,
-                    ),
-                  );
-                }),
-              if (!state.canSubscribeMore) ...[
-                const SizedBox(height: 8),
-                Card(
-                  color: AppConfig.warning.withOpacity(0.12),
-                  child: const ListTile(
-                    leading: Icon(Icons.info_outline, color: AppConfig.warning),
-                    title: Text('Límite alcanzado'),
-                    subtitle: Text(
-                      'Quita una zona suscrita para poder agregar otra.',
-                    ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConfig.horizontalMargin,
+                  ),
+                  sliver: SliverList.builder(
+                    itemCount: zonesForList.length,
+                    itemBuilder: (context, index) {
+                      final zona = zonesForList[index];
+                      final isSubscribed = state.subscribedIds.contains(zona.id);
+                      return ZonaSubscriptionTile(
+                        nombre: zona.nombre,
+                        isSubscribed: isSubscribed,
+                        enabled: (isSubscribed || state.canSubscribeMore) &&
+                            !state.isMutating,
+                        subtitle: zona.descripcion.isNotEmpty
+                            ? zona.descripcion
+                            : 'Riesgo nivel ${zona.riesgoNivel}',
+                        onChanged: (value) => _onToggle(
+                          context,
+                          ref,
+                          zona: zona,
+                          subscribe: value,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ],
-            ],
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => context.push(
-                '/home/${GoRouterState.of(context).pathParameters['page'] ?? '3'}/${ChangeLocationPage.routeName}',
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConfig.horizontalMargin,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    if (!state.canSubscribeMore) ...[
+                      const SizedBox(height: 8),
+                      Card(
+                        color: AppConfig.warning.withValues(alpha: 0.12),
+                        child: const ListTile(
+                          leading: Icon(
+                            Icons.info_outline,
+                            color: AppConfig.warning,
+                          ),
+                          title: Text('Límite alcanzado'),
+                          subtitle: Text(
+                            'Quita una zona suscrita para poder agregar otra.',
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push(
+                        '/home/${GoRouterState.of(context).pathParameters['page'] ?? '3'}/${ChangeLocationPage.routeName}',
+                      ),
+                      icon: const Icon(Icons.edit_location_alt_outlined),
+                      label: const Text('Cambiar zona principal'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/home/1'),
+                      icon: const Icon(Icons.map_outlined),
+                      label: const Text('Ver alertas en el mapa'),
+                    ),
+                    const SizedBox(height: 12),
+                  ]),
+                ),
               ),
-              icon: const Icon(Icons.edit_location_alt_outlined),
-              label: const Text('Cambiar zona principal'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => context.go('/home/1'),
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Ver alertas en el mapa'),
-            ),
+            ],
           ],
         ),
       ),
@@ -209,7 +261,7 @@ class SubscriptionsHubPage extends ConsumerWidget {
 
     if (ok) {
       if (ref.exists(mapProvider)) {
-        unawaited(ref.read(mapProvider.notifier).refreshAlerts());
+        unawaited(ref.read(mapProvider.notifier).refreshMapContext());
       }
       if (!subscribe) {
         AppAlert.success(context, 'Zona desuscrita');

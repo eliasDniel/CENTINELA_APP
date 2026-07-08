@@ -15,6 +15,16 @@ class MapRepositoryImpl implements MapRepository {
   }
 
   @override
+  Future<List<AlertEntity>> getMapAlerts({int horas = 24}) {
+    return datasources.getMapAlerts(horas: horas);
+  }
+
+  @override
+  Future<List<AlertEntity>> getPublicMapAlerts({int horas = 24}) {
+    return datasources.getPublicMapAlerts(horas: horas);
+  }
+
+  @override
   Future<AlertEntity> getAlertById(String alertId) {
     return datasources.getAlertById(alertId);
   }

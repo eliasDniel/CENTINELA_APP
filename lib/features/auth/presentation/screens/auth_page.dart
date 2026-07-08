@@ -94,7 +94,7 @@ class _AuthPageState extends ConsumerState<AuthPage>
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () {
-                // authNotifier.loginAsVisitor();
+                ref.read(authProvider.notifier).loginAsVisitor();
               },
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Ingresar como Visitante'),

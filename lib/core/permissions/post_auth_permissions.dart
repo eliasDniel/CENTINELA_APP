@@ -46,9 +46,11 @@ class _PostAuthPermissionsListenerState
   }
 
   Future<void> _requestInOrder() async {
-    if (ref.read(authProvider).authStatus != AuthStatus.authenticated) return;
+    final auth = ref.read(authProvider);
+    if (auth.authStatus != AuthStatus.authenticated) return;
+    final isVisitor = auth.user?.isVisitor ?? false;
 
-    if (NotificationPreferences.enabled) {
+    if (!isVisitor && NotificationPreferences.enabled) {
       await context.read<NotificationsBloc>().requestPermissions();
     }
 

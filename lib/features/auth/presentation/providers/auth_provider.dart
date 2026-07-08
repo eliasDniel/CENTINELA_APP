@@ -32,6 +32,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     checkAuthStatus();
   }
 
+  /// Ingreso sin cuenta: solo mapa con alertas cercanas (RF-0205).
+  Future<void> loginAsVisitor() async {
+    _sessionGeneration++;
+    _registeredFcmToken = null;
+    state = state.copyWith(
+      authStatus: AuthStatus.authenticated,
+      user: UserEntity(
+        uuid: 'visitante',
+        alias: 'Visitante',
+        email: '',
+        rol: 'visitante',
+        token: '',
+        refreshToken: '',
+        zonaId: '',
+      ),
+      errorMessage: '',
+    );
+  }
+
   /// `null` si el login fue exitoso; mensaje de error del backend en caso contrario.
   Future<String?> loginUser(String email, String password) async {
     _sessionGeneration++;
@@ -388,6 +407,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> syncFcmWithBackend() async {
     if (state.authStatus != AuthStatus.authenticated) return;
+    if (state.user?.isVisitor ?? false) return;
     if (!NotificationPreferences.enabled) return;
 
     final fcm = FcmTokenRegistry.token;

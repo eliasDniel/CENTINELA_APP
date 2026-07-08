@@ -34,6 +34,7 @@ dependencies:
   firebase_messaging: ^15.2.8
   flutter_local_notifications: ^18.0.1
   flutter_bloc: ^9.1.1
+  socket_io_client: ^3.1.6
 
 dev_dependencies:
   flutter_test:

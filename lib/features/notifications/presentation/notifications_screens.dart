@@ -56,32 +56,45 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ? const _EmptyNotifications()
                   : RefreshIndicator(
                       onRefresh: () async => _loadHistory(),
-                      child: ListView(
+                      child: ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.symmetric(
                           vertical: 8,
                           horizontal: AppConfig.horizontalMargin,
                         ),
-                        children: [
-                          if (state.historyError != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                state.historyError!,
-                                style: TextStyle(color: AppConfig.warning),
-                              ),
-                            ),
-                          if (unreadCount > 0) ...[
-                            _UnreadBanner(count: unreadCount),
-                            const SizedBox(height: 8),
-                          ],
-                          ...items.map(
-                            (n) => _NotificationTile(
-                              notification: n,
-                              onTap: () => _onTapNotification(context, n),
-                            ),
-                          ),
-                        ],
+                        itemCount: items.length +
+                            (state.historyError != null ? 1 : 0) +
+                            (unreadCount > 0 ? 2 : 0),
+                        itemBuilder: (context, index) {
+                          var cursor = index;
+                          if (state.historyError != null) {
+                            if (cursor == 0) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  state.historyError!,
+                                  style: TextStyle(color: AppConfig.warning),
+                                ),
+                              );
+                            }
+                            cursor--;
+                          }
+                          if (unreadCount > 0) {
+                            if (cursor == 0) {
+                              return _UnreadBanner(count: unreadCount);
+                            }
+                            if (cursor == 1) {
+                              return const SizedBox(height: 8);
+                            }
+                            cursor -= 2;
+                          }
+                          final notification = items[cursor];
+                          return _NotificationTile(
+                            notification: notification,
+                            onTap: () =>
+                                _onTapNotification(context, notification),
+                          );
+                        },
                       ),
                     ),
         );

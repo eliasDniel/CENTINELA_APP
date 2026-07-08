@@ -123,7 +123,7 @@ class _ChangeLocationPageState extends ConsumerState<ChangeLocationPage> {
     }
 
     if (ref.exists(mapProvider)) {
-      unawaited(ref.read(mapProvider.notifier).refreshAlerts());
+      unawaited(ref.read(mapProvider.notifier).refreshMapContext());
     }
 
     AppAlert.success(context, 'Zona principal actualizada: ${selected.nombre}');

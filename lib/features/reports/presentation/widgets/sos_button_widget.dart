@@ -54,9 +54,10 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
+    return RepaintBoundary(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
         // Pulse ring animation
         AnimatedBuilder(
           animation: _pulse,
@@ -154,6 +155,7 @@ class _SOSButtonWidgetState extends State<SOSButtonWidget>
           ),
         ),
       ],
+      ),
     );
   }
 }
