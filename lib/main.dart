@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/deep_links/deep_link_listener.dart';
+import 'core/map/map_tile_cache.dart';
+import 'core/realtime/map_realtime_service.dart';
 import 'core/permissions/post_auth_permissions.dart';
 import 'core/notifications/notification_preferences.dart';
 import 'core/utils/app_theme.dart';
@@ -19,6 +21,7 @@ Future<void> main() async {
   await initializeDateFormatting('es5');
   await dotenv.load(fileName: ".env");
   await NotificationPreferences.load();
+  await initializeMapTileCache();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await NotificationsBloc.initializeFCM();
@@ -48,9 +51,11 @@ class MainApp extends ConsumerWidget {
         child: DeepLinkListener(
           appRouter: appRouter,
           child: FcmAuthSync(
-            child: HandleNotificationInteraction(
-              appRouter: appRouter,
-              child: child!,
+            child: MapRealtimeSync(
+              child: HandleNotificationInteraction(
+                appRouter: appRouter,
+                child: child!,
+              ),
             ),
           ),
         ),

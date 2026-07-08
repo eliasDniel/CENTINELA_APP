@@ -36,7 +36,8 @@ class AlertMarkerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = MapAlertLevelStyle.forLevel(alert.level);
-    final dimmed = barrioCategory == BarrioMapCategory.other;
+    final dimmed =
+        barrioCategory == BarrioMapCategory.other || alert.isResolvedOnMap;
     final title = alert.displayTitle;
     final subtitle = _subtitleFor(alert, barrioCategory);
 
@@ -58,7 +59,9 @@ class AlertMarkerWidget extends StatelessWidget {
                   accent: level.pinAccent,
                   icon: alert.markerIcon,
                   showSosLabel: alert.isSos,
-                  pulse: alert.level == AlertLevel.critico && !dimmed,
+                  pulse: alert.level == AlertLevel.critico &&
+                      !dimmed &&
+                      alert.isActiveAlert,
                 ),
               ),
               Positioned(
@@ -79,6 +82,9 @@ class AlertMarkerWidget extends StatelessWidget {
   }
 
   String _subtitleFor(AlertEntity alert, BarrioMapCategory category) {
+    if (alert.isResolvedOnMap) {
+      return 'Atendida · ${alert.displayEstado}';
+    }
     if (alert.zonaNombre.isNotEmpty) return alert.zonaNombre;
     return switch (category) {
       BarrioMapCategory.home => 'Mi zona',

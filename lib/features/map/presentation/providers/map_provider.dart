@@ -1,16 +1,24 @@
 // RF-0306: estado del mapa con Riverpod
 import 'package:centinela_milagro/features/auth/infrastructure/errors/auth_errors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/location/user_location_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/services/key_value_storage_impl.dart';
 import '../../domain/constants/map_alert_enums.dart';
+import '../../domain/constants/map_alert_window.dart';
+import '../../domain/constants/visitor_map_prefs.dart';
 import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/entities/map_alert_extensions.dart';
 import '../../domain/entities/user_zona_entity.dart';
 import '../../domain/repositories/map_repository.dart';
+import '../../domain/utils/wkt_polygon_parser.dart';
+import 'last_sos_alert_provider.dart';
 import 'map_repository_provider.dart';
+import 'pending_sos_report_provider.dart';
 
 class MapState {
   final List<AlertEntity> allAlerts;
@@ -107,13 +115,33 @@ class MapNotifier extends Notifier<MapState> {
       final sameUser = previous.user?.uuid == next.user?.uuid;
       final sameRole = _isCitizen(previous) == _isCitizen(next);
       if (sameUser && sameRole) return;
+
+      if (_isCitizen(next) && !_isCitizen(previous)) {
+        state = state.copyWith(clearProximityRadius: true);
+      }
+
       Future.microtask(_bootstrap);
     });
 
     Future.microtask(_bootstrap);
     return MapState.initial(
-      proximityRadiusMeters: isCitizen ? null : 3000,
+      proximityRadiusMeters:
+          isCitizen ? null : defaultVisitorProximityRadiusMeters,
     );
+  }
+
+  Future<int> _loadVisitorProximityRadius() async {
+    final storage = KeyValueStorageImpl();
+    final stored = await storage.getValue<int>(visitorProximityRadiusKey);
+    if (stored != null && mapProximityRadiusOptions.contains(stored)) {
+      return stored;
+    }
+    return defaultVisitorProximityRadiusMeters;
+  }
+
+  Future<void> _persistVisitorProximityRadius(int meters) async {
+    if (!mapProximityRadiusOptions.contains(meters)) return;
+    await KeyValueStorageImpl().setKeyValue(visitorProximityRadiusKey, meters);
   }
 
   LatLng _proximityCenter() => ref.read(userLocationProvider).position;
@@ -124,27 +152,49 @@ class MapNotifier extends Notifier<MapState> {
       final auth = ref.read(authProvider);
       final user = auth.user;
       final isCitizen = user != null && !user.isVisitor;
+      final isVisitor = user?.isVisitor ?? false;
 
       final userZonas = isCitizen
           ? await _repository.getZonasByUser(user.uuid)
           : <UserZonaEntity>[];
 
-      final alerts = (await _repository.getActiveAlerts())
-          .where((alert) => alert.estado == 'activa')
-          .toList();
+      final visitorRadius = isVisitor ? await _loadVisitorProximityRadius() : null;
+
+      // Carga inicial: activas + últimas 24 h. Nuevas llegan por WebSocket.
+      final alerts = isCitizen
+          ? await _repository.getMapAlerts(horas: kMapAlertWindowHours)
+          : isVisitor
+              ? await _repository.getPublicMapAlerts(horas: kMapAlertWindowHours)
+              : (await _repository.getActiveAlerts())
+                  .where(
+                    (alert) => matchesCitizenMapWindow(
+                      createdAt: alert.timestampDate,
+                    ),
+                  )
+                  .toList();
 
       if (!ref.mounted) return;
 
       final positions = positionsFromAlerts(alerts);
       final userPosition = ref.read(userLocationProvider).position;
       final center = userPosition;
+      final effectiveProximity =
+          isCitizen ? null : (visitorRadius ?? state.proximityRadiusMeters);
 
       state = state.copyWith(
         userZonas: userZonas,
         allAlerts: alerts,
         positions: positions,
-        proximityRadiusMeters: isCitizen ? null : (state.proximityRadiusMeters ?? 3000),
-        filteredAlerts: _applyCurrentFilters(alerts, userZonas: userZonas),
+        proximityRadiusMeters: effectiveProximity,
+        clearProximityRadius: isCitizen,
+        filteredAlerts: _filterAlerts(
+          alerts,
+          userZonas: userZonas,
+          levelFilter: state.levelFilter,
+          sourceFilter: state.sourceFilter,
+          zonaIdFilter: state.zonaIdFilter,
+          proximityRadiusMeters: effectiveProximity,
+        ),
         center: center,
         isLoading: false,
       );
@@ -160,27 +210,82 @@ class MapNotifier extends Notifier<MapState> {
     }
   }
 
-  Future<void> refreshAlerts() => _bootstrap();
+  Future<void> refreshAlerts() => refreshMapContext();
+
+  /// Recarga zonas y alertas (ciudadano) o mapa público (visitante).
+  Future<void> refreshMapContext() async {
+    await _bootstrap();
+  }
+
+  Future<void> onRealtimeAlertEvent(String alertId) async {
+    final auth = ref.read(authProvider);
+    if (!_isCitizen(auth)) return;
+
+    try {
+      final alert = await _repository.getAlertById(alertId);
+      if (!ref.mounted) return;
+
+      final alreadyOnMap = state.allAlerts.any((item) => item.id == alert.id);
+      if (!alreadyOnMap &&
+          !isEligibleForCitizenMap(
+            estado: alert.estado,
+            createdAt: alert.timestampDate,
+          )) {
+        return;
+      }
+
+      _upsertAlert(alert);
+    } catch (_) {
+      // La alerta puede no estar disponible aún o fuera de permisos.
+    }
+  }
+
+  void _upsertAlert(AlertEntity alert) {
+    final alerts = [...state.allAlerts];
+    final index = alerts.indexWhere((item) => item.id == alert.id);
+    if (index >= 0) {
+      alerts[index] = alert;
+    } else {
+      alerts.add(alert);
+    }
+
+    final positions = Map<String, LatLng>.from(state.positions);
+    final position = alert.position;
+    if (position != null) {
+      positions[alert.id] = position;
+    }
+
+    state = state.copyWith(
+      allAlerts: alerts,
+      positions: positions,
+      filteredAlerts: _filterAlerts(
+        alerts,
+        levelFilter: state.levelFilter,
+        sourceFilter: state.sourceFilter,
+        zonaIdFilter: state.zonaIdFilter,
+        proximityRadiusMeters: state.proximityRadiusMeters,
+      ),
+    );
+
+    final pendingReportId = ref.read(pendingSosReportIdProvider);
+    if (pendingReportId != null && alert.reporteId == pendingReportId) {
+      ref.read(lastSosAlertProvider.notifier).state = alert;
+      ref.read(pendingSosReportIdProvider.notifier).state = null;
+    }
+  }
 
   Future<AlertEntity> loadAlertDetail(String alertId) {
+    final auth = ref.read(authProvider);
+    if (auth.user?.isVisitor ?? false) {
+      final cached = state.allAlerts
+          .where((alert) => alert.id == alertId)
+          .firstOrNull;
+      if (cached != null) return Future.value(cached);
+    }
     return _repository.getAlertById(alertId);
   }
 
   static const _distance = Distance();
-
-  List<AlertEntity> _applyCurrentFilters(
-    List<AlertEntity> alerts, {
-    List<UserZonaEntity>? userZonas,
-  }) {
-    return _filterAlerts(
-      alerts,
-      userZonas: userZonas,
-      levelFilter: state.levelFilter,
-      sourceFilter: state.sourceFilter,
-      zonaIdFilter: state.zonaIdFilter,
-      proximityRadiusMeters: state.proximityRadiusMeters,
-    );
-  }
 
   List<AlertEntity> _filterAlerts(
     List<AlertEntity> alerts, {
@@ -203,11 +308,12 @@ class MapNotifier extends Notifier<MapState> {
         userZonas: zones,
         isCitizen: isCitizen,
       );
-      final proximityMatches = _matchesProximity(
-        alert.positionAt(state.positions),
-        center: _proximityCenter(),
-        radiusMeters: proximityRadiusMeters,
-      );
+      final proximityMatches = isCitizen ||
+          _matchesProximity(
+            alert.positionAt(state.positions),
+            center: _proximityCenter(),
+            radiusMeters: proximityRadiusMeters,
+          );
       return levelMatches && sourceMatches && zonaMatches && proximityMatches;
     }).toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
@@ -280,7 +386,7 @@ class MapNotifier extends Notifier<MapState> {
       zonaIdFilter: newZonaIdFilter,
       clearZonaIdFilter: clearZonaIdFilter,
       proximityRadiusMeters: newProximityRadius,
-      clearProximityRadius: clearProximityRadius,
+      clearProximityRadius: isCitizen || clearProximityRadius,
       filteredAlerts: _filterAlerts(
         state.allAlerts,
         levelFilter: newLevelFilter,
@@ -289,6 +395,10 @@ class MapNotifier extends Notifier<MapState> {
         proximityRadiusMeters: newProximityRadius,
       ),
     );
+
+    if (!isCitizen && newProximityRadius != null) {
+      _persistVisitorProximityRadius(newProximityRadius);
+    }
   }
 
   void clearFilters() {
@@ -297,7 +407,7 @@ class MapNotifier extends Notifier<MapState> {
       clearLevelFilter: true,
       clearSourceFilter: true,
       clearZonaIdFilter: true,
-      proximityRadiusMeters: usesProximity ? 3000 : null,
+      proximityRadiusMeters: usesProximity ? defaultVisitorProximityRadiusMeters : null,
       clearProximityRadius: !usesProximity,
     );
   }
@@ -337,24 +447,69 @@ class MapNotifier extends Notifier<MapState> {
   }
 }
 
-final mapProvider = NotifierProvider.autoDispose<MapNotifier, MapState>(
+final mapProvider = NotifierProvider<MapNotifier, MapState>(
   MapNotifier.new,
 );
 
-final mapUsesProximityRadiusProvider = Provider<bool>((ref) {
-  final auth = ref.watch(authProvider);
-  return auth.user == null || (auth.user?.isVisitor ?? true);
+typedef MapAlertCounts = ({int total, int active, int resolved});
+
+final mapAlertCountsProvider = Provider<MapAlertCounts>((ref) {
+  final alerts = ref.watch(mapProvider.select((s) => s.filteredAlerts));
+  var active = 0;
+  var resolved = 0;
+  for (final alert in alerts) {
+    if (alert.isActiveAlert) {
+      active++;
+    } else if (alert.isResolvedOnMap) {
+      resolved++;
+    }
+  }
+  return (total: alerts.length, active: active, resolved: resolved);
 });
 
-const mapProximityRadiusOptions = <int>[1000, 3000, 5000];
+final mapShowProximityCircleProvider = Provider<bool>((ref) {
+  final usesProximity = ref.watch(mapUsesProximityRadiusProvider);
+  if (!usesProximity) return false;
+  return ref.watch(mapProvider.select((s) => s.proximityRadiusMeters)) != null;
+});
+
+final mapZonePolygonsProvider = Provider<List<Polygon>>((ref) {
+  final userZonas = ref.watch(mapProvider.select((s) => s.userZonas));
+  final zonaIdFilter = ref.watch(mapProvider.select((s) => s.zonaIdFilter));
+  if (userZonas.isEmpty) return const [];
+
+  final polygons = <Polygon>[];
+  for (final userZona in userZonas) {
+    final points = parseWktPolygon(userZona.zona.geomWkt);
+    if (points.isEmpty) continue;
+    final isSelected =
+        zonaIdFilter == null || zonaIdFilter == userZona.zonaId;
+    final baseColor = userZona.isPrincipal
+        ? const Color(0xFF42A5F5)
+        : const Color(0xFF66BB6A);
+    polygons.add(
+      Polygon(
+        points: points,
+        color: baseColor.withValues(alpha: isSelected ? 0.18 : 0.08),
+        borderColor: baseColor.withValues(alpha: isSelected ? 0.9 : 0.35),
+        borderStrokeWidth: isSelected ? 2.5 : 1.2,
+      ),
+    );
+  }
+  return polygons;
+});
+
+final mapUsesProximityRadiusProvider = Provider<bool>((ref) {
+  final auth = ref.watch(authProvider);
+  return auth.user?.isVisitor ?? false;
+});
 
 final mapZonaFilterChipsProvider =
     Provider<List<({String? value, String label})>>((ref) {
-      final state = ref.watch(mapProvider);
+      final userZonas = ref.watch(mapProvider.select((s) => s.userZonas));
       final auth = ref.watch(authProvider);
       final isCitizen = auth.user != null && !(auth.user?.isVisitor ?? true);
-
-      if (!isCitizen || state.userZonas.isEmpty) {
+      if (!isCitizen || userZonas.isEmpty) {
         return const [(value: null, label: 'Todas las zonas')];
       }
 
@@ -362,7 +517,7 @@ final mapZonaFilterChipsProvider =
         (value: null, label: 'Todas mis zonas'),
       ];
 
-      for (final userZona in state.userZonas) {
+      for (final userZona in userZonas) {
         final suffix = userZona.isPrincipal ? ' (principal)' : '';
         chips.add((value: userZona.zonaId, label: '${userZona.zona.nombre}$suffix'));
       }
@@ -371,18 +526,22 @@ final mapZonaFilterChipsProvider =
     });
 
 final mapHasActiveFiltersProvider = Provider<bool>((ref) {
-  final state = ref.watch(mapProvider);
+  final filters = ref.watch(
+    mapProvider.select(
+      (s) => (s.levelFilter, s.sourceFilter, s.zonaIdFilter, s.proximityRadiusMeters),
+    ),
+  );
   final usesProximity = ref.watch(mapUsesProximityRadiusProvider);
 
-  if (state.levelFilter != null ||
-      state.sourceFilter != null ||
-      state.zonaIdFilter != null) {
+  if (filters.$1 != null ||
+      filters.$2 != null ||
+      filters.$3 != null) {
     return true;
   }
 
   if (usesProximity &&
-      state.proximityRadiusMeters != null &&
-      state.proximityRadiusMeters != 3000) {
+      filters.$4 != null &&
+      filters.$4 != defaultVisitorProximityRadiusMeters) {
     return true;
   }
 
@@ -390,29 +549,35 @@ final mapHasActiveFiltersProvider = Provider<bool>((ref) {
 });
 
 final mapActiveFiltersSummaryProvider = Provider<String?>((ref) {
-  final state = ref.watch(mapProvider);
+  final levelFilter = ref.watch(mapProvider.select((s) => s.levelFilter));
+  final sourceFilter = ref.watch(mapProvider.select((s) => s.sourceFilter));
+  final zonaIdFilter = ref.watch(mapProvider.select((s) => s.zonaIdFilter));
+  final proximityRadius = ref.watch(
+    mapProvider.select((s) => s.proximityRadiusMeters),
+  );
+  final userZonas = ref.watch(mapProvider.select((s) => s.userZonas));
   final parts = <String>[];
 
-  if (state.zonaIdFilter != null) {
-    final zone = state.userZonas
-        .where((item) => item.zonaId == state.zonaIdFilter)
+  if (zonaIdFilter != null) {
+    final zone = userZonas
+        .where((item) => item.zonaId == zonaIdFilter)
         .firstOrNull;
     if (zone != null) {
       parts.add('Zona: ${zone.zona.nombre}');
     }
   }
 
-  if (state.levelFilter != null) {
-    parts.add('Nivel: ${_levelLabel(state.levelFilter!)}');
+  if (levelFilter != null) {
+    parts.add('Nivel: ${_levelLabel(levelFilter)}');
   }
-  if (state.sourceFilter != null) {
-    parts.add('Fuente: ${_sourceLabel(state.sourceFilter!)}');
+  if (sourceFilter != null) {
+    parts.add('Fuente: ${_sourceLabel(sourceFilter)}');
   }
 
   if (ref.watch(mapUsesProximityRadiusProvider) &&
-      state.proximityRadiusMeters != null &&
-      state.proximityRadiusMeters != 3000) {
-    parts.add('Cerca de ti: ${state.proximityRadiusMeters! ~/ 1000} km');
+      proximityRadius != null &&
+      proximityRadius != defaultVisitorProximityRadiusMeters) {
+    parts.add('Cerca de ti: ${proximityRadius ~/ 1000} km');
   }
 
   if (parts.isEmpty) return null;

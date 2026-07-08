@@ -7,22 +7,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/map/map_tile_cache.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../subscriptions/domain/barrio_membership.dart';
 import '../widgets/map_floating_controls.dart';
 import '../widgets/map_active_filters_banner.dart';
 import '../../domain/constants/map_alert_enums.dart';
+import '../../domain/constants/visitor_map_prefs.dart';
 import '../../domain/entities/map_alert_entity.dart';
 import '../../domain/entities/map_alert_extensions.dart';
 import '../../domain/entities/user_zona_entity.dart';
-import '../../domain/utils/wkt_polygon_parser.dart';
 import '../providers/last_sos_alert_provider.dart';
 import '../providers/map_provider.dart';
 import '../widgets/alert_detail_sheet.dart';
-import '../widgets/alert_marker_widget.dart';
+import '../widgets/map_app_bar.dart';
+import '../widgets/map_layers.dart';
 import '../../../../core/location/user_heading_provider.dart';
 import '../../../../core/location/user_location_provider.dart';
 import '../widgets/radius_badge_widget.dart';
-import '../widgets/user_location_marker.dart';
 
 class MapPage extends ConsumerStatefulWidget {
   const MapPage({super.key});
@@ -33,6 +35,7 @@ class MapPage extends ConsumerStatefulWidget {
 
 class _MapPageState extends ConsumerState<MapPage> {
   final MapController _mapController = MapController();
+  late final TileProvider _tileProvider = createCachedMapTileProvider();
   bool _showRadiusHint = false;
   bool _mapReady = false;
   bool _shouldCenterOnUser = true;
@@ -167,27 +170,7 @@ class _MapPageState extends ConsumerState<MapPage> {
   BarrioMapCategory _zonaCategory(
     AlertEntity alert,
     List<UserZonaEntity> userZonas,
-  ) {
-    if (userZonas.isEmpty) return BarrioMapCategory.other;
-
-    final alertZonaId = alert.zonaId ?? alert.zona?.id;
-    UserZonaEntity? match;
-    if (alertZonaId != null && alertZonaId.isNotEmpty) {
-      for (final zone in userZonas) {
-        if (zone.zonaId == alertZonaId) {
-          match = zone;
-          break;
-        }
-      }
-    }
-    match ??= userZonas
-        .where((zone) => zone.zona.nombre == alert.zonaNombre)
-        .firstOrNull;
-
-    if (match == null) return BarrioMapCategory.other;
-    if (match.isPrincipal) return BarrioMapCategory.home;
-    return BarrioMapCategory.subscribed;
-  }
+  ) => zonaCategoryForAlert(alert, userZonas);
 
   Future<void> _openFiltersSheet(MapState state) async {
     AlertLevel? selectedLevel = state.levelFilter;
@@ -499,62 +482,43 @@ class _MapPageState extends ConsumerState<MapPage> {
     }
   }
 
-  PreferredSizeWidget _buildMapAppBar({
-    required MapState state,
+  Future<void> _visitorGoBack() async {
+    await ref.read(authProvider.notifier).logoutUser();
+    if (mounted) context.go('/login');
+  }
+
+  Widget _visitorBackButton() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Material(
+            color: AppConfig.surface.withValues(alpha: 0.92),
+            shape: const CircleBorder(),
+            elevation: 3,
+            shadowColor: Colors.black45,
+            child: IconButton(
+              onPressed: _visitorGoBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: 'Volver',
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget? _mapAppBarForUser({
+    required bool isVisitor,
     required VoidCallback onRefresh,
     required VoidCallback onOpenFilters,
   }) {
-    final hasActiveFilters = ref.watch(mapHasActiveFiltersProvider);
-    final alertCount = state.filteredAlerts.length;
-
-    return AppBar(
-      backgroundColor: AppConfig.surface.withValues(alpha: 0.92),
-      elevation: 0,
-      scrolledUnderElevation: 2,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Mapa de alertas',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
-            ),
-          ),
-          Text(
-            '$alertCount alerta${alertCount == 1 ? '' : 's'} activa${alertCount == 1 ? '' : 's'}',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppConfig.textSecondary,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          onPressed: state.isLoading ? null : onRefresh,
-          icon: state.isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh_rounded),
-          tooltip: 'Actualizar alertas',
-        ),
-        IconButton(
-          onPressed: onOpenFilters,
-          tooltip: 'Filtrar alertas',
-          icon: Badge(
-            isLabelVisible: hasActiveFilters,
-            smallSize: 8,
-            backgroundColor: AppConfig.sos,
-            child: const Icon(Icons.tune_rounded),
-          ),
-        ),
-        const SizedBox(width: 4),
-      ],
+    if (isVisitor) return null;
+    return MapAppBar(
+      onRefresh: onRefresh,
+      onOpenFilters: onOpenFilters,
     );
   }
 
@@ -609,7 +573,27 @@ class _MapPageState extends ConsumerState<MapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(mapProvider);
+    final isVisitor = ref.watch(authProvider).user?.isVisitor ?? false;
+    final showProximityCircle = ref.watch(mapShowProximityCircleProvider);
+    final mapSnapshot = ref.watch(
+      mapProvider.select(
+        (s) => (
+          isLoading: s.isLoading,
+          allAlertsEmpty: s.allAlerts.isEmpty,
+          userZonasEmpty: s.userZonas.isEmpty,
+          filteredEmpty: s.filteredAlerts.isEmpty,
+          errorMessage: s.errorMessage,
+          proximityRadiusMeters: s.proximityRadiusMeters,
+        ),
+      ),
+    );
+    final onRefresh = () => ref.read(mapProvider.notifier).refreshMapContext();
+    final onOpenFilters = () => _openFiltersSheet(ref.read(mapProvider));
+    final mapAppBar = _mapAppBarForUser(
+      isVisitor: isVisitor,
+      onRefresh: onRefresh,
+      onOpenFilters: onOpenFilters,
+    );
 
     ref.listen<LatLng>(mapProvider.select((state) => state.center), (
       previous,
@@ -653,167 +637,91 @@ class _MapPageState extends ConsumerState<MapPage> {
       _focusPendingSosIfAny();
     });
 
-    if (state.isLoading && state.allAlerts.isEmpty && state.userZonas.isEmpty) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF10131A),
-        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+    if (mapSnapshot.isLoading &&
+        mapSnapshot.allAlertsEmpty &&
+        mapSnapshot.userZonasEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF10131A),
+        appBar: mapAppBar,
+        body: Stack(
+          children: [
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
+            if (isVisitor) _visitorBackButton(),
+          ],
+        ),
       );
     }
 
-    if (state.errorMessage.isNotEmpty &&
-        state.allAlerts.isEmpty &&
-        state.userZonas.isEmpty) {
+    if (mapSnapshot.errorMessage.isNotEmpty &&
+        mapSnapshot.allAlertsEmpty &&
+        mapSnapshot.userZonasEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFF10131A),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              state.errorMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70),
+        appBar: mapAppBar,
+        body: Stack(
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  mapSnapshot.errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
             ),
-          ),
+            if (isVisitor) _visitorBackButton(),
+          ],
         ),
       );
     }
 
     final hasMapContent =
-        state.filteredAlerts.isNotEmpty || state.userZonas.isNotEmpty;
+        !mapSnapshot.filteredEmpty || !mapSnapshot.userZonasEmpty;
 
     if (!hasMapContent) {
       return Scaffold(
         backgroundColor: const Color(0xFF10131A),
-        appBar: _buildMapAppBar(
-          state: state,
-          onRefresh: () => ref.read(mapProvider.notifier).refreshAlerts(),
-          onOpenFilters: () => _openFiltersSheet(state),
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              state.errorMessage.isNotEmpty
-                  ? state.errorMessage
-                  : 'No hay alertas activas en tus zonas.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70),
+        appBar: mapAppBar,
+        body: Stack(
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  mapSnapshot.errorMessage.isNotEmpty
+                      ? mapSnapshot.errorMessage
+                      : showProximityCircle
+                          ? 'No hay alertas activas ni recientes (24 h) cerca de ti.'
+                          : 'No hay alertas activas ni recientes (24 h) en tus zonas.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
             ),
-          ),
+            if (isVisitor) _visitorBackButton(),
+          ],
         ),
       );
     }
 
-    final userLocation = ref.watch(userLocationProvider);
-    final heading = ref.watch(userHeadingProvider);
-    final compassFollow = ref.watch(compassFollowModeProvider);
     final mapControlsBottom = 20.0;
-    final proximityCenter = state.proximityRadiusMeters != null
-        ? userLocation.position
-        : state.center;
-    final categorize = (AlertEntity alert) =>
-        _zonaCategory(alert, state.userZonas);
-    final zonePolygons = <Polygon>[];
-    for (final userZona in state.userZonas) {
-      final points = parseWktPolygon(userZona.zona.geomWkt);
-      if (points.isEmpty) continue;
-      final isSelected =
-          state.zonaIdFilter == null || state.zonaIdFilter == userZona.zonaId;
-      final baseColor = userZona.isPrincipal
-          ? const Color(0xFF42A5F5)
-          : const Color(0xFF66BB6A);
-      zonePolygons.add(
-        Polygon(
-          points: points,
-          color: baseColor.withOpacity(isSelected ? 0.18 : 0.08),
-          borderColor: baseColor.withOpacity(isSelected ? 0.9 : 0.35),
-          borderStrokeWidth: isSelected ? 2.5 : 1.2,
-        ),
-      );
-    }
-    final markers = state.filteredAlerts.map((alert) {
-      final position = state.positions[alert.id];
-      if (position == null) return null;
-      final category = categorize(alert);
-      return Marker(
-        width: kAlertMarkerWidth,
-        height: kAlertMarkerHeight,
-        alignment: Marker.computePixelAlignment(
-          width: kAlertMarkerWidth,
-          height: kAlertMarkerHeight,
-          left: kAlertPinTipLeft,
-          top: kAlertPinTipTop,
-        ),
-        point: position,
-        child: AlertMarkerWidget(
-          alert: alert,
-          barrioCategory: category,
-          onTap: () => _openAlertSheet(alert, category),
-        ),
-      );
-    }).whereType<Marker>().toList();
+    final headingAvailable = ref.watch(
+      userHeadingProvider.select((s) => s.isAvailable),
+    );
+    final compassFollow = ref.watch(compassFollowModeProvider);
 
     return Scaffold(
-      appBar: _buildMapAppBar(
-        state: state,
-        onRefresh: () => ref.read(mapProvider.notifier).refreshAlerts(),
-        onOpenFilters: () => _openFiltersSheet(state),
-      ),
+      backgroundColor: const Color(0xFF10131A),
+      appBar: mapAppBar,
       body: Stack(
         children: [
-          FlutterMap(
+          MapFlutterMapView(
             mapController: _mapController,
-            options: MapOptions(
-              initialCenter: userLocation.position,
-              initialZoom: _defaultMapZoom,
-              onMapReady: _onMapReady,
-              interactionOptions: InteractionOptions(
-                flags: compassFollow && heading.isAvailable
-                    ? InteractiveFlag.all & ~InteractiveFlag.rotate
-                    : InteractiveFlag.all,
-              ),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.barrioseguro.app',
-                retinaMode: RetinaMode.isHighDensity(context),
-                tileProvider: NetworkTileProvider(),
-              ),
-              if (zonePolygons.isNotEmpty) PolygonLayer(polygons: zonePolygons),
-              if (state.proximityRadiusMeters != null)
-                CircleLayer(
-                  circles: [
-                    CircleMarker(
-                      point: proximityCenter,
-                      radius: state.proximityRadiusMeters!.toDouble(),
-                      useRadiusInMeter: true,
-                      color: Colors.blue.withOpacity(0.08),
-                      borderColor: const Color(0xFF1E90FF),
-                      borderStrokeWidth: 1.5,
-                    ),
-                  ],
-                ),
-              MarkerLayer(markers: markers),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: userLocation.position,
-                    width: heading.isAvailable ? 72 : 28,
-                    height: heading.isAvailable ? 72 : 28,
-                    alignment: Alignment.center,
-                    child: UserLocationMarker(
-                      headingDegrees: heading.headingDegrees,
-                      beamPointsUpOnScreen:
-                          compassFollow && heading.isAvailable,
-                      showBeam: heading.isAvailable,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            tileProvider: _tileProvider,
+            onMapReady: _onMapReady,
+            onAlertTap: _openAlertSheet,
+            initialZoom: _defaultMapZoom,
           ),
           Positioned(
             top: 4,
@@ -822,12 +730,13 @@ class _MapPageState extends ConsumerState<MapPage> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: MapActiveFiltersBanner(
-                onTap: () => _openFiltersSheet(state),
+                onTap: onOpenFilters,
                 onClear: () => ref.read(mapProvider.notifier).clearFilters(),
               ),
             ),
           ),
-          if (state.proximityRadiusMeters != null)
+          if (isVisitor) _visitorBackButton(),
+          if (showProximityCircle)
             Positioned(
               left: 12,
               bottom: mapControlsBottom + 56,
@@ -837,7 +746,8 @@ class _MapPageState extends ConsumerState<MapPage> {
                 child: IgnorePointer(
                   ignoring: !_showRadiusHint,
                   child: RadiusHintChip(
-                    radiusKm: state.proximityRadiusMeters! ~/ 1000,
+                    radiusKm:
+                        (mapSnapshot.proximityRadiusMeters ?? 3000) ~/ 1000,
                   ),
                 ),
               ),
@@ -846,12 +756,13 @@ class _MapPageState extends ConsumerState<MapPage> {
             bottom: mapControlsBottom,
             right: 16,
             child: MapFloatingControls(
-              compassActive: compassFollow && heading.isAvailable,
-              compassAvailable: heading.isAvailable,
+              compassActive: compassFollow && headingAvailable,
+              compassAvailable: headingAvailable,
               onCompass: _toggleCompassFollow,
               onMyLocation: _centerOnUser,
               onZoomIn: () => _zoomBy(1),
               onZoomOut: () => _zoomBy(-1),
+              onFilter: isVisitor ? onOpenFilters : null,
             ),
           ),
         ],

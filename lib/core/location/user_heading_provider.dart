@@ -52,8 +52,8 @@ class UserHeadingNotifier extends Notifier<UserHeadingState> {
     var delta = next - previous;
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
-    if (delta.abs() < 1.5) return previous;
-    var value = previous + delta * 0.35;
+    if (delta.abs() < 3) return previous;
+    var value = previous + delta * 0.3;
     if (value < 0) value += 360;
     if (value >= 360) value -= 360;
     return value;

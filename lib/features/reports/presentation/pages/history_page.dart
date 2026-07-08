@@ -63,119 +63,113 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
     final selectedFilter = ref.watch(reportTypeFilterProvider);
     final reportsState = ref.watch(reportsProvider);
     final reports = ref.watch(reportsFilteredProvider(selectedFilter));
+    final isVisitor = ref.watch(authProvider).user == null;
 
-    return Consumer(
-      builder: (context, ref, _) {
-        final isVisitor = ref.watch(authProvider).user == null;
-
-        return Scaffold(
-          body: SafeArea(
-            child: isVisitor
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.lock, size: 64, color: Colors.grey),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Inicia sesión para ver tu historial',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () => context.go('/auth'),
-                          child: const Text('Iniciar sesión'),
-                        ),
-                      ],
+    return Scaffold(
+      body: SafeArea(
+        child: isVisitor
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.lock, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Inicia sesión para ver tu historial',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        height: size.height * 0.10,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: AppConfig.horizontalMargin,
-                          ),
-                          child: const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Mi Historial',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Resumen de tus reportes de seguridad',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.go('/auth'),
+                      child: const Text('Iniciar sesión'),
+                    ),
+                  ],
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: size.height * 0.10,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppConfig.horizontalMargin,
                       ),
-                      TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.start,
-                        labelColor: AppConfig.primary,
-                        unselectedLabelColor: Colors.white54,
-                        indicatorColor: AppConfig.primary,
-                        dividerColor: Colors.white12,
-                        labelStyle: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                        tabs: [
-                          const Tab(text: 'Todos'),
-                          ...kIncidentTypes.map(
-                            (type) => Tab(text: type['label']),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Mi Historial',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 25,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Resumen de tus reportes de seguridad',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ],
                       ),
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: () async {
-                            if (!mounted) return;
-                            final container = ProviderScope.containerOf(context);
-                            if (container.read(authProvider).user != null) {
-                              await container
-                                  .read(reportsProvider.notifier)
-                                  .loadHistory();
-                            }
-                          },
-                          child: _buildReportsBody(
-                            context,
-                            reportsState: reportsState,
-                            reports: reports,
-                            hasFilter: selectedFilter.isNotEmpty,
-                          ),
-                        ),
+                    ),
+                  ),
+                  TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelColor: AppConfig.primary,
+                    unselectedLabelColor: Colors.white54,
+                    indicatorColor: AppConfig.primary,
+                    dividerColor: Colors.white12,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    tabs: [
+                      const Tab(text: 'Todos'),
+                      ...kIncidentTypes.map(
+                        (type) => Tab(text: type['label']),
                       ),
                     ],
                   ),
-          ),
-          floatingActionButton: isVisitor
-              ? null
-              : FloatingActionButton(
-                  onPressed: () => context.push('/home/2/report/new'),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        if (!mounted) return;
+                        if (ref.read(authProvider).user != null) {
+                          await ref
+                              .read(reportsProvider.notifier)
+                              .loadHistory();
+                        }
+                      },
+                      child: _buildReportsBody(
+                        context,
+                        reportsState: reportsState,
+                        reports: reports,
+                        hasFilter: selectedFilter.isNotEmpty,
+                      ),
+                    ),
                   ),
-                  backgroundColor: AppConfig.primary,
-                  child: const Icon(Icons.add),
-                ),
-        );
-      },
+                ],
+              ),
+      ),
+      floatingActionButton: isVisitor
+          ? null
+          : FloatingActionButton(
+              onPressed: () => context.push('/home/2/report/new'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(100),
+              ),
+              backgroundColor: AppConfig.primary,
+              child: const Icon(Icons.add),
+            ),
     );
   }
 

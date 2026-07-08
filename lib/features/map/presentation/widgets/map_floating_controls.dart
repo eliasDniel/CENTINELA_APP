@@ -11,6 +11,7 @@ class MapFloatingControls extends StatelessWidget {
     required this.onMyLocation,
     required this.onZoomIn,
     required this.onZoomOut,
+    this.onFilter,
   });
 
   final bool compassActive;
@@ -20,6 +21,7 @@ class MapFloatingControls extends StatelessWidget {
   final VoidCallback onMyLocation;
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
+  final VoidCallback? onFilter;
 
   static const _googleBlue = Color(0xFF1A73E8);
   static const _dividerColor = Color(0xFFE0E0E0);
@@ -35,6 +37,15 @@ class MapFloatingControls extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (onFilter != null) ...[
+            _ControlButton(
+              icon: Icons.tune_rounded,
+              tooltip: 'Filtrar alertas',
+              onPressed: onFilter,
+              iconColor: _googleBlue,
+            ),
+            const _ControlDivider(),
+          ],
           if (showCompass) ...[
             _ControlButton(
               icon: Icons.explore_rounded,

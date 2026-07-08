@@ -124,12 +124,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     final notification = _mapRemoteMessage(message);
     if (notification == null) return;
 
-    await LocalNotificationService.instance.show(
-      id: notification.id,
-      title: notification.title,
-      body: notification.body,
-    );
-
+    // App abierta: solo lista + contador, sin banner del sistema.
     add(NotificationsReceived(notification));
   }
 

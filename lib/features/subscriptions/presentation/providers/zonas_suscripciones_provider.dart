@@ -163,3 +163,16 @@ final puedeSuscribirMasZonasProvider = Provider<bool>((ref) {
 final zonasSuscritasCountProvider = Provider<int>((ref) {
   return ref.watch(zonasSuscripcionesProvider).subscribedCount;
 });
+
+final subscriptionCatalogZonesProvider = Provider<List<ZonaEntity>>((ref) {
+  final state = ref.watch(zonasSuscripcionesProvider);
+  final principalId = state.principalZona?.zonaId;
+  final zones = state.catalog.where((z) => z.id != principalId).toList();
+  zones.sort((a, b) {
+    final aSub = state.subscribedIds.contains(a.id);
+    final bSub = state.subscribedIds.contains(b.id);
+    if (aSub != bSub) return aSub ? -1 : 1;
+    return a.nombre.compareTo(b.nombre);
+  });
+  return zones;
+});

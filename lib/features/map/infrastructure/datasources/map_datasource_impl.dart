@@ -50,6 +50,50 @@ class MapDatasourceImpl implements MapDatasource {
   }
 
   @override
+  Future<List<AlertEntity>> getMapAlerts({int horas = 24}) async {
+    try {
+      await _setAuthorizationHeader();
+      final response = await _dio.get(
+        '/alertas/mapa',
+        queryParameters: {'horas': horas},
+      );
+      final raw = response.data as List;
+      final alertsResponse = raw
+          .map((item) => AlertsResponse.fromJson(item as Map<String, dynamic>))
+          .toList();
+      return alertsResponse
+          .map((alert) => MapAlertMapper.fromAlertsResponse(alert))
+          .toList();
+    } on DioException catch (e) {
+      throw CustomError(reportApiErrorMessage(e.response?.data));
+    } catch (_) {
+      throw CustomError('Error al obtener las alertas del mapa');
+    }
+  }
+
+  @override
+  Future<List<AlertEntity>> getPublicMapAlerts({int horas = 24}) async {
+    try {
+      _dio.options.headers.remove('Authorization');
+      final response = await _dio.get(
+        '/alertas/mapa/public',
+        queryParameters: {'horas': horas},
+      );
+      final raw = response.data as List;
+      final alertsResponse = raw
+          .map((item) => AlertsResponse.fromJson(item as Map<String, dynamic>))
+          .toList();
+      return alertsResponse
+          .map((alert) => MapAlertMapper.fromAlertsResponse(alert))
+          .toList();
+    } on DioException catch (e) {
+      throw CustomError(reportApiErrorMessage(e.response?.data));
+    } catch (_) {
+      throw CustomError('Error al obtener las alertas del mapa');
+    }
+  }
+
+  @override
   Future<AlertEntity> getAlertById(String alertId) async {
     try {
       await _setAuthorizationHeader();

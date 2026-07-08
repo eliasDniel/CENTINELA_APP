@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/utils/api_timestamp.dart';
 import '../../../reports/domain/constants/incident_types.dart';
 import '../constants/map_alert_enums.dart';
+import '../constants/map_alert_window.dart';
 import 'map_alert_entity.dart';
 import 'user_zona_entity.dart';
 
@@ -101,7 +102,14 @@ extension AlertEntityUi on AlertEntity {
 
   bool get isSos => alertType == AlertType.sos;
 
-  /// Icono del pin según el tipo real (reportes ciudadanos o sensores).
+  bool get isActiveAlert => estado == 'activa';
+
+  bool get isWithinMapWindow => matchesCitizenMapWindow(
+        createdAt: timestampDate,
+      );
+
+  /// Pin atenuado si ya fue atendida pero sigue en ventana de 24 h.
+  bool get isResolvedOnMap => !isActiveAlert && isWithinMapWindow;
   IconData get markerIcon {
     final reportType = citizenReportType;
     if (_isCitizenAlert && reportType != null) {

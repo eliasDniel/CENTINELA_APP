@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:centinela_milagro/core/location/user_location_provider.dart';
 import 'package:centinela_milagro/core/utils/app_alert.dart';
 import 'package:centinela_milagro/features/auth/presentation/providers/auth_provider.dart';
-import 'package:centinela_milagro/features/map/presentation/providers/last_sos_alert_provider.dart';
-import 'package:centinela_milagro/features/map/presentation/providers/map_provider.dart';
+import 'package:centinela_milagro/features/map/presentation/providers/pending_sos_report_provider.dart';
 import 'package:centinela_milagro/features/reports/domain/entities/report_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,15 +68,5 @@ Future<void> _linkLatestSosToMap(
   ProviderContainer container,
   ReportEntity latestReport,
 ) async {
-  if (!container.exists(mapProvider)) return;
-
-  await container.read(mapProvider.notifier).refreshAlerts();
-
-  final alerts = container.read(mapProvider).allAlerts;
-  for (final alert in alerts) {
-    if (alert.reporteId == latestReport.id) {
-      container.read(lastSosAlertProvider.notifier).state = alert;
-      return;
-    }
-  }
+  container.read(pendingSosReportIdProvider.notifier).state = latestReport.id;
 }
