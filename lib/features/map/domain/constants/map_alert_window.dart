@@ -9,13 +9,11 @@ bool matchesCitizenMapWindow({
   return !createdAt.isBefore(cutoff);
 }
 
-/// Activa sin límite de tiempo, o creada en las últimas [windowHours].
+/// Misma regla que el backend `/alertas/mapa`: solo últimas [windowHours].
 bool isEligibleForCitizenMap({
-  required String estado,
   required DateTime createdAt,
   int windowHours = kMapAlertWindowHours,
 }) {
-  if (estado == 'activa') return true;
   return matchesCitizenMapWindow(
     createdAt: createdAt,
     windowHours: windowHours,

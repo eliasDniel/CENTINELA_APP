@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../config/enviroment.dart';
+import '../../domain/constants/notification_window.dart';
 import '../../domain/datasources/notifications_datasource.dart';
 import '../../notification_model.dart';
 
@@ -19,10 +20,15 @@ class NotificationsDatasourceImpl implements NotificationsDatasource {
     required String accessToken,
     int limit = 50,
     int offset = 0,
+    int horas = kNotificationWindowHours,
   }) async {
     final response = await _dio.get(
       '/notificaciones/mias',
-      queryParameters: {'limit': limit, 'offset': offset},
+      queryParameters: {
+        'limit': limit,
+        'offset': offset,
+        'horas': horas,
+      },
       options: _authOptions(accessToken),
     );
 
