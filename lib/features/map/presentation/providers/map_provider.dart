@@ -102,6 +102,15 @@ class MapState {
 class MapNotifier extends Notifier<MapState> {
   MapRepository get _repository => ref.read(mapRepositoryProvider);
 
+  final Set<String> _pendingRealtimeAlertIds = {};
+  var _bootstrapInProgress = false;
+
+  static const _realtimeAlertRetryDelays = [
+    Duration(milliseconds: 0),
+    Duration(milliseconds: 400),
+    Duration(milliseconds: 900),
+  ];
+
   bool _isCitizen(AuthState auth) =>
       auth.user != null && !(auth.user?.isVisitor ?? true);
 
@@ -147,6 +156,7 @@ class MapNotifier extends Notifier<MapState> {
   LatLng _proximityCenter() => ref.read(userLocationProvider).position;
 
   Future<void> _bootstrap() async {
+    _bootstrapInProgress = true;
     state = state.copyWith(isLoading: true, errorMessage: '');
     try {
       final auth = ref.read(authProvider);
@@ -198,15 +208,20 @@ class MapNotifier extends Notifier<MapState> {
         center: center,
         isLoading: false,
       );
+      await _flushPendingRealtimeAlerts();
     } on CustomError catch (e) {
       if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, errorMessage: e.message);
+      await _flushPendingRealtimeAlerts();
     } catch (_) {
       if (!ref.mounted) return;
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'No se pudieron cargar las alertas del mapa',
       );
+      await _flushPendingRealtimeAlerts();
+    } finally {
+      _bootstrapInProgress = false;
     }
   }
 
@@ -221,22 +236,74 @@ class MapNotifier extends Notifier<MapState> {
     final auth = ref.read(authProvider);
     if (!_isCitizen(auth)) return;
 
-    try {
-      final alert = await _repository.getAlertById(alertId);
+    if (_bootstrapInProgress || state.isLoading) {
+      _pendingRealtimeAlertIds.add(alertId);
+      return;
+    }
+
+    await _applyRealtimeAlert(alertId);
+  }
+
+  Future<void> _flushPendingRealtimeAlerts() async {
+    if (_pendingRealtimeAlertIds.isEmpty) return;
+    final pending = List<String>.from(_pendingRealtimeAlertIds);
+    _pendingRealtimeAlertIds.clear();
+    for (final alertId in pending) {
+      await _applyRealtimeAlert(alertId);
+    }
+  }
+
+  Future<void> _applyRealtimeAlert(String alertId) async {
+    AlertEntity? alert;
+    Object? lastError;
+
+    for (final delay in _realtimeAlertRetryDelays) {
+      if (delay > Duration.zero) {
+        await Future<void>.delayed(delay);
+      }
       if (!ref.mounted) return;
 
-      final alreadyOnMap = state.allAlerts.any((item) => item.id == alert.id);
-      if (!alreadyOnMap &&
-          !isEligibleForCitizenMap(
-            estado: alert.estado,
-            createdAt: alert.timestampDate,
-          )) {
-        return;
+      try {
+        alert = await _repository.getAlertById(alertId);
+        break;
+      } catch (error) {
+        lastError = error;
       }
+    }
 
-      _upsertAlert(alert);
-    } catch (_) {
-      // La alerta puede no estar disponible aún o fuera de permisos.
+    if (alert == null) {
+      assert(() {
+        final detail = lastError is CustomError
+            ? lastError.message
+            : lastError?.toString();
+        debugPrint(
+          'Mapa: no se pudo cargar alerta $alertId en tiempo real ($detail)',
+        );
+        return true;
+      }());
+      return;
+    }
+
+    if (!ref.mounted) return;
+
+    final alreadyOnMap = state.allAlerts.any((item) => item.id == alert!.id);
+    if (!alreadyOnMap &&
+        !isEligibleForCitizenMap(createdAt: alert.timestampDate)) {
+      return;
+    }
+
+    _upsertAlert(alert);
+
+    if (!alert.hasPosition) {
+      Future<void>.delayed(const Duration(milliseconds: 800), () async {
+        if (!ref.mounted) return;
+        try {
+          final refreshed = await _repository.getAlertById(alertId);
+          if (refreshed.hasPosition) {
+            _upsertAlert(refreshed);
+          }
+        } catch (_) {}
+      });
     }
   }
 

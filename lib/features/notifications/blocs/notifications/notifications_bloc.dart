@@ -9,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/constants/notification_window.dart';
 import '../../domain/repositories/notifications_repository.dart';
 import '../../infrastructure/datasources/notifications_datasource_impl.dart';
 import '../../infrastructure/local_notification_service.dart';
@@ -165,6 +166,8 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     NotificationsReceived event,
     Emitter<NotificationsState> emit,
   ) {
+    if (!isNotificationWithinWindow(event.notification.timestamp)) return;
+
     final exists = state.notifications.any((n) => n.id == event.notification.id);
     if (exists) return;
 
@@ -189,11 +192,13 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     try {
       final remote = await _repository.fetchMyNotifications(
         accessToken: event.accessToken,
+        horas: kNotificationWindowHours,
       );
 
       final incomingIds = remote.map((n) => n.id).toSet();
       final localOnly = state.notifications
           .where((n) => !incomingIds.contains(n.id))
+          .where((n) => isNotificationWithinWindow(n.timestamp))
           .toList();
 
       final merged = [...localOnly, ...remote]

@@ -72,7 +72,16 @@ class AlertsResponse {
     createdAt: json["createdAt"]?.toString() ?? '',
     updatedAt: json["updatedAt"]?.toString(),
     deletedAt: json["deletedAt"]?.toString(),
-    zona: json["zona"] != null ? Zona.fromJson(json["zona"]) : null,
+    zona: json["zona"] != null
+        ? Zona.fromJson({
+            ...(json["zona"] as Map<String, dynamic>),
+            "id": (json["zona"] as Map<String, dynamic>)["id"] ??
+                json["zonaId"] ??
+                '',
+            "riesgoNivel":
+                (json["zona"] as Map<String, dynamic>)["riesgoNivel"] ?? 1,
+          })
+        : null,
     latitud: (json["latitud"] as num?)?.toDouble(),
     longitud: (json["longitud"] as num?)?.toDouble(),
     timestamp: parseApiTimestamp(

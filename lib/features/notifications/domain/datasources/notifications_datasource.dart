@@ -5,6 +5,7 @@ abstract class NotificationsDatasource {
     required String accessToken,
     int limit,
     int offset,
+    int horas,
   });
 
   Future<NotificationModel> markAsRead({

@@ -41,10 +41,10 @@ class Zona {
   });
 
   factory Zona.fromJson(Map<String, dynamic> json) => Zona(
-    id: json["id"],
-    nombre: json["nombre"],
-    riesgoNivel: json["riesgoNivel"],
-    geomWkt: json["geomWkt"],
+    id: json["id"]?.toString() ?? '',
+    nombre: json["nombre"]?.toString() ?? '',
+    riesgoNivel: (json["riesgoNivel"] as num?)?.toInt() ?? 1,
+    geomWkt: json["geomWkt"]?.toString(),
   );
 
   Map<String, dynamic> toJson() => {

@@ -106,6 +106,11 @@ class MapRealtimeSync extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(mapRealtimeServiceProvider);
+    final auth = ref.watch(authProvider);
+    if (auth.user != null && !auth.user!.isVisitor) {
+      // Mantiene vivo el estado del mapa para aplicar eventos en tiempo real.
+      ref.watch(mapProvider);
+    }
     return child;
   }
 }

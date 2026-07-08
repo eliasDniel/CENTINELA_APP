@@ -1,3 +1,4 @@
+import '../../domain/constants/notification_window.dart';
 import '../../domain/datasources/notifications_datasource.dart';
 import '../../domain/repositories/notifications_repository.dart';
 import '../../notification_model.dart';
@@ -12,11 +13,13 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     required String accessToken,
     int limit = 50,
     int offset = 0,
+    int horas = kNotificationWindowHours,
   }) {
     return _datasource.fetchMyNotifications(
       accessToken: accessToken,
       limit: limit,
       offset: offset,
+      horas: horas,
     );
   }
 
