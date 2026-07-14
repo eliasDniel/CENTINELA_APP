@@ -1,3 +1,4 @@
+import 'package:centinela_milagro/core/notifications/push_notifications_support.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationPreferences {
@@ -9,6 +10,9 @@ class NotificationPreferences {
   static bool _loaded = false;
 
   static bool get enabled => _enabled;
+
+  static bool get pushActive =>
+      PushNotificationsSupport.isAvailable && _enabled;
 
   static Future<void> load() async {
     if (_loaded) return;

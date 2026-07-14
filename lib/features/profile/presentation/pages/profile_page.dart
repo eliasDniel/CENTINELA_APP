@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../reports/presentation/pages/offline_queue_page.dart';
 import '../pages/privacy_page.dart';
 import '../pages/change_password_page.dart';
 
@@ -351,35 +350,8 @@ class CardProfile extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-
-            // Divider
-            Divider(color: AppConfig.border),
-            const SizedBox(height: 12),
-
-            // Estadísticas rápidas (3 columnas)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _StatItem(
-                  icon: Icons.report_outlined,
-                  label: 'Reportes',
-                  value: '12',
-                ),
-                _StatItem(
-                  icon: Icons.thumb_up_outlined,
-                  label: 'Útiles',
-                  value: '8',
-                ),
-                _StatItem(
-                  icon: Icons.star_outline,
-                  label: 'Puntos',
-                  value: '240',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
+            
+           
             Divider(color: AppConfig.border),
             const SizedBox(height: 12),
 

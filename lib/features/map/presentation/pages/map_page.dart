@@ -705,7 +705,7 @@ class _MapPageState extends ConsumerState<MapPage> {
       );
     }
 
-    final mapControlsBottom = 20.0;
+    final mapControlsBottom = 24.0;
     final headingAvailable = ref.watch(
       userHeadingProvider.select((s) => s.isAvailable),
     );
@@ -739,7 +739,7 @@ class _MapPageState extends ConsumerState<MapPage> {
           if (showProximityCircle)
             Positioned(
               left: 12,
-              bottom: mapControlsBottom + 56,
+              bottom: mapControlsBottom + 80,
               child: AnimatedOpacity(
                 opacity: _showRadiusHint ? 1 : 0,
                 duration: const Duration(milliseconds: 400),

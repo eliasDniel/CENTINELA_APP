@@ -1,4 +1,4 @@
-// RF-0303: adjuntar foto o video al reporte (Android / iOS)
+// RF-0303: adjuntar foto al reporte (Android / iOS)
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 
-enum ReportMediaKind { photo, video }
+enum ReportMediaKind { photo }
 
 class ReportMediaAttachment {
   const ReportMediaAttachment({
@@ -31,27 +31,22 @@ class ReportMediaPicker extends StatelessWidget {
 
   static final _picker = ImagePicker();
 
-  Future<void> _pick(BuildContext context, {
-    required bool isVideo,
+  Future<void> _pick(
+    BuildContext context, {
     required ImageSource source,
   }) async {
     try {
-      final XFile? file = isVideo
-          ? await _picker.pickVideo(
-              source: source,
-              maxDuration: const Duration(minutes: 2),
-            )
-          : await _picker.pickImage(
-              source: source,
-              imageQuality: 85,
-              maxWidth: 1920,
-            );
+      final XFile? file = await _picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1920,
+      );
 
       if (file == null || !context.mounted) return;
 
       onChanged(ReportMediaAttachment(
         file: file,
-        kind: isVideo ? ReportMediaKind.video : ReportMediaKind.photo,
+        kind: ReportMediaKind.photo,
       ));
     } catch (e) {
       if (!context.mounted) return;
@@ -59,7 +54,7 @@ class ReportMediaPicker extends StatelessWidget {
     }
   }
 
-  void _showSourceSheet(BuildContext context, {required bool isVideo}) {
+  void _showSourceSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -71,10 +66,10 @@ class ReportMediaPicker extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: Text(isVideo ? 'Grabar video' : 'Tomar foto'),
+              title: const Text('Tomar foto'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pick(context, isVideo: isVideo, source: ImageSource.camera);
+                _pick(context, source: ImageSource.camera);
               },
             ),
             ListTile(
@@ -82,7 +77,7 @@ class ReportMediaPicker extends StatelessWidget {
               title: const Text('Elegir de galería'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pick(context, isVideo: isVideo, source: ImageSource.gallery);
+                _pick(context, source: ImageSource.gallery);
               },
             ),
           ],
@@ -105,40 +100,26 @@ class ReportMediaPicker extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Adjunta una foto (JPEG, PNG o WebP, máx. 5 MB). '
-          'Los videos no son aceptados por el servidor.',
+          'Solo se permiten imágenes.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppConfig.textSecondary,
               ),
         ),
         const SizedBox(height: 12),
         if (attachment == null) ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _showSourceSheet(context, isVideo: false),
-                  icon: const Icon(Icons.photo_camera_outlined),
-                  label: const Text('Foto'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _showSourceSheet(context, isVideo: true),
-                  icon: const Icon(Icons.videocam_outlined),
-                  label: const Text('Video'),
-                ),
-              ),
-            ],
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showSourceSheet(context),
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: const Text('Adjuntar foto'),
+            ),
           ),
         ] else
           _AttachmentPreview(
             attachment: attachment!,
             onRemove: () => onChanged(null),
-            onReplacePhoto: () =>
-                _showSourceSheet(context, isVideo: false),
-            onReplaceVideo: () =>
-                _showSourceSheet(context, isVideo: true),
+            onReplacePhoto: () => _showSourceSheet(context),
           ),
       ],
     );
@@ -150,17 +131,14 @@ class _AttachmentPreview extends StatelessWidget {
     required this.attachment,
     required this.onRemove,
     required this.onReplacePhoto,
-    required this.onReplaceVideo,
   });
 
   final ReportMediaAttachment attachment;
   final VoidCallback onRemove;
   final VoidCallback onReplacePhoto;
-  final VoidCallback onReplaceVideo;
 
   @override
   Widget build(BuildContext context) {
-    final isPhoto = attachment.kind == ReportMediaKind.photo;
     final path = attachment.file.path;
     final name = attachment.file.name;
 
@@ -175,20 +153,18 @@ class _AttachmentPreview extends StatelessWidget {
         children: [
           SizedBox(
             height: 160,
-            child: isPhoto
-                ? Image.file(
-                    File(path),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _videoPlaceholder(name),
-                  )
-                : _videoPlaceholder(name),
+            child: Image.file(
+              File(path),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _imagePlaceholder(name),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Icon(
-                  isPhoto ? Icons.image_outlined : Icons.videocam_outlined,
+                  Icons.image_outlined,
                   color: AppConfig.primaryLight,
                   size: 20,
                 ),
@@ -218,11 +194,6 @@ class _AttachmentPreview extends StatelessWidget {
                   icon: const Icon(Icons.photo_camera_outlined, size: 18),
                   label: const Text('Cambiar foto'),
                 ),
-                TextButton.icon(
-                  onPressed: onReplaceVideo,
-                  icon: const Icon(Icons.videocam_outlined, size: 18),
-                  label: const Text('Cambiar video'),
-                ),
               ],
             ),
           ),
@@ -231,14 +202,17 @@ class _AttachmentPreview extends StatelessWidget {
     );
   }
 
-  Widget _videoPlaceholder(String name) {
+  Widget _imagePlaceholder(String name) {
     return Container(
       color: AppConfig.surface,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.play_circle_outline,
-              size: 48, color: AppConfig.primaryLight),
+          const Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: AppConfig.primaryLight,
+          ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
