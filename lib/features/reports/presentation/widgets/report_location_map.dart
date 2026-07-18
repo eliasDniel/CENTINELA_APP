@@ -5,8 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/location/user_location_provider.dart';
+import '../../../../core/utils/app_alert.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../map/presentation/widgets/map_floating_controls.dart';
+
+/// Radio máximo permitido (metros) entre el GPS del usuario y el pin del reporte.
+const kReportLocationMaxRadiusMeters = 100.0;
 
 class ReportLocationMap extends ConsumerStatefulWidget {
   const ReportLocationMap({
@@ -61,6 +65,19 @@ class _ReportLocationMapState extends ConsumerState<ReportLocationMap> {
     _safeMove(widget.position, _mapController.camera.zoom);
   }
 
+  void _trySetPosition(LatLng point, LatLng userPosition) {
+    final meters = distanceToUserMeters(userPosition, point);
+    if (meters > kReportLocationMaxRadiusMeters) {
+      AppAlert.warning(
+        context,
+        'Solo puedes ubicar el reporte dentro de un radio de '
+        '${kReportLocationMaxRadiusMeters.round()} m desde tu posición actual.',
+      );
+      return;
+    }
+    widget.onPositionChanged(point);
+  }
+
   void _centerOnUser() {
     if (!_mapReady) return;
     final userPosition = ref.read(userLocationProvider).position;
@@ -95,17 +112,50 @@ class _ReportLocationMapState extends ConsumerState<ReportLocationMap> {
             Text(
               'Ubicación del incidente',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Toca el mapa para mover el pin a la posición exacta.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppConfig.textSecondary,
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppConfig.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: AppConfig.primary.withValues(alpha: 0.35),
+            ),
           ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.privacy_tip_outlined,
+                size: 18,
+                color: AppConfig.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Por tu seguridad, evita marcar tu ubicación exacta. Selecciona un punto aproximado dentro de la zona del incidente.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppConfig.textPrimary,
+                        height: 1.35,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Toca el mapa para mover el pin. Solo dentro del círculo de '
+          '${kReportLocationMaxRadiusMeters.round()} m alrededor de tu GPS.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppConfig.textSecondary,
+              ),
         ),
         const SizedBox(height: 10),
         ClipRRect(
@@ -120,7 +170,7 @@ class _ReportLocationMapState extends ConsumerState<ReportLocationMap> {
                     initialCenter: mapCenter,
                     initialZoom: _defaultZoom,
                     onMapReady: _onMapReady,
-                    onTap: (_, point) => widget.onPositionChanged(point),
+                    onTap: (_, point) => _trySetPosition(point, userPosition),
                     interactionOptions: const InteractionOptions(
                       flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                     ),
@@ -131,6 +181,18 @@ class _ReportLocationMapState extends ConsumerState<ReportLocationMap> {
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.centinela.milagro',
                       tileProvider: NetworkTileProvider(),
+                    ),
+                    CircleLayer(
+                      circles: [
+                        CircleMarker(
+                          point: userPosition,
+                          radius: kReportLocationMaxRadiusMeters,
+                          useRadiusInMeter: true,
+                          color: AppConfig.primary.withValues(alpha: 0.12),
+                          borderColor: AppConfig.primary,
+                          borderStrokeWidth: 2,
+                        ),
+                      ],
                     ),
                     MarkerLayer(
                       markers: [

@@ -135,7 +135,10 @@ class _ReportFormState extends ConsumerState<ReportForm>
                       ? null
                       : () {
                           if (form.currentStep == 2) {
-                            notifier.onSubmit();
+                            notifier.onSubmit(
+                              userPosition:
+                                  ref.read(userLocationProvider).position,
+                            );
                             return;
                           }
                           _animateStepChange(notifier.nextStep);
