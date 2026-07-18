@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,21 +12,26 @@ import 'core/map/map_tile_cache.dart';
 import 'core/realtime/map_realtime_service.dart';
 import 'core/permissions/post_auth_permissions.dart';
 import 'core/notifications/notification_preferences.dart';
+import 'core/notifications/push_notifications_support.dart';
 import 'core/utils/app_theme.dart';
 import 'core/utils/app_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/notifications/blocs/notifications/notifications_bloc.dart';
 
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await initializeDateFormatting('es5');
   await dotenv.load(fileName: ".env");
   await NotificationPreferences.load();
   await initializeMapTileCache();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await NotificationsBloc.initializeFCM();
+  if (PushNotificationsSupport.isAvailable) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await NotificationsBloc.initializeFCM();
+  }
   runApp(ProviderScope(
       child: MultiBlocProvider(
         providers: [BlocProvider(create: (_) => NotificationsBloc())],
@@ -98,7 +105,7 @@ class _HandleNotificationInteractionState
   }
 
   void _handleMessage(RemoteMessage message) {
-    if (!NotificationPreferences.enabled) return;
+    if (!NotificationPreferences.pushActive) return;
     context.read<NotificationsBloc>().handleRemoteMessage(message);
     widget.appRouter.go('/home/0/notifications');
   }
@@ -106,7 +113,9 @@ class _HandleNotificationInteractionState
   @override
   void initState() {
     super.initState();
-    setupInteractedMessage();
+    if (PushNotificationsSupport.isAvailable) {
+      setupInteractedMessage();
+    }
   }
 
   @override
@@ -141,7 +150,7 @@ class _FcmAuthSyncState extends ConsumerState<FcmAuthSync>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    if (!NotificationPreferences.enabled) return;
+    if (!NotificationPreferences.pushActive) return;
 
     final auth = ref.read(authProvider);
     if (auth.authStatus != AuthStatus.authenticated) return;
@@ -158,7 +167,7 @@ class _FcmAuthSyncState extends ConsumerState<FcmAuthSync>
       listenWhen: (previous, current) =>
           previous.token != current.token && current.token != null,
       listener: (context, state) {
-        if (!NotificationPreferences.enabled) return;
+        if (!NotificationPreferences.pushActive) return;
         final auth = ref.read(authProvider);
         if (auth.authStatus == AuthStatus.authenticated) {
           ref.read(authProvider.notifier).syncFcmWithBackend();

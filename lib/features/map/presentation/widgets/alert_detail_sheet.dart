@@ -182,6 +182,14 @@ class AlertDetailSheet extends StatelessWidget {
                       label: 'Fuente',
                       value: _sourceText(alert.source),
                     ),
+
+                    _InfoRow(
+                      icon: Icons.description_outlined,
+                      label: 'Descripción',
+                      value: alert.descripcion,
+                      valueColor: const Color(0xFF78909C),
+                      showDivider: false,
+                    ),
                     if (position != null)
                       _InfoRow(
                         icon: Icons.gps_fixed_rounded,

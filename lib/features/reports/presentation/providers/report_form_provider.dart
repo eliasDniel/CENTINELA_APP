@@ -5,6 +5,7 @@ import 'package:formz/formz.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../widgets/inputs/inputs.dart';
+import '../widgets/report_location_map.dart';
 import '../widgets/report_media_picker.dart';
 import 'reports_provider.dart';
 import 'reports_repository_provider.dart';
@@ -153,9 +154,19 @@ class ReportFormNotifier extends StateNotifier<ReportFormState> {
     }
   }
 
-  Future<void> onSubmit() async {
+  Future<void> onSubmit({required LatLng userPosition}) async {
     _touchEveryField();
     if (!Formz.validate([state.incidentType, state.description])) return;
+
+    final distanceMeters = distanceToUserMeters(userPosition, state.position);
+    if (distanceMeters > kReportLocationMaxRadiusMeters) {
+      state = state.copyWith(
+        errorMessage:
+            'La ubicación del reporte debe estar dentro de un radio de '
+            '${kReportLocationMaxRadiusMeters.round()} m desde tu posición actual.',
+      );
+      return;
+    }
 
     state = state.copyWith(isPosting: true, errorMessage: '');
 

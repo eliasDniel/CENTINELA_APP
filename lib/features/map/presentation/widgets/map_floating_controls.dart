@@ -1,6 +1,8 @@
+import 'package:centinela_milagro/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Controles flotantes del mapa al estilo Google Maps.
+/// Controles flotantes del mapa al estilo Google Maps, adaptados al tema oscuro.
 class MapFloatingControls extends StatelessWidget {
   const MapFloatingControls({
     super.key,
@@ -23,89 +25,162 @@ class MapFloatingControls extends StatelessWidget {
   final VoidCallback onZoomOut;
   final VoidCallback? onFilter;
 
-  static const _googleBlue = Color(0xFF1A73E8);
-  static const _dividerColor = Color(0xFFE0E0E0);
+  static const _controlSize = 48.0;
+  static const _groupGap = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (onFilter != null) ...[
+          _MapControlCircle(
+            icon: Icons.tune_rounded,
+            tooltip: 'Filtrar alertas',
+            accent: true,
+            onPressed: onFilter,
+          ),
+          const SizedBox(height: _groupGap),
+        ],
+        if (showCompass && compassAvailable) ...[
+          _MapControlCircle(
+            icon: Icons.explore_rounded,
+            tooltip: 'Modo brújula',
+            active: compassActive,
+            onPressed: onCompass,
+          ),
+          const SizedBox(height: _groupGap),
+        ],
+        _MapControlPill(
+          children: [
+            _MapControlTile(
+              icon: Icons.add_rounded,
+              tooltip: 'Acercar',
+              onPressed: onZoomIn,
+            ),
+            const _MapControlDivider(),
+            _MapControlTile(
+              icon: Icons.remove_rounded,
+              tooltip: 'Alejar',
+              onPressed: onZoomOut,
+            ),
+          ],
+        ),
+        const SizedBox(height: _groupGap),
+        _MapControlCircle(
+          icon: Icons.my_location_rounded,
+          tooltip: 'Mi ubicación',
+          accent: true,
+          onPressed: onMyLocation,
+        ),
+      ],
+    );
+  }
+}
+
+class _MapControlSurface extends StatelessWidget {
+  const _MapControlSurface({
+    required this.child,
+    required this.shape,
+  });
+
+  final Widget child;
+  final ShapeBorder shape;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      elevation: 4,
-      shadowColor: Colors.black26,
-      borderRadius: BorderRadius.circular(28),
+      color: AppConfig.surface.withValues(alpha: 0.94),
+      elevation: 3,
+      shadowColor: Colors.black54,
+      shape: shape,
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (onFilter != null) ...[
-            _ControlButton(
-              icon: Icons.tune_rounded,
-              tooltip: 'Filtrar alertas',
-              onPressed: onFilter,
-              iconColor: _googleBlue,
-            ),
-            const _ControlDivider(),
-          ],
-          if (showCompass) ...[
-            _ControlButton(
-              icon: Icons.explore_rounded,
-              tooltip: 'Modo brújula',
-              onPressed: compassAvailable ? onCompass : null,
-              iconColor: compassActive && compassAvailable
-                  ? _googleBlue
-                  : compassAvailable
-                  ? const Color(0xFF5F6368)
-                  : const Color(0xFFBDBDBD),
-              backgroundColor: compassActive && compassAvailable
-                  ? _googleBlue.withValues(alpha: 0.12)
-                  : Colors.white,
-            ),
-            const _ControlDivider(),
-          ],
-          _ControlButton(
-            icon: Icons.my_location_rounded,
-            tooltip: 'Mi ubicación',
-            onPressed: onMyLocation,
-            iconColor: _googleBlue,
-          ),
-          const _ControlDivider(),
-          _ControlButton(
-            icon: Icons.add_rounded,
-            tooltip: 'Acercar',
-            onPressed: onZoomIn,
-          ),
-          const _ControlDivider(),
-          _ControlButton(
-            icon: Icons.remove_rounded,
-            tooltip: 'Alejar',
-            onPressed: onZoomOut,
-          ),
-        ],
+      child: child,
+    );
+  }
+}
+
+class _MapControlCircle extends StatelessWidget {
+  const _MapControlCircle({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.active = false,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final bool active;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = active
+        ? AppConfig.primaryLight
+        : accent
+        ? AppConfig.primaryLight
+        : AppConfig.textSecondary;
+
+    return _MapControlSurface(
+      shape: CircleBorder(
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: _MapControlTile(
+        icon: icon,
+        tooltip: tooltip,
+        onPressed: onPressed,
+        iconColor: iconColor,
+        backgroundColor: active
+            ? AppConfig.primary.withValues(alpha: 0.22)
+            : Colors.transparent,
       ),
     );
   }
 }
 
-class _ControlDivider extends StatelessWidget {
-  const _ControlDivider();
+class _MapControlPill extends StatelessWidget {
+  const _MapControlPill({required this.children});
+
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
-      height: 1,
-      thickness: 1,
-      color: MapFloatingControls._dividerColor,
+    return _MapControlSurface(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: children,
+      ),
     );
   }
 }
 
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
+class _MapControlDivider extends StatelessWidget {
+  const _MapControlDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: AppConfig.divider.withValues(alpha: 0.6),
+    );
+  }
+}
+
+class _MapControlTile extends StatelessWidget {
+  const _MapControlTile({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
-    this.iconColor = const Color(0xFF5F6368),
-    this.backgroundColor = Colors.white,
+    this.iconColor = AppConfig.textSecondary,
+    this.backgroundColor = Colors.transparent,
   });
 
   final IconData icon;
@@ -119,10 +194,15 @@ class _ControlButton extends StatelessWidget {
     return Material(
       color: backgroundColor,
       child: InkWell(
-        onTap: onPressed,
+        onTap: onPressed == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onPressed!();
+              },
         child: SizedBox(
-          width: 40,
-          height: 40,
+          width: MapFloatingControls._controlSize,
+          height: MapFloatingControls._controlSize,
           child: Tooltip(
             message: tooltip,
             child: Icon(icon, size: 22, color: iconColor),

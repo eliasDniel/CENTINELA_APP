@@ -1,6 +1,6 @@
 {
-    "name": "centinela_milagro",
-    "short_name": "centinela_milagro",
+    "name": "Centinela",
+    "short_name": "Centinela",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

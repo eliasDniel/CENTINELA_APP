@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:centinela_milagro/core/notifications/fcm_token_registry.dart';
 import 'package:centinela_milagro/core/notifications/notification_preferences.dart';
+import 'package:centinela_milagro/core/notifications/push_notifications_support.dart';
 import 'package:centinela_milagro/firebase_options.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -59,6 +60,8 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   static Future<void> initializeFCM() async {
+    if (!PushNotificationsSupport.isAvailable) return;
+
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -75,6 +78,8 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   }
 
   Future<void> _bootstrap() async {
+    if (!PushNotificationsSupport.isAvailable) return;
+
     final settings = await _messaging.getNotificationSettings();
     add(NotificationsChangeStatus(settings.authorizationStatus));
 
@@ -93,6 +98,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   }
 
   Future<void> refreshToken() async {
+    if (!PushNotificationsSupport.isAvailable) return;
     if (!NotificationPreferences.enabled) return;
     final token = await _messaging.getToken();
     if (token == null || token.isEmpty) return;
@@ -101,6 +107,8 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   }
 
   Future<void> requestPermissions() async {
+    if (!PushNotificationsSupport.isAvailable) return;
+
     final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,

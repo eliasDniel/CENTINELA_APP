@@ -42,47 +42,45 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBZjELhCh6SK_NGbgZnNHv1NBMFBpVdYjs',
-    appId: '1:232951398605:web:c6b617ec68b14b56afe984',
-    messagingSenderId: '232951398605',
-    projectId: 'notifications-8b993',
-    authDomain: 'notifications-8b993.firebaseapp.com',
-    storageBucket: 'notifications-8b993.firebasestorage.app',
-    measurementId: 'G-QJ6CNQNNDC',
-  );
-
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBi-qsIfL8V7MG8O9k4MQVIjki6drOx578',
-    appId: '1:232951398605:android:124a3b8b69a6d0cfafe984',
-    messagingSenderId: '232951398605',
-    projectId: 'notifications-8b993',
-    storageBucket: 'notifications-8b993.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCVOS6qtlKXKegozTuvJvpkoztHLEERUfU',
-    appId: '1:232951398605:ios:4a8d1aea415c5316afe984',
-    messagingSenderId: '232951398605',
-    projectId: 'notifications-8b993',
-    storageBucket: 'notifications-8b993.firebasestorage.app',
-    iosBundleId: 'com.example.appCine2',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCVOS6qtlKXKegozTuvJvpkoztHLEERUfU',
-    appId: '1:232951398605:ios:4a8d1aea415c5316afe984',
-    messagingSenderId: '232951398605',
-    projectId: 'notifications-8b993',
-    storageBucket: 'notifications-8b993.firebasestorage.app',
-    iosBundleId: 'com.example.appCine2',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBZjELhCh6SK_NGbgZnNHv1NBMFBpVdYjs',
     appId: '1:232951398605:web:47f47d90e1e41674afe984',
     messagingSenderId: '232951398605',
     projectId: 'notifications-8b993',
     authDomain: 'notifications-8b993.firebaseapp.com',
     storageBucket: 'notifications-8b993.firebasestorage.app',
     measurementId: 'G-WQLNWLV3TN',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyBi-qsIfL8V7MG8O9k4MQVIjki6drOx578',
+    appId: '1:232951398605:android:5a1c0887d26b02a2afe984',
+    messagingSenderId: '232951398605',
+    projectId: 'notifications-8b993',
+    storageBucket: 'notifications-8b993.firebasestorage.app',
+  );
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCVOS6qtlKXKegozTuvJvpkoztHLEERUfU',
+    appId: '1:232951398605:ios:b05843e653dc0538afe984',
+    messagingSenderId: '232951398605',
+    projectId: 'notifications-8b993',
+    storageBucket: 'notifications-8b993.firebasestorage.app',
+    iosBundleId: 'com.example.centinelaMilagro',
+  );
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCVOS6qtlKXKegozTuvJvpkoztHLEERUfU',
+    appId: '1:232951398605:ios:b05843e653dc0538afe984',
+    messagingSenderId: '232951398605',
+    projectId: 'notifications-8b993',
+    storageBucket: 'notifications-8b993.firebasestorage.app',
+    iosBundleId: 'com.example.centinelaMilagro',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDU-IlHyYNKb5ll7xHFSpoBW0pHSDDoWCk',
+    appId: '1:232951398605:web:cf17e4be7b9e28e4afe984',
+    messagingSenderId: '232951398605',
+    projectId: 'notifications-8b993',
+    authDomain: 'notifications-8b993.firebaseapp.com',
+    storageBucket: 'notifications-8b993.firebasestorage.app',
+    measurementId: 'G-FBJH4FM4YK',
   );
 }
