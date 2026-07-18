@@ -33,6 +33,18 @@ class _ReportLocationMapState extends ConsumerState<ReportLocationMap> {
 
   static const _defaultZoom = 16.0;
 
+  /// Tamaño del marcador (debe coincidir con [Icon.size]).
+  static const _pinSize = 40.0;
+
+  /// Punta de [Icons.location_pin] en la cuadrícula Material 24×24: (12, 22).
+  /// Ancla el LatLng en esa punta, no en el centro ni en el borde del widget.
+  static final _pinTipAlignment = Marker.computePixelAlignment(
+    width: _pinSize,
+    height: _pinSize,
+    left: _pinSize * 12 / 24,
+    top: _pinSize * 22 / 24,
+  );
+
   @override
   void didUpdateWidget(covariant ReportLocationMap oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -198,13 +210,13 @@ class _ReportLocationMapState extends ConsumerState<ReportLocationMap> {
                       markers: [
                         Marker(
                           point: widget.position,
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.bottomCenter,
+                          width: _pinSize,
+                          height: _pinSize,
+                          alignment: _pinTipAlignment,
                           child: const Icon(
                             Icons.location_pin,
                             color: AppConfig.error,
-                            size: 40,
+                            size: _pinSize,
                           ),
                         ),
                       ],
